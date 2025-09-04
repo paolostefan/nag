@@ -4,6 +4,7 @@ project(nag LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# OpenGL is required by SDL2
 find_package(OpenGL REQUIRED)
 
 # SDL2
@@ -66,9 +67,14 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(spdlog)
 
+# Project libraries
+add_library(nag_engine_lib src/engine/engine.cc)
+target_include_directories(nag_engine_lib PUBLIC src/include)
+target_link_libraries(nag_engine_lib PUBLIC spdlog) 
+
 # Dependency collector interface
 add_library(editor_lib INTERFACE)
-target_link_libraries(editor_lib INTERFACE SDL2::SDL2 imgui imgui_fd ${OPENMPT_LIBRARIES} spdlog)
+target_link_libraries(editor_lib INTERFACE SDL2::SDL2 imgui imgui_fd ${OPENMPT_LIBRARIES} spdlog nag_engine_lib)
 target_include_directories(editor_lib INTERFACE ${OPENMPT_INCLUDE_DIRS})
 target_compile_options(editor_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
 
