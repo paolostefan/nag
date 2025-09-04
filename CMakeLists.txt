@@ -49,8 +49,28 @@ add_library(imgui_fd STATIC
 target_link_libraries(imgui_fd PUBLIC imgui)
 target_include_directories(imgui_fd PUBLIC ${imguifiledialog_SOURCE_DIR}/)
 
+# OpenMPT
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(OPENMPT REQUIRED libopenmpt)
+
+if(NOT OPENMPT_FOUND)
+  message(ERROR "OpenMPT not found")
+endif()
+
+# Spdlog
+FetchContent_Declare(
+  spdlog
+  GIT_REPOSITORY https://github.com/gabime/spdlog.git
+  GIT_TAG v2.x
+)
+
+FetchContent_MakeAvailable(spdlog)
+
+# Dependency collector interface
 add_library(editor_lib INTERFACE)
-target_link_libraries(editor_lib INTERFACE SDL2::SDL2 imgui imgui_fd)
+target_link_libraries(editor_lib INTERFACE SDL2::SDL2 imgui imgui_fd ${OPENMPT_LIBRARIES} spdlog)
+target_include_directories(editor_lib INTERFACE ${OPENMPT_INCLUDE_DIRS})
+target_compile_options(editor_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
 
 # Editor
 add_executable(editor src/editor/main.cc)

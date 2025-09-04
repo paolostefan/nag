@@ -1,21 +1,19 @@
-#include <SDL.h>
-#include <SDL_opengl.h>
+#include <string>
 
 #include "imgui.h"
 #include "backends/imgui_impl_sdl2.h"
 #include "backends/imgui_impl_opengl3.h"
-
 #include "ImGuiFileDialog.h"
-
-#include <iostream>
-#include <string>
+#include "SDL.h"
+#include "SDL_opengl.h"
+#include "spdlog/spdlog.h"
 
 int main(int argc, char **argv)
 {
   // Inizializzazione SDL con supporto OpenGL
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO) != 0)
   {
-    std::cerr << "Error initializing SDL: " << SDL_GetError() << "\n";
+    spdlog::critical("Error initializing SDL: {}", SDL_GetError());
     return -1;
   }
 
@@ -96,7 +94,7 @@ int main(int argc, char **argv)
       if (ImGuiFileDialog::Instance()->IsOk())
       {
         lastLoadedFile = ImGuiFileDialog::Instance()->GetFilePathName();
-        std::cout << "Asset loaded: " << lastLoadedFile << "\n";
+        spdlog::info("Asset loaded: {}", lastLoadedFile);
         // TODO: qui potresti chiamare engine->LoadAsset(lastLoadedFile);
       }
       ImGuiFileDialog::Instance()->Close();

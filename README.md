@@ -26,9 +26,14 @@ The project is configured to use the following dependencies:
 
 The dependencies are managed using the [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) CMake module.
 
+## System prerequisites
+
+```bash
+sudo apt update
+sudo apt install libopenmpt-dev libmpg123-dev libasound2-dev pkg-config
+```
+
 ## What to do next
 
-- Add a GUI framework - imgui
-- Add a file dialog manager - imguifiledialog
 - Allow the user to load an audio module
 - Add a timeline system
