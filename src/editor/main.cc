@@ -8,6 +8,8 @@
 #include "SDL_opengl.h"
 #include "spdlog/spdlog.h"
 
+#include "engine.h"
+
 int main(int argc, char **argv)
 {
   // Inizializzazione SDL con supporto OpenGL
@@ -53,6 +55,8 @@ int main(int argc, char **argv)
 
   bool firstFrame = true;
 
+  Engine engine;
+
   while (running)
   {
     // Gestione eventi
@@ -94,9 +98,17 @@ int main(int argc, char **argv)
       if (ImGuiFileDialog::Instance()->IsOk())
       {
         lastLoadedFile = ImGuiFileDialog::Instance()->GetFilePathName();
-        spdlog::info("Asset loaded: {}", lastLoadedFile);
-        // TODO: qui potresti chiamare engine->LoadAsset(lastLoadedFile);
+
+        if (!engine.LoadAsset(lastLoadedFile))
+        {
+          spdlog::error("Error loading asset {}", lastLoadedFile);
+        }
+        else
+        {
+          // Do stuff like playing the asset
+        }
       }
+
       ImGuiFileDialog::Instance()->Close();
     }
 

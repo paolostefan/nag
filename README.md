@@ -35,5 +35,5 @@ sudo apt install libopenmpt-dev libmpg123-dev libasound2-dev pkg-config
 
 ## What to do next
 
-- Allow the user to load an audio module
+- Play the audio module upon loading
 - Add a timeline system
