@@ -9,6 +9,7 @@
 #include "spdlog/spdlog.h"
 
 #include "engine.h"
+#include "openmpt_player.h"
 
 int main(int argc, char **argv)
 {
@@ -56,6 +57,7 @@ int main(int argc, char **argv)
   bool firstFrame = true;
 
   Engine engine;
+  OpenMptPlayer player;
 
   while (running)
   {
@@ -99,14 +101,20 @@ int main(int argc, char **argv)
       {
         lastLoadedFile = ImGuiFileDialog::Instance()->GetFilePathName();
 
-        if (!engine.LoadAsset(lastLoadedFile))
-        {
+        if(!player.load(lastLoadedFile))
           spdlog::error("Error loading asset {}", lastLoadedFile);
+        else {
+          player.play();
         }
-        else
-        {
-          // Do stuff like playing the asset
-        }
+
+        // if (!engine.LoadAsset(lastLoadedFile))
+        // {
+        //   spdlog::error("Error loading asset {}", lastLoadedFile);
+        // }
+        // else
+        // {
+        //   // Do stuff like playing the asset
+        // }
       }
 
       ImGuiFileDialog::Instance()->Close();

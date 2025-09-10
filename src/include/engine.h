@@ -1,13 +1,7 @@
-#include <memory>
-#include <string_view>
-#include <vector>
+#ifndef NAG_ENGINE_ENGINE_H
+#define NAG_ENGINE_ENGINE_H
 
-struct Asset
-{
-  std::string_view name;
-  std::vector<uint8_t> data;
-  size_t file_size;
-};
+#include "asset.h"
 
 class Engine
 {
@@ -20,3 +14,5 @@ public:
 private:
   std::vector<Asset> assets;
 };
+
+#endif // NAG_ENGINE_ENGINE_H
