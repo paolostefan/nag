@@ -2,7 +2,7 @@
 
 A simple SDL2 demo engine.
 
-## Nag Champa agarbathi
+## The name
 
 Nag Champa Agarbathi (नागचम्पा अगरबत्ती) literally means "the incense of the sacred Champaca tree" or "the incense of the Champaca flower".
 
@@ -16,17 +16,30 @@ Breaking down the terms:
 - Champa: refers to the Champaka flower (a golden magnolia), also known as Plumeria or the "snake flower".
 - Agarbathi: the Hindi word for the incense sticks, which are hand-rolled around a bamboo stick.
 
+Just after writing this, I realized that the word "nag" in English has a completely different meaning, and I loved the idea of using this pun.
+
 ## Dependecies policy
 
-The project is configured to use the following dependencies:
+Some deps are loaded through the system package manager, and some others through CMake.
+
+### CMake-managed deps
 
 - SDL2
 - imgui
 - imguifiledialog
 
-The dependencies are managed using the [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) CMake module.
+The above dependencies are managed using the [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) CMake module.
 
-## System prerequisites
+### System prerequisites
+
+The following system packages are required:
+
+- libopenmpt-dev
+- libmpg123-dev
+- libasound2-dev
+- pkg-config
+
+In a Debian-based system, you can install them with:
 
 ```bash
 sudo apt update
@@ -35,5 +48,5 @@ sudo apt install libopenmpt-dev libmpg123-dev libasound2-dev pkg-config
 
 ## What to do next
 
-- Play the audio module upon loading
 - Add a timeline system
+- Add module player visual controls (play, stop, seek, etc.)

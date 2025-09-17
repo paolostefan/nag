@@ -20,11 +20,19 @@ class OpenMptPlayer : public IAudioPlayer
 public:
   bool load(const std::string &path) override
   {
-    std::ifstream file(path, std::ios::binary);
-    if (!file.is_open())
+    if (mod)
+    {
+      stop();
+      mod.reset();
+    }
+
+    audio_path = path;
+
+    std::ifstream in_file_stream(audio_path, std::ios::binary);
+    if (!in_file_stream.is_open())
       return false;
 
-    std::vector<char> data((std::istreambuf_iterator<char>(file)), {});
+    std::vector<char> data((std::istreambuf_iterator<char>(in_file_stream)), {});
     mod = std::make_unique<openmpt::module>(data);
     return true;
   }
@@ -32,7 +40,10 @@ public:
   void play() override
   {
     if (!mod)
+    {
       return;
+    }
+
     position = 0.0;
 
     SDL_AudioSpec spec;
@@ -47,7 +58,10 @@ public:
 
     device = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
     if (!device)
+    {
       return;
+    }
+
     SDL_PauseAudioDevice(device, 0);
   }
 
@@ -72,7 +86,7 @@ public:
 
   double getBpm() const override
   {
-    return mod ? mod->get_current_speed() * (mod->get_current_tempo() / 24.0) : 0.0;
+    return mod ? mod->get_current_speed() * (mod->get_current_tempo2() / 24.0) : 0.0;
   }
 
   int getRow() const override

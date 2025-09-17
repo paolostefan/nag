@@ -101,9 +101,12 @@ int main(int argc, char **argv)
       {
         lastLoadedFile = ImGuiFileDialog::Instance()->GetFilePathName();
 
-        if(!player.load(lastLoadedFile))
+        if (!player.load(lastLoadedFile))
+        {
           spdlog::error("Error loading asset {}", lastLoadedFile);
-        else {
+        }
+        else
+        {
           player.play();
         }
 
@@ -120,10 +123,23 @@ int main(int argc, char **argv)
       ImGuiFileDialog::Instance()->Close();
     }
 
-    if (!lastLoadedFile.empty())
+    
+    const std::string audio_file = player.get_audio_path_str();
+    if (!audio_file.empty())
     {
-      ImGui::Text("Last loaded file: %s", lastLoadedFile.c_str());
+      ImGui::SameLine();
+      ImGui::Text("Audio path: %s", audio_file.c_str());
+
+      ImGui::Text("Position: %.3fs", player.getPositionMs() / 1000.0);
+      ImGui::Text("BPM: %.2f", player.getBpm());
+      ImGui::Text("Pattern/Row: %d/%02x", player.getPattern(), player.getRow());
+      ImGui::SameLine();
+      if (ImGui::Button("Stop"))
+      {
+        player.stop();
+      }
     }
+
 
     ImGui::End();
 
