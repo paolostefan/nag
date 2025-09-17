@@ -123,23 +123,65 @@ int main(int argc, char **argv)
       ImGuiFileDialog::Instance()->Close();
     }
 
-    
     const std::string audio_file = player.get_audio_path_str();
     if (!audio_file.empty())
     {
       ImGui::SameLine();
       ImGui::Text("Audio path: %s", audio_file.c_str());
+      ImGui::Separator();
 
-      ImGui::Text("Position: %.3fs", player.getPositionMs() / 1000.0);
-      ImGui::Text("BPM: %.2f", player.getBpm());
-      ImGui::Text("Pattern/Row: %d/%02x", player.getPattern(), player.getRow());
-      ImGui::SameLine();
-      if (ImGui::Button("Stop"))
+      const PlaybackState state = player.get_playback_state();
+
+      if (state == PlaybackState::PLAYING)
       {
-        player.stop();
+        if (ImGui::Button("Pause"))
+        {
+          player.pause();
+        }
       }
-    }
+      else if (state == PlaybackState::PAUSED)
+      {
+        if (ImGui::Button("Resume"))
+        {
+          player.play();
+        }
+      }
+      else if (state == PlaybackState::STOPPED)
+      {
+        if (ImGui::Button("Play"))
+        {
+          player.play();
+        }
+      }
+      
+      if (state == PlaybackState::PLAYING || state == PlaybackState::PAUSED)
+      {
+        if (ImGui::Button("Stop"))
+        {
+          player.stop();
+        }
+      }
 
+      ImGui::Text("Position: %.3fs", player.get_position_ms() / 1000.0);
+      ImGui::Text("BPM: %.2f", player.get_bpm());
+      ImGui::Text("Pattern/Row: %d/%02x", player.get_pattern(), player.get_row());
+
+      // State indicator
+      const char *stateText = "";
+      switch (state)
+      {
+      case PlaybackState::STOPPED:
+        stateText = "Stopped";
+        break;
+      case PlaybackState::PLAYING:
+        stateText = "Playing";
+        break;
+      case PlaybackState::PAUSED:
+        stateText = "Paused";
+        break;
+      }
+      ImGui::Text("Status: %s", stateText);
+    }
 
     ImGui::End();
 
