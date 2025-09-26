@@ -22,9 +22,41 @@ class OpenMptPlayer : public IAudioPlayer
 
   std::atomic<PlaybackState> playback_state{PlaybackState::STOPPED};
 
+  std::atomic<bool> seek_requested{false};
+  std::atomic<double> seek_position{0.0};
+
   mutable std::mutex mod_mx;
 
 public:
+  double get_position_ms() const override
+  {
+    std::lock_guard<std::mutex> lock(mod_mx);
+    return mod ? mod->get_position_seconds() * 1000.0 : 0.0;
+  }
+
+  double get_duration_ms() const override
+  {
+    return duration;
+  }
+
+  double get_bpm() const override
+  {
+    std::lock_guard<std::mutex> lock(mod_mx);
+    return mod ? mod->get_current_speed() * (mod->get_current_tempo2() / 24.0) : 0.0;
+  }
+
+  int get_row() const override
+  {
+    std::lock_guard<std::mutex> lock(mod_mx);
+    return mod ? mod->get_current_row() : -1;
+  }
+
+  int get_pattern() const override
+  {
+    std::lock_guard<std::mutex> lock(mod_mx);
+    return mod ? mod->get_current_pattern() : -1;
+  }
+
   bool load(const std::string &path) override
   {
     if (mod)
@@ -121,38 +153,29 @@ public:
       mod->set_position_seconds(0.0);
   }
 
-  double get_position_ms() const override
+  void seek(const double position_ms) override
   {
-    std::lock_guard<std::mutex> lock(mod_mx);
-    return mod ? mod->get_position_seconds() * 1000.0 : 0.0;
-  }
+    if (!mod || position_ms < 0.0 || position_ms > duration)
+      return;
 
-  double get_bpm() const override
-  {
-    std::lock_guard<std::mutex> lock(mod_mx);
-    return mod ? mod->get_current_speed() * (mod->get_current_tempo2() / 24.0) : 0.0;
-  }
-
-  int get_row() const override
-  {
-    std::lock_guard<std::mutex> lock(mod_mx);
-    return mod ? mod->get_current_row() : -1;
-  }
-
-  int get_pattern() const override
-  {
-    std::lock_guard<std::mutex> lock(mod_mx);
-    return mod ? mod->get_current_pattern() : -1;
+    seek_position = position_ms;
+    seek_requested = true;
   }
 
 private:
   static void audio_callback(void *userdata, Uint8 *stream, int len)
   {
     OpenMptPlayer *self = static_cast<OpenMptPlayer *>(userdata);
-    if (!self->mod)
+
+    // Handle seek requests
+    if (self->seek_requested.load())
     {
-      memset(stream, 0, len);
-      return;
+      std::lock_guard<std::mutex> lock(self->mod_mx);
+      if (self->mod)
+      {
+        self->mod->set_position_seconds(self->seek_position.load());
+        self->seek_requested = false;
+      }
     }
 
     std::lock_guard<std::mutex> lock(self->mod_mx);
@@ -170,7 +193,7 @@ private:
     if (count > 0)
     {
       memcpy(stream, buffer.data(), count * 2 * sizeof(float));
-      if(self->mod->get_position_seconds() >= self->mod->get_duration_seconds())
+      if (self->mod->get_position_seconds() >= self->mod->get_duration_seconds())
       {
         self->playback_state = PlaybackState::STOPPED;
       }

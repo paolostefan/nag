@@ -11,6 +11,14 @@
 #include "engine.h"
 #include "openmpt_player.h"
 
+std::string format_time(double seconds)
+{
+  int minutes = static_cast<int>(seconds) / 60;
+  int secs = static_cast<int>(seconds) % 60;
+
+  return std::to_string(minutes) + ":" + (secs < 10 ? "0" : "") + std::to_string(secs);
+}
+
 int main(int argc, char **argv)
 {
   // Inizializzazione SDL con supporto OpenGL
@@ -139,32 +147,43 @@ int main(int argc, char **argv)
           player.pause();
         }
       }
-      else if (state == PlaybackState::PAUSED)
+      else
       {
-        if (ImGui::Button("Resume"))
-        {
-          player.play();
-        }
-      }
-      else if (state == PlaybackState::STOPPED)
-      {
+        ImGui::SameLine();
         if (ImGui::Button("Play"))
         {
           player.play();
         }
       }
-      
-      if (state == PlaybackState::PLAYING || state == PlaybackState::PAUSED)
+
+      ImGui::SameLine();
+      if (ImGui::Button("Stop"))
       {
-        if (ImGui::Button("Stop"))
-        {
-          player.stop();
-        }
+        player.stop();
       }
 
-      ImGui::Text("Position: %.3fs", player.get_position_ms() / 1000.0);
-      ImGui::Text("BPM: %.2f", player.get_bpm());
-      ImGui::Text("Pattern/Row: %d/%02x", player.get_pattern(), player.get_row());
+      const double current_ms = player.get_position_ms();
+      const double duration_ms = player.get_duration_ms();
+
+      const double current_seconds = current_ms / 1000.0;
+      const double total_seconds = duration_ms / 1000.0;
+
+      if (duration_ms > 0)
+      {
+        const float progress = static_cast<float>(current_ms / duration_ms);
+        float slider_value = progress;
+        if(ImGui::SliderFloat("Progress", &slider_value, 0.0f, 1.0f, "%.2f%%"))
+        {
+          double new_pos_ms = duration_ms * slider_value;
+          spdlog::info("Seeking to {}", new_pos_ms);
+          player.seek(new_pos_ms);
+        }
+
+        ImGui::Text("Time: %s / %s", format_time(current_seconds).c_str(), format_time(total_seconds).c_str());
+
+        ImGui::Text("BPM: %.2f", player.get_bpm());
+        ImGui::Text("Pattern/Row: %d/%02x", player.get_pattern(), player.get_row());
+      }
 
       // State indicator
       const char *stateText = "";
