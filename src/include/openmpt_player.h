@@ -173,7 +173,7 @@ private:
       std::lock_guard<std::mutex> lock(self->mod_mx);
       if (self->mod)
       {
-        self->mod->set_position_seconds(self->seek_position.load());
+        self->mod->set_position_seconds(self->seek_position.load() / 1000.0);
         self->seek_requested = false;
       }
     }

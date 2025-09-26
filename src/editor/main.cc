@@ -172,11 +172,11 @@ int main(int argc, char **argv)
       {
         const float progress = static_cast<float>(current_ms / duration_ms);
         float slider_value = progress;
-        if(ImGui::SliderFloat("Progress", &slider_value, 0.0f, 1.0f, "%.2f%%"))
+        if (ImGui::SliderFloat("Progress", &slider_value, 0.0f, 1.0f, "%.2f%%"))
         {
           double new_pos_ms = duration_ms * slider_value;
-          spdlog::info("Seeking to {}", new_pos_ms);
           player.seek(new_pos_ms);
+          spdlog::debug("Seeking to {}ms (slider {})", new_pos_ms, slider_value);
         }
 
         ImGui::Text("Time: %s / %s", format_time(current_seconds).c_str(), format_time(total_seconds).c_str());

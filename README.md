@@ -48,6 +48,6 @@ sudo apt install libopenmpt-dev libmpg123-dev libasound2-dev pkg-config
 
 ## What to do next
 
-- Debug the mod player timeline
+- Avoid buzzing when seeking
 - Add module player visual controls (play, stop, seek, etc.)
 - Fix crash on mp3 load
