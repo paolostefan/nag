@@ -40,15 +40,23 @@ target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR}/)
 FetchContent_Declare(
   imguifiledialog
   GIT_REPOSITORY https://github.com/aiekick/ImGuiFileDialog.git
-  GIT_TAG v0.6.7
+  GIT_TAG master
 )
 FetchContent_MakeAvailable(imguifiledialog)
 
 add_library(imgui_fd STATIC
-  ${imguifiledialog_SOURCE_DIR}/ImGuiFileDialog.cpp  
+${imguifiledialog_SOURCE_DIR}/ImGuiFileDialog.cpp  
 )
 target_link_libraries(imgui_fd PUBLIC imgui)
 target_include_directories(imgui_fd PUBLIC ${imguifiledialog_SOURCE_DIR}/)
+
+# nlohmann/json
+FetchContent_Declare(
+  nlohmann_json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG develop
+)
+FetchContent_MakeAvailable(nlohmann_json)
 
 # OpenMPT
 find_package(PkgConfig REQUIRED)
