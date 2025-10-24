@@ -75,20 +75,20 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(spdlog)
 
-# Project libraries
+# Engine
 add_library(nag_engine_lib src/engine/engine.cc)
 target_include_directories(nag_engine_lib PUBLIC src/include)
 target_link_libraries(nag_engine_lib PUBLIC spdlog) 
 
-# Dependency collector interface
-add_library(editor_lib INTERFACE)
-target_link_libraries(editor_lib INTERFACE SDL2::SDL2 imgui imgui_fd ${OPENMPT_LIBRARIES} spdlog nag_engine_lib)
-target_include_directories(editor_lib INTERFACE ${OPENMPT_INCLUDE_DIRS})
-target_compile_options(editor_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
+# Editor
+add_library(nag_editor_lib src/editor/editor.cc)
+target_link_libraries(nag_editor_lib PUBLIC SDL2::SDL2 imgui imgui_fd ${OPENMPT_LIBRARIES} spdlog nag_engine_lib)
+target_include_directories(nag_editor_lib PUBLIC ${OPENMPT_INCLUDE_DIRS})
+target_compile_options(nag_editor_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
 
 # Editor
 add_executable(editor src/editor/main.cc)
-target_link_libraries(editor PRIVATE editor_lib)
+target_link_libraries(editor PRIVATE nag_editor_lib)
 
 # Proofs of concept
 add_executable(dummy_sdl_win src/poc/dummy_sdl_win.cc)
