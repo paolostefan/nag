@@ -21,6 +21,16 @@ class Editor
 public:
   Editor() = default;
 
+  int run();
+
+private:
+
+  enum class EditorStyle: uint8_t
+  {
+    PURPLE
+  };
+
+
   static inline std::string format_time(double seconds)
   {
     int minutes = static_cast<int>(seconds) / 60;
@@ -30,10 +40,11 @@ public:
            std::to_string(secs);
   }
 
-  int run();
   void main_event_loop();
 
-private:
+  static void style_purple(ImGuiStyle &style);
+  static void style_win11dark(ImGuiStyle &style);
+
   SDL_Window *window{nullptr};
   ImGuiIO *io{nullptr};
 };
