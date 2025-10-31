@@ -11,24 +11,19 @@ Some deps are loaded through the system package manager, and some others through
 - SDL2
 - imgui
 - imguifiledialog
+- nlohmann/json
 
 The above dependencies are managed using the [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) CMake module.
 
 ### System prerequisites
 
-The following system packages are required:
+The following system packages are required under Debian/Ubuntu GNU/Linux:
 
-- libopenmpt-dev
-- libmpg123-dev
 - libasound2-dev
+- libglew-dev
+- libmpg123-dev
+- libopenmpt-dev
 - pkg-config
-
-In a Debian-based system, you can install them with:
-
-```bash
-sudo apt update
-sudo apt install libopenmpt-dev libmpg123-dev libasound2-dev pkg-config
-```
 
 ## What to do next
 
