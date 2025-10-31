@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "GL/gl.h"
+#include "engine/engine.h"
 
 class ShaderProgram
 {

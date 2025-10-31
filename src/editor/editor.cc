@@ -20,6 +20,19 @@ int Editor::run()
   SDL_GL_MakeCurrent(window, gl_context);
   SDL_GL_SetSwapInterval(1); // V-Sync
 
+  // IMPORTANTE: Inizializza GLEW DOPO aver creato il contesto OpenGL
+  glewExperimental = GL_TRUE; // Needed for core profile
+  GLenum glew_err = glewInit();
+  if (glew_err != GLEW_OK)
+  {
+    spdlog::critical("GLEW initialization failed: {}",
+                     (const char *)glewGetErrorString(glew_err));
+    return -1;
+  }
+
+  spdlog::info("OpenGL version: {}", (const char *)glGetString(GL_VERSION));
+  spdlog::info("GLSL version: {}", (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
+
   // Setup Dear ImGui
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
@@ -94,31 +107,30 @@ void Editor::render_fx_preview()
     auto &params = mandel_effect->get_parameters();
     for (auto &param : params)
     {
-
       const std::string &name = param.get_name();
 
-      if (param.get_type() == EffectParameter::Type::FLOAT)
+      if (param.get_type() == ParameterType::FLOAT)
       {
         float val = std::get<float>(param.get_value());
-        if (ImGui::SliderFloat(name.c_str(), &val, param.get_min(), param.get_max()))
+        if (ImGui::SliderFloat(name.c_str(), &val, .0f, 1.f))
         {
           param.set_value(val);
         }
       }
-      else if (param.get_type() == EffectParameter::Type::INT)
+      else if (param.get_type() == ParameterType::INT)
       {
         int val = std::get<int>(param.get_value());
-        if (ImGui::SliderInt(name.c_str(), &val, param.get_min(), param.get_max()))
+        if (ImGui::SliderInt(name.c_str(), &val, 0, 100))
         {
           param.set_value(val);
         }
       }
-      else if (param.get_type() == EffectParameter::Type::VEC2)
+      else if (param.get_type() == ParameterType::VEC2)
       {
         Vec2 val = std::get<Vec2>(param.get_value());
 
         if (ImGui::SliderFloat2(name.c_str(),
-                                &val, param.get_min(), param.get_max()))
+                                (float *)&val, .0f, 1.f))
         {
           param.set_value(val);
         }
@@ -157,10 +169,6 @@ void Editor::main_event_loop()
   SDL_Event event;
   std::string lastLoadedFile;
 
-  Engine engine;
-  OpenMptPlayer player;
-  Project current_project;
-
   // style_purple(ImGui::GetStyle());
   style_win11dark(ImGui::GetStyle());
 
@@ -198,7 +206,6 @@ void Editor::main_event_loop()
     // Main UI window
     if (ImGui::Begin("Editor", nullptr, ImGuiWindowFlags_NoDecoration))
     {
-
       ImGui::Text("Project: %s", current_project.get_name().c_str());
 
       if (ImGui::Button("Load audio track"))
@@ -306,8 +313,11 @@ void Editor::main_event_loop()
         }
         ImGui::Text("Status: %s", stateText);
       }
-    
-      if(show_fx_preview)
+
+      ImGui::Separator();
+      ImGui::Checkbox("Show FX preview", &show_fx_preview);
+
+      if (show_fx_preview)
       {
         render_fx_preview();
       }

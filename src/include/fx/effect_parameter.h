@@ -1,6 +1,7 @@
 #ifndef NAG_ENGINE_EFFECT_PARAMETER_H
 #define NAG_ENGINE_EFFECT_PARAMETER_H
 
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <variant>
@@ -98,7 +99,12 @@ public:
   inline const std::vector<Keyframe> &get_keyframes() const { return keyframes; }
 
   // Evaluate parameter value at given time with interpolation
-  ParameterValue evaluate(double time_ms, InterpolationType interp = InterpolationType::LINEAR) const;
+  ParameterValue evaluate(double time_ms, InterpolationType interp = InterpolationType::LINEAR) const{
+    if(keyframes.empty())
+      return current_value;
+
+    throw std::runtime_error("Not implemented");
+  }
 
 private:
   std::string name;

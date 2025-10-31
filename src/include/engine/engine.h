@@ -1,6 +1,8 @@
 #ifndef NAG_ENGINE_ENGINE_H
 #define NAG_ENGINE_ENGINE_H
 
+#include "GL/glew.h"
+
 #include "asset.h"
 
 class Engine

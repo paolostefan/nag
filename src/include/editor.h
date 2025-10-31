@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "GL/glew.h"
 #include "imgui.h"
 #include "backends/imgui_impl_sdl2.h"
 #include "backends/imgui_impl_opengl3.h"
@@ -11,10 +12,10 @@
 #include "SDL_opengl.h"
 #include "spdlog/spdlog.h"
 
-#include "engine.h"
+#include "engine/engine.h"
+#include "fx/mandelbrot_effect.h"
 #include "openmpt_player.h"
 #include "project.h"
-#include "fx/mandelbrot_effect.h"
 
 class Editor
 {
@@ -24,13 +25,11 @@ public:
   int run();
 
 private:
-
-  enum class EditorStyle: uint8_t
+  enum class EditorStyle : uint8_t
   {
     PURPLE,
     WIN11DARK
   };
-
 
   static inline std::string format_time(double seconds)
   {
@@ -41,17 +40,20 @@ private:
            std::to_string(secs);
   }
 
+  static void style_purple(ImGuiStyle &style);
+  static void style_win11dark(ImGuiStyle &style);
+
   void init_fx_system();
   void render_fx_preview();
 
   void main_event_loop();
 
-  static void style_purple(ImGuiStyle &style);
-  static void style_win11dark(ImGuiStyle &style);
-
-
   SDL_Window *window{nullptr};
   ImGuiIO *io{nullptr};
+
+  Engine engine;
+  OpenMptPlayer player;
+  Project current_project;
 
   std::unique_ptr<MandelbrotEffect> mandel_effect;
   GLuint fx_fbo{0};

@@ -7,6 +7,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # OpenGL is required by SDL2
 find_package(OpenGL REQUIRED)
 
+# GLEW is required by the ShaderManager
+find_package(GLEW REQUIRED)
+
 # SDL2
 include(FetchContent)
 FetchContent_Declare(
@@ -78,17 +81,29 @@ FetchContent_MakeAvailable(spdlog)
 # Engine
 file(GLOB ENGINE_SRCS src/engine/*.cc src/fx/*.cc)
 add_library(nag_engine_lib ${ENGINE_SRCS})
-target_include_directories(nag_engine_lib PUBLIC src/include)
+target_include_directories(nag_engine_lib PUBLIC 
+  src/include
+  ${OPENMPT_INCLUDE_DIRS}
+)
+
 target_link_libraries(nag_engine_lib PUBLIC 
   OpenGL::GL
+  GLEW::GLEW
   spdlog
+  ${OPENMPT_LIBRARIES}
 ) 
 
-# Editor
+target_compile_options(nag_engine_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
+
+# Editor library
 add_library(nag_editor_lib src/editor/editor.cc)
-target_link_libraries(nag_editor_lib PUBLIC SDL2::SDL2 imgui imgui_fd ${OPENMPT_LIBRARIES} spdlog nag_engine_lib)
-target_include_directories(nag_editor_lib PUBLIC ${OPENMPT_INCLUDE_DIRS})
-target_compile_options(nag_editor_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
+target_link_libraries(nag_editor_lib PUBLIC
+  GLEW::GLEW
+  SDL2::SDL2
+  imgui
+  imgui_fd
+  nag_engine_lib
+)
 
 # Editor
 add_executable(editor src/editor/main.cc)
@@ -101,6 +116,7 @@ target_link_libraries(dummy_sdl_win PRIVATE SDL2::SDL2 SDL2::SDL2main)
 # Copy shaders to build directory
 file(GLOB SHADER_FILES "${CMAKE_SOURCE_DIR}/src/shaders/*")
 file(COPY ${SHADER_FILES} DESTINATION "${CMAKE_BINARY_DIR}/shaders")
+message(STATUS "Shaders copied to ${CMAKE_BINARY_DIR}/shaders: ${SHADER_FILES}")
 
 # Install shaders
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/src/shaders/" 

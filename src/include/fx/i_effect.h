@@ -42,7 +42,7 @@ public:
     return nullptr;
   }
 
-  void update_parameters(const double time_ms)
+  inline void update_parameters(const double time_ms)
   {
     auto &params = get_parameters();
 
