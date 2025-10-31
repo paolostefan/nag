@@ -76,9 +76,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(spdlog)
 
 # Engine
-add_library(nag_engine_lib src/engine/engine.cc)
+file(GLOB ENGINE_SRCS src/engine/*.cc src/fx/*.cc)
+add_library(nag_engine_lib ${ENGINE_SRCS})
 target_include_directories(nag_engine_lib PUBLIC src/include)
-target_link_libraries(nag_engine_lib PUBLIC spdlog) 
+target_link_libraries(nag_engine_lib PUBLIC 
+  OpenGL::GL
+  spdlog
+) 
 
 # Editor
 add_library(nag_editor_lib src/editor/editor.cc)
@@ -93,3 +97,12 @@ target_link_libraries(editor PRIVATE nag_editor_lib)
 # Proofs of concept
 add_executable(dummy_sdl_win src/poc/dummy_sdl_win.cc)
 target_link_libraries(dummy_sdl_win PRIVATE SDL2::SDL2 SDL2::SDL2main)
+
+# Copy shaders to build directory
+file(GLOB SHADER_FILES "${CMAKE_SOURCE_DIR}/src/shaders/*")
+file(COPY ${SHADER_FILES} DESTINATION "${CMAKE_BINARY_DIR}/shaders")
+
+# Install shaders
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/src/shaders/" 
+        DESTINATION "shaders"
+        FILES_MATCHING PATTERN "*.vert" PATTERN "*.frag" PATTERN "*.comp")
