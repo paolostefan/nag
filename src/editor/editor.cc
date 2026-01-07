@@ -93,6 +93,21 @@ void Editor::init_fx_system()
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void Editor::render_preview_image()
+{
+  glBindFramebuffer(GL_FRAMEBUFFER, fx_fbo);
+  glViewport(0, 0, fx_preview_width, fx_preview_height);
+
+  // Clear color buffer
+  glClearColor(.0f, .0f, .0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  double current_time = player.get_position_ms();
+  mandel_effect->render(fx_preview_width, fx_preview_height, current_time);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 void Editor::render_fx_preview()
 {
   if (!mandel_effect)
@@ -112,45 +127,49 @@ void Editor::render_fx_preview()
       if (param.get_type() == ParameterType::FLOAT)
       {
         float val = std::get<float>(param.get_value());
-        if (ImGui::SliderFloat(name.c_str(), &val, .0f, 1.f))
+        if (ImGui::SliderFloat(name.c_str(), &val,
+                               std::get<float>(param.get_min_value()),
+                               std::get<float>(param.get_max_value())))
         {
           param.set_value(val);
+          fx_preview_dirty = true;
         }
       }
       else if (param.get_type() == ParameterType::INT)
       {
         int val = std::get<int>(param.get_value());
-        if (ImGui::SliderInt(name.c_str(), &val, 0, 100))
+        if (ImGui::SliderInt(name.c_str(), &val,
+                             std::get<int>(param.get_min_value()),
+                             std::get<int>(param.get_max_value())))
         {
           param.set_value(val);
+          fx_preview_dirty = true;
         }
       }
       else if (param.get_type() == ParameterType::VEC2)
       {
         Vec2 val = std::get<Vec2>(param.get_value());
 
-        if (ImGui::SliderFloat2(name.c_str(),
-                                (float *)&val, .0f, 1.f))
+        Vec2 min_val = std::get<Vec2>(param.get_min_value());
+        Vec2 max_val = std::get<Vec2>(param.get_max_value());
+
+        bool changed = false;
+
+        changed |= ImGui::SliderFloat((name + ".x").c_str(), &val.x, min_val.x, max_val.x);
+        changed |= ImGui::SliderFloat((name + ".y").c_str(), &val.y, min_val.y, max_val.y);
+
+        if (changed)
         {
           param.set_value(val);
+          fx_preview_dirty = true;
         }
       }
     }
 
     // Render effect preview
-    if (ImGui::Button("Render"))
+    if (fx_preview_dirty)
     {
-      glBindFramebuffer(GL_FRAMEBUFFER, fx_fbo);
-      glViewport(0, 0, fx_preview_width, fx_preview_height);
-
-      // Clear color buffer
-      glClearColor(.0f, .0f, .0f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
-
-      double current_time = player.get_position_ms();
-      mandel_effect->render(fx_preview_width, fx_preview_height, current_time);
-
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      render_preview_image();
     }
 
     ImGui::Image((void *)(intptr_t)fx_texture,

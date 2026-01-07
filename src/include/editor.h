@@ -46,6 +46,8 @@ private:
   void init_fx_system();
   void render_fx_preview();
 
+  void render_preview_image();
+
   void main_event_loop();
 
   SDL_Window *window{nullptr};
@@ -62,6 +64,7 @@ private:
   int fx_preview_width{800};
   int fx_preview_height{600};
   bool show_fx_preview{false};
+  bool fx_preview_dirty{true};
 };
 
 #endif // NAG_EDITOR_H

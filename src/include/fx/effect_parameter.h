@@ -67,12 +67,17 @@ class EffectParameter
 public:
   EffectParameter(const std::string &name,
                   ParameterType type,
-                  ParameterValue default_value)
+                  ParameterValue default_value, 
+                  ParameterValue min_value,
+                  ParameterValue max_value)
       : name(name),
         type(type),
         current_value(default_value),
-        default_value(default_value)
+        default_value(default_value),
+        min_value(min_value),
+        max_value(max_value)
   {
+
   }
 
   inline const std::string &get_name() const { return name; }
@@ -82,6 +87,9 @@ public:
 
   inline const ParameterValue &get_value() const { return current_value; }
   inline void set_value(const ParameterValue &value) { current_value = value; }
+  
+  inline const ParameterValue &get_min_value() const { return min_value; }
+  inline const ParameterValue &get_max_value() const { return max_value; }
 
   inline void add_keyframe(const double time_ms, const ParameterValue &value)
   {
@@ -111,6 +119,8 @@ private:
   ParameterType type;
   ParameterValue current_value;
   ParameterValue default_value;
+  ParameterValue min_value;
+  ParameterValue max_value;
   std::vector<Keyframe> keyframes;
 
   InterpolationType interpolation{InterpolationType::LINEAR};
