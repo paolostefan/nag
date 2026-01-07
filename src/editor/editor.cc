@@ -20,7 +20,7 @@ int Editor::run()
   SDL_GL_MakeCurrent(window, gl_context);
   SDL_GL_SetSwapInterval(1); // V-Sync
 
-  // IMPORTANTE: Inizializza GLEW DOPO aver creato il contesto OpenGL
+  // IMPORTANT: Initialize GLEW AFTER creating the OpenGL context
   glewExperimental = GL_TRUE; // Needed for core profile
   GLenum glew_err = glewInit();
   if (glew_err != GLEW_OK)
