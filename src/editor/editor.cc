@@ -115,7 +115,7 @@ void Editor::render_fx_preview()
     return;
   }
 
-  ImGui::Begin("FX Preview", &show_fx_preview);
+  ImGui::Begin("FX Preview");
 
   if (ImGui::CollapsingHeader("Mandelbrot", ImGuiTreeNodeFlags_DefaultOpen))
   {
@@ -123,46 +123,68 @@ void Editor::render_fx_preview()
     for (auto &param : params)
     {
       const std::string &name = param.get_name();
+      const std::string &fmt = param.get_fmt();
+      const ParameterType type = param.get_type();
 
-      if (param.get_type() == ParameterType::FLOAT)
+      switch (type)
+      {
+      case ParameterType::FLOAT:
       {
         float val = std::get<float>(param.get_value());
-        if (ImGui::SliderFloat(name.c_str(), &val,
-                               std::get<float>(param.get_min_value()),
-                               std::get<float>(param.get_max_value())))
+
+        const float min_val = std::get<float>(param.get_min_value());
+        const float max_val = std::get<float>(param.get_max_value());
+        const float step = std::get<float>(param.get_step());
+
+        if (ImGui::DragFloat(name.c_str(), &val,
+                             step, min_val, max_val,
+                             fmt == "" ? "%.3f" : fmt.c_str()))
         {
           param.set_value(val);
           fx_preview_dirty = true;
         }
+        break;
       }
-      else if (param.get_type() == ParameterType::INT)
+      case ParameterType::INT:
       {
         int val = std::get<int>(param.get_value());
-        if (ImGui::SliderInt(name.c_str(), &val,
-                             std::get<int>(param.get_min_value()),
-                             std::get<int>(param.get_max_value())))
+
+        const int min_val = std::get<int>(param.get_min_value());
+        const int max_val = std::get<int>(param.get_max_value());
+        const int step = std::get<int>(param.get_step());
+
+        if (ImGui::DragInt(name.c_str(), &val, step, min_val, max_val,
+                           fmt == "" ? "%d" : fmt.c_str()))
         {
           param.set_value(val);
           fx_preview_dirty = true;
         }
+        break;
       }
-      else if (param.get_type() == ParameterType::VEC2)
+      case ParameterType::VEC2:
       {
         Vec2 val = std::get<Vec2>(param.get_value());
 
-        Vec2 min_val = std::get<Vec2>(param.get_min_value());
-        Vec2 max_val = std::get<Vec2>(param.get_max_value());
+        const Vec2 min_val = std::get<Vec2>(param.get_min_value());
+        const Vec2 max_val = std::get<Vec2>(param.get_max_value());
+        const Vec2 step = std::get<Vec2>(param.get_step());
 
         bool changed = false;
 
-        changed |= ImGui::SliderFloat((name + ".x").c_str(), &val.x, min_val.x, max_val.x);
-        changed |= ImGui::SliderFloat((name + ".y").c_str(), &val.y, min_val.y, max_val.y);
+        changed |= ImGui::DragFloat((name + ".x").c_str(), &val.x,
+                                    step.x, min_val.x, max_val.x,
+                                    fmt == "" ? "%.3f" : fmt.c_str());
+        changed |= ImGui::DragFloat((name + ".y").c_str(), &val.y,
+                                    step.y, min_val.y, max_val.y,
+                                    fmt == "" ? "%.3f" : fmt.c_str());
 
         if (changed)
         {
           param.set_value(val);
           fx_preview_dirty = true;
         }
+        break;
+      }
       }
     }
 
@@ -180,13 +202,127 @@ void Editor::render_fx_preview()
   ImGui::End();
 }
 
+void Editor::render_audio_tracks()
+{
+  static std::string lastLoadedFile = "";
+
+  ImGui::Begin("Audio Tracks");
+
+  if (ImGui::Button("Load audio track"))
+  {
+    IGFD::FileDialogConfig config;
+    config.path = ".";
+    ImGuiFileDialog::Instance()->OpenDialog("ChooseAudioDlgKey", "Choose audio file", ".mod,.xm,.mp3", config);
+  }
+
+  // Audio track load dialog
+  if (ImGuiFileDialog::Instance()->Display("ChooseAudioDlgKey"))
+  {
+    if (ImGuiFileDialog::Instance()->IsOk())
+    {
+      lastLoadedFile = ImGuiFileDialog::Instance()->GetFilePathName();
+
+      if (!player.load(lastLoadedFile))
+      {
+        spdlog::error("Error loading asset {}", lastLoadedFile);
+      }
+      else
+      {
+        player.play();
+      }
+
+      // if (!engine.LoadAsset(lastLoadedFile))
+      // {
+      //   spdlog::error("Error loading asset {}", lastLoadedFile);
+      // }
+      // else
+      // {
+      //   // Do stuff like playing the asset
+      // }
+    }
+
+    ImGuiFileDialog::Instance()->Close();
+  }
+
+  const std::string audio_file = player.get_audio_path_str();
+  if (!audio_file.empty())
+  {
+    ImGui::SameLine();
+    ImGui::Text("Audio path: %s", audio_file.c_str());
+    ImGui::Separator();
+
+    const PlaybackState state = player.get_playback_state();
+
+    if (state == PlaybackState::PLAYING)
+    {
+      if (ImGui::Button("Pause"))
+      {
+        player.pause();
+      }
+    }
+    else
+    {
+      if (ImGui::Button("Play"))
+      {
+        player.play();
+      }
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Stop"))
+    {
+      player.stop();
+    }
+
+    const double current_ms = player.get_position_ms();
+    const double duration_ms = player.get_duration_ms();
+
+    const double current_seconds = current_ms / 1000.0;
+    const double total_seconds = duration_ms / 1000.0;
+
+    if (duration_ms > 0)
+    {
+      const float progress = static_cast<float>(current_ms * 100.0 / duration_ms);
+      float slider_value = progress;
+      if (ImGui::SliderFloat("Progress", &slider_value, 0.0f, 100.0f, "%.2f%%"))
+      {
+        double new_pos_ms = duration_ms * slider_value / 100.0;
+        player.seek(new_pos_ms);
+        spdlog::debug("Seeking to {}ms (slider {})", new_pos_ms, slider_value);
+      }
+
+      ImGui::Text("Time: %s / %s", format_time(current_seconds).c_str(), format_time(total_seconds).c_str());
+
+      ImGui::Text("BPM: %.2f", player.get_bpm());
+      ImGui::Text("Pattern/Row: %d/%02x", player.get_pattern(), player.get_row());
+    }
+
+    // State indicator
+    const char *stateText = "";
+    switch (state)
+    {
+    case PlaybackState::STOPPED:
+      stateText = "Stopped";
+      break;
+    case PlaybackState::PLAYING:
+      stateText = "Playing";
+      break;
+    case PlaybackState::PAUSED:
+      stateText = "Paused";
+      break;
+    }
+    ImGui::Text("Status: %s", stateText);
+  }
+
+  ImGui::End();
+}
+
 void Editor::main_event_loop()
 {
   bool running = true;
   bool firstFrame = true;
 
   SDL_Event event;
-  std::string lastLoadedFile;
 
   // style_purple(ImGui::GetStyle());
   style_win11dark(ImGui::GetStyle());
@@ -223,126 +359,12 @@ void Editor::main_event_loop()
     ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_FirstUseEver);
 
     // Main UI window
-    if (ImGui::Begin("Editor", nullptr, ImGuiWindowFlags_NoDecoration))
-    {
-      ImGui::Text("Project: %s", current_project.get_name().c_str());
-
-      if (ImGui::Button("Load audio track"))
-      {
-        IGFD::FileDialogConfig config;
-        config.path = ".";
-        ImGuiFileDialog::Instance()->OpenDialog("ChooseAudioDlgKey", "Choose audio file", ".mod,.xm,.mp3", config);
-      }
-
-      // Audio track load dialog
-      if (ImGuiFileDialog::Instance()->Display("ChooseAudioDlgKey"))
-      {
-        if (ImGuiFileDialog::Instance()->IsOk())
-        {
-          lastLoadedFile = ImGuiFileDialog::Instance()->GetFilePathName();
-
-          if (!player.load(lastLoadedFile))
-          {
-            spdlog::error("Error loading asset {}", lastLoadedFile);
-          }
-          else
-          {
-            player.play();
-          }
-
-          // if (!engine.LoadAsset(lastLoadedFile))
-          // {
-          //   spdlog::error("Error loading asset {}", lastLoadedFile);
-          // }
-          // else
-          // {
-          //   // Do stuff like playing the asset
-          // }
-        }
-
-        ImGuiFileDialog::Instance()->Close();
-      }
-
-      const std::string audio_file = player.get_audio_path_str();
-      if (!audio_file.empty())
-      {
-        ImGui::SameLine();
-        ImGui::Text("Audio path: %s", audio_file.c_str());
-        ImGui::Separator();
-
-        const PlaybackState state = player.get_playback_state();
-
-        if (state == PlaybackState::PLAYING)
-        {
-          if (ImGui::Button("Pause"))
-          {
-            player.pause();
-          }
-        }
-        else
-        {
-          if (ImGui::Button("Play"))
-          {
-            player.play();
-          }
-        }
-
-        ImGui::SameLine();
-        if (ImGui::Button("Stop"))
-        {
-          player.stop();
-        }
-
-        const double current_ms = player.get_position_ms();
-        const double duration_ms = player.get_duration_ms();
-
-        const double current_seconds = current_ms / 1000.0;
-        const double total_seconds = duration_ms / 1000.0;
-
-        if (duration_ms > 0)
-        {
-          const float progress = static_cast<float>(current_ms * 100.0 / duration_ms);
-          float slider_value = progress;
-          if (ImGui::SliderFloat("Progress", &slider_value, 0.0f, 100.0f, "%.2f%%"))
-          {
-            double new_pos_ms = duration_ms * slider_value / 100.0;
-            player.seek(new_pos_ms);
-            spdlog::debug("Seeking to {}ms (slider {})", new_pos_ms, slider_value);
-          }
-
-          ImGui::Text("Time: %s / %s", format_time(current_seconds).c_str(), format_time(total_seconds).c_str());
-
-          ImGui::Text("BPM: %.2f", player.get_bpm());
-          ImGui::Text("Pattern/Row: %d/%02x", player.get_pattern(), player.get_row());
-        }
-
-        // State indicator
-        const char *stateText = "";
-        switch (state)
-        {
-        case PlaybackState::STOPPED:
-          stateText = "Stopped";
-          break;
-        case PlaybackState::PLAYING:
-          stateText = "Playing";
-          break;
-        case PlaybackState::PAUSED:
-          stateText = "Paused";
-          break;
-        }
-        ImGui::Text("Status: %s", stateText);
-      }
-
-      ImGui::Separator();
-      ImGui::Checkbox("Show FX preview", &show_fx_preview);
-
-      if (show_fx_preview)
-      {
-        render_fx_preview();
-      }
-    } // main window
-
+    ImGui::Begin("Project Info", nullptr, ImGuiWindowFlags_NoDecoration);
+    ImGui::Text("Project: %s", current_project.get_name().c_str());
     ImGui::End();
+
+    render_fx_preview();
+    render_audio_tracks();
 
     // Render UI
     ImGui::Render();

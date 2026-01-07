@@ -5,10 +5,10 @@
 MandelbrotEffect::MandelbrotEffect()
 {
   // Initialize parameters with default values
-  parameters.emplace_back("zoom", ParameterType::FLOAT, 1.0f, 0.1f, 1000.0f);
-  parameters.emplace_back("center", ParameterType::VEC2, Vec2{-0.5f, 0.0f}, Vec2{-2.0f, -2.0f}, Vec2{2.0f, 2.0f});
-  parameters.emplace_back("iterations", ParameterType::INT, 100, 10, 1000);
-  parameters.emplace_back("color_offset", ParameterType::FLOAT, 0.0f, -1.0f, 1.0f);
+  parameters.emplace_back("zoom", ParameterType::FLOAT, 1.0f, 0.1f, 1000.0f, 0.1f);
+  parameters.emplace_back("center", ParameterType::VEC2, Vec2{-0.5f, 0.0f}, Vec2{-2.0f, -2.0f}, Vec2{2.0f, 2.0f}, Vec2{.0001f, .0001f}, "%.6f");
+  parameters.emplace_back("iterations", ParameterType::INT, 100, 10, 1000, 1);
+  parameters.emplace_back("color_offset", ParameterType::FLOAT, 0.0f, -1.0f, 1.0f, 0.01f);
 }
 
 MandelbrotEffect::~MandelbrotEffect()

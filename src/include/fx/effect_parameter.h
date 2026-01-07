@@ -69,19 +69,26 @@ public:
                   ParameterType type,
                   ParameterValue default_value, 
                   ParameterValue min_value,
-                  ParameterValue max_value)
+                  ParameterValue max_value,
+                  ParameterValue step,
+                  const std::string &format_string = ""
+                )
       : name(name),
         type(type),
         current_value(default_value),
         default_value(default_value),
         min_value(min_value),
-        max_value(max_value)
+        max_value(max_value),
+        step(step),
+        fmt(format_string)
   {
-
   }
 
   inline const std::string &get_name() const { return name; }
+  inline const std::string &get_fmt() const { return fmt; }
+  
   constexpr ParameterType get_type() const { return type; }
+
   constexpr InterpolationType get_interpolation() const { return interpolation; }
   inline void set_interpolation(InterpolationType interp) { interpolation = interp; }
 
@@ -90,6 +97,7 @@ public:
   
   inline const ParameterValue &get_min_value() const { return min_value; }
   inline const ParameterValue &get_max_value() const { return max_value; }
+  inline const ParameterValue &get_step() const { return step; }
 
   inline void add_keyframe(const double time_ms, const ParameterValue &value)
   {
@@ -115,12 +123,21 @@ public:
   }
 
 private:
+  /// @brief Short parameter name, used in IDs and JSON, MUST NOT contain spaces or special chars.
   std::string name;
+
+  /// @brief Format string for displaying the parameter in UI
+  std::string fmt{""};
+
   ParameterType type;
   ParameterValue current_value;
   ParameterValue default_value;
   ParameterValue min_value;
   ParameterValue max_value;
+
+  /// @brief Step size for value changes (used in UI)
+  ParameterValue step;
+
   std::vector<Keyframe> keyframes;
 
   InterpolationType interpolation{InterpolationType::LINEAR};
