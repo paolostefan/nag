@@ -18,6 +18,8 @@ public:
   Project(const std::string &name) : name(name) {}
 
   const std::string &get_name() const noexcept { return name; }
+  const std::filesystem::path &get_path() const noexcept { return path; }
+
   const std::vector<AudioTrack> &get_audio_tracks() const noexcept
   {
     return audio_tracks;
@@ -77,6 +79,40 @@ public:
     catch (const std::exception &e)
     {
       spdlog::error("Failed to save project: {}", e.what());
+    }
+
+    return result;
+  }
+
+  inline bool load(const std::string &load_path)
+  {
+    path = load_path;
+
+    bool result = false; // Assume failure
+    try
+    {
+      std::ifstream load_file(load_path);
+      nlohmann::json j;
+      load_file >> j;
+
+      name = j["name"];
+      audio_tracks.clear();
+
+      for (const auto &track : j["audio_tracks"])
+      {
+        AudioTrack audio_track;
+        audio_track.name = track["name"];
+        audio_track.path = track["path"].get<std::filesystem::path>();
+        audio_track.start_seconds = track["start_seconds"];
+
+        audio_tracks.push_back(audio_track);
+      }
+
+      result = true;
+    }
+    catch (const std::exception &e)
+    {
+      spdlog::error("Failed to load project: {}", e.what());
     }
 
     return result;

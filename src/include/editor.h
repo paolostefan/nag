@@ -32,6 +32,7 @@ private:
   };
 
   static constexpr const char *const kChooseAudioDlgKey = "ChooseAudioDlgKey";
+  static constexpr const char *const kLoadProjectDlgKey = "LoadProjectDlgKey";
   static constexpr const char *const kSaveProjectDlgKey = "SaveProjectDlgKey";
 
   static inline std::string format_time(double seconds)
@@ -58,6 +59,7 @@ private:
   void display_dialogs();
 
   void open_audio_track_dialog();
+  void open_load_project_dialog();
   void open_save_project_dialog();
 
   SDL_Window *window{nullptr};

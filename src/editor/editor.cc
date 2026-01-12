@@ -222,7 +222,12 @@ void Editor::render_menu()
 
   if (ImGui::BeginMenu("File"))
   {
-    if (ImGui::MenuItem("Save project"))
+    if (ImGui::MenuItem("Open project..."))
+    {
+      open_load_project_dialog();
+    }
+
+    if (ImGui::MenuItem("Save project as..."))
     {
       open_save_project_dialog();
     }
@@ -331,24 +336,35 @@ void Editor::render_audio_tracks()
 
 void Editor::display_dialogs()
 {
-  static std::string lastLoadedFile = "";
-
   // Audio track load dialog
   if (ImGuiFileDialog::Instance()->Display(kChooseAudioDlgKey))
   {
     if (ImGuiFileDialog::Instance()->IsOk())
     {
-      lastLoadedFile = ImGuiFileDialog::Instance()->GetFilePathName();
+      const std::string audio_file_path = ImGuiFileDialog::Instance()->GetFilePathName();
 
-      if (!player.load(lastLoadedFile))
+      if (!player.load(audio_file_path))
       {
-        spdlog::error("Error loading asset {}", lastLoadedFile);
+        spdlog::error("Error loading asset {}", audio_file_path);
       }
       else
       {
-        current_project.add_audio_track(lastLoadedFile);
+        current_project.add_audio_track(audio_file_path);
         player.play();
       }
+    }
+
+    ImGuiFileDialog::Instance()->Close();
+  }
+
+  if (ImGuiFileDialog::Instance()->Display(kLoadProjectDlgKey))
+  {
+    if (ImGuiFileDialog::Instance()->IsOk())
+    {
+      const std::string project_path = ImGuiFileDialog::Instance()->GetFilePathName();
+
+      spdlog::info("Opening project '{}'...", project_path);
+      current_project.load(project_path);
     }
 
     ImGuiFileDialog::Instance()->Close();
@@ -358,10 +374,9 @@ void Editor::display_dialogs()
   {
     if (ImGuiFileDialog::Instance()->IsOk())
     {
-      const std::string savePath = ImGuiFileDialog::Instance()->GetFilePathName();
+      const std::string project_save_path = ImGuiFileDialog::Instance()->GetFilePathName();
 
-      spdlog::info("Saving project to {}", savePath);
-      current_project.save(savePath);
+      current_project.save(project_save_path);
     }
 
     ImGuiFileDialog::Instance()->Close();
@@ -371,25 +386,46 @@ void Editor::display_dialogs()
 void Editor::open_audio_track_dialog()
 {
   static IGFD::FileDialogConfig config;
+
+  player.pause();
+
   if (current_project.get_audio_tracks().empty())
-  {
     config.path = "~";
-  }
   else
   {
     const auto &last_track = current_project.get_audio_tracks().back();
     config.path = last_track.path.parent_path().string();
   }
+
   ImGuiFileDialog::Instance()->OpenDialog(kChooseAudioDlgKey, "Choose audio file", ".mod,.xm,.mp3", config);
+}
+
+void Editor::open_load_project_dialog()
+{
+  static IGFD::FileDialogConfig config;
+
+  player.pause();
+
+  if (current_project.get_path().empty())
+    config.path = "~";
+  else
+    config.path = current_project.get_path().string();
+
+  ImGuiFileDialog::Instance()->OpenDialog(kLoadProjectDlgKey, "Load Project", ".nagproj", config);
 }
 
 void Editor::open_save_project_dialog()
 {
-  spdlog::info("Save project menu item clicked");
   static IGFD::FileDialogConfig config;
 
+  player.pause();
+
   // Open save file dialog
-  config.path = "~";
+  if (current_project.get_path().empty())
+    config.path = "~";
+  else
+    config.path = current_project.get_path().string();
+
   ImGuiFileDialog::Instance()->OpenDialog(kSaveProjectDlgKey, "Save Project", ".nagproj", config);
 }
 
