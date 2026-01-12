@@ -17,7 +17,7 @@ The above dependencies are managed using the [FetchContent](https://cmake.org/cm
 
 ### System prerequisites
 
-The following system packages are required under Debian/Ubuntu GNU/Linux:
+The following system packages are required under APT-based GNU/Linux distros (like Ubuntu and Debian):
 
 - libasound2-dev
 - libglew-dev
@@ -31,23 +31,23 @@ The following system packages are required under Debian/Ubuntu GNU/Linux:
 
 - Audio buzzing when the slider is moved while playing
 - crash on mp3 load
+- audio track UI/info is cluttered and ugly
 
 ### Editor Features 🚀
 
-- store audio track(s) in current project
-- manage project files (json)
-  - Save current project
-  - Load project
+- popup notifications (toasts) - info/warning/error
+- timeline class
+- keyframe class
+- timeline view
+- interactively set and edit keyframes on every effect parameter
+- interactively select tween keyframe method
+- set the start/end of an effect via UI
 - fine movements in audio tracks (mods): step forward/backward, seek
 
-## The name
+## The project name
 
 Nag Champa Agarbathi (नागचम्पा अगरबत्ती) literally means "the incense of the sacred Champaca tree" or "the incense of the Champaca flower".
 
-"Nāga" refers to the sacred Nagara tree or spirit/breath, and "Champa" refers to the flower or the tree itself (the plumeria or Champaca tree), and "Agarbatti" is the Sanskrit word for a scented incense stick.
+It is the name of my favorite incense sticks, with "Nag" meaning "snake" and "Champa" referring to the fragrant Champaka flower (the plumeria or Champaca tree) found in India and Nepal. "Agarbathi" is the Hindi word for the incense sticks themselves, which are made from a blend of Champaka flower, sandalwood, and other natural resins. This popular Indian incense is known for its unique, rich, earthy, and slightly sweet aroma and is used for meditation, relaxation, and to create a calming, spiritually uplifting atmosphere.
 
-"Nagchampa agarbathi" refers to Nag Champa incense sticks, with "Nag" meaning "snake" and "Champa" referring to the fragrant Champaka flower found in India and Nepal. "Agarbathi" is the Hindi word for the incense sticks themselves, which are made from a blend of Champaka flower, sandalwood, and other natural resins. This popular Indian incense is known for its unique, rich, earthy, and slightly sweet aroma and is used for meditation, relaxation, and to create a calming, spiritually uplifting atmosphere.
-
-I had this in mind when I wrote the name of this project, and I thought it was a good name.
-
-Just after writing this, I learned that the word "nag" in English has a completely different meaning, and I loved the idea of using this pun even more.
+I had this in mind when I wrote the name of this project, and I thought it was a good name. Right after writing this, I learned that the word "nag" in English has a completely different meaning, and I loved the idea of using this pun even more.
