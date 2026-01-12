@@ -108,6 +108,13 @@ void Editor::render_preview_image()
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+/**
+ * Renders a preview of the Mandelbrot effect, and allows the user
+ * to modify the effect's parameters.
+ *
+ * The preview is rendered in a 400x300 pixel window, and is
+ * updated when the user changes any of the effect's parameters.
+ */
 void Editor::render_fx_preview()
 {
   if (!mandel_effect)
@@ -202,46 +209,51 @@ void Editor::render_fx_preview()
   ImGui::End();
 }
 
+/**
+ * Renders the main menu bar with the following items:
+ * - "File" menu
+ *   - "Save project" item
+ *   - "Load audio track" item
+ *   - "Exit" item
+ */
+void Editor::render_menu()
+{
+  ImGui::BeginMainMenuBar();
+
+  if (ImGui::BeginMenu("File"))
+  {
+    if (ImGui::MenuItem("Save project"))
+    {
+      open_save_project_dialog();
+    }
+
+    if (ImGui::MenuItem("Load audio track"))
+    {
+      open_audio_track_dialog();
+    }
+
+    ImGui::Separator();
+
+    if (ImGui::MenuItem("Exit"))
+    {
+      SDL_Event quit_event;
+      quit_event.type = SDL_QUIT;
+      SDL_PushEvent(&quit_event);
+    }
+
+    ImGui::EndMenu();
+  }
+
+  ImGui::EndMainMenuBar();
+}
+
 void Editor::render_audio_tracks()
 {
-  static std::string lastLoadedFile = "";
-
   ImGui::Begin("Audio Tracks");
 
   if (ImGui::Button("Load audio track"))
   {
-    IGFD::FileDialogConfig config;
-    config.path = ".";
-    ImGuiFileDialog::Instance()->OpenDialog("ChooseAudioDlgKey", "Choose audio file", ".mod,.xm,.mp3", config);
-  }
-
-  // Audio track load dialog
-  if (ImGuiFileDialog::Instance()->Display("ChooseAudioDlgKey"))
-  {
-    if (ImGuiFileDialog::Instance()->IsOk())
-    {
-      lastLoadedFile = ImGuiFileDialog::Instance()->GetFilePathName();
-
-      if (!player.load(lastLoadedFile))
-      {
-        spdlog::error("Error loading asset {}", lastLoadedFile);
-      }
-      else
-      {
-        player.play();
-      }
-
-      // if (!engine.LoadAsset(lastLoadedFile))
-      // {
-      //   spdlog::error("Error loading asset {}", lastLoadedFile);
-      // }
-      // else
-      // {
-      //   // Do stuff like playing the asset
-      // }
-    }
-
-    ImGuiFileDialog::Instance()->Close();
+    open_audio_track_dialog();
   }
 
   const std::string audio_file = player.get_audio_path_str();
@@ -317,10 +329,73 @@ void Editor::render_audio_tracks()
   ImGui::End();
 }
 
+void Editor::display_dialogs()
+{
+  static std::string lastLoadedFile = "";
+
+  // Audio track load dialog
+  if (ImGuiFileDialog::Instance()->Display(kChooseAudioDlgKey))
+  {
+    if (ImGuiFileDialog::Instance()->IsOk())
+    {
+      lastLoadedFile = ImGuiFileDialog::Instance()->GetFilePathName();
+
+      if (!player.load(lastLoadedFile))
+      {
+        spdlog::error("Error loading asset {}", lastLoadedFile);
+      }
+      else
+      {
+        current_project.add_audio_track(lastLoadedFile);
+        player.play();
+      }
+    }
+
+    ImGuiFileDialog::Instance()->Close();
+  }
+
+  if (ImGuiFileDialog::Instance()->Display(kSaveProjectDlgKey))
+  {
+    if (ImGuiFileDialog::Instance()->IsOk())
+    {
+      const std::string savePath = ImGuiFileDialog::Instance()->GetFilePathName();
+
+      spdlog::info("Saving project to {}", savePath);
+      current_project.save(savePath);
+    }
+
+    ImGuiFileDialog::Instance()->Close();
+  }
+}
+
+void Editor::open_audio_track_dialog()
+{
+  static IGFD::FileDialogConfig config;
+  if (current_project.get_audio_tracks().empty())
+  {
+    config.path = "~";
+  }
+  else
+  {
+    const auto &last_track = current_project.get_audio_tracks().back();
+    config.path = last_track.path.parent_path().string();
+  }
+  ImGuiFileDialog::Instance()->OpenDialog(kChooseAudioDlgKey, "Choose audio file", ".mod,.xm,.mp3", config);
+}
+
+void Editor::open_save_project_dialog()
+{
+  spdlog::info("Save project menu item clicked");
+  static IGFD::FileDialogConfig config;
+
+  // Open save file dialog
+  config.path = "~";
+  ImGuiFileDialog::Instance()->OpenDialog(kSaveProjectDlgKey, "Save Project", ".nagproj", config);
+}
+
 void Editor::main_event_loop()
 {
   bool running = true;
-  bool firstFrame = true;
 
   SDL_Event event;
 
@@ -358,6 +433,8 @@ void Editor::main_event_loop()
 
     ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_FirstUseEver);
 
+    render_menu();
+
     // Main UI window
     ImGui::Begin("Project Info", nullptr, ImGuiWindowFlags_NoDecoration);
     ImGui::Text("Project: %s", current_project.get_name().c_str());
@@ -365,6 +442,8 @@ void Editor::main_event_loop()
 
     render_fx_preview();
     render_audio_tracks();
+
+    display_dialogs();
 
     // Render UI
     ImGui::Render();

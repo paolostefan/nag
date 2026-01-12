@@ -31,10 +31,13 @@ private:
     WIN11DARK
   };
 
+  static constexpr const char *const kChooseAudioDlgKey = "ChooseAudioDlgKey";
+  static constexpr const char *const kSaveProjectDlgKey = "SaveProjectDlgKey";
+
   static inline std::string format_time(double seconds)
   {
-    int minutes = static_cast<int>(seconds) / 60;
-    int secs = static_cast<int>(seconds) % 60;
+    const int minutes = static_cast<int>(seconds) / 60;
+    const int secs = static_cast<int>(seconds) % 60;
 
     return std::to_string(minutes) + ":" + (secs < 10 ? "0" : "") +
            std::to_string(secs);
@@ -45,11 +48,17 @@ private:
 
   void init_fx_system();
 
+  void main_event_loop();
+
   void render_fx_preview();
+  void render_menu();
   void render_preview_image();
   void render_audio_tracks();
   
-  void main_event_loop();
+  void display_dialogs();
+
+  void open_audio_track_dialog();
+  void open_save_project_dialog();
 
   SDL_Window *window{nullptr};
   ImGuiIO *io{nullptr};

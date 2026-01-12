@@ -91,6 +91,7 @@ target_link_libraries(nag_engine_lib PUBLIC
   GLEW::GLEW
   spdlog
   ${OPENMPT_LIBRARIES}
+  nlohmann_json::nlohmann_json
 ) 
 
 target_compile_options(nag_engine_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
@@ -98,7 +99,6 @@ target_compile_options(nag_engine_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
 # Editor library
 add_library(nag_editor_lib src/editor/editor.cc)
 target_link_libraries(nag_editor_lib PUBLIC
-  GLEW::GLEW
   SDL2::SDL2
   imgui
   imgui_fd
