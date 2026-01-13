@@ -1,4 +1,4 @@
-#include "editor.h"
+#include "editor/editor.h"
 
 int Editor::run()
 {
@@ -46,6 +46,8 @@ int Editor::run()
 
   init_fx_system();
 
+  init_project();
+
   main_event_loop();
 
   // Cleanup
@@ -91,6 +93,13 @@ void Editor::init_fx_system()
   }
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Editor::init_project()
+{
+  // todo reload last project from ...?
+
+  timeline.Add(TrackType::EFFECT);
 }
 
 void Editor::render_preview_image()
@@ -209,13 +218,6 @@ void Editor::render_fx_preview()
   ImGui::End();
 }
 
-/**
- * Renders the main menu bar with the following items:
- * - "File" menu
- *   - "Save project" item
- *   - "Load audio track" item
- *   - "Exit" item
- */
 void Editor::render_menu()
 {
   ImGui::BeginMainMenuBar();
@@ -334,6 +336,32 @@ void Editor::render_audio_tracks()
   ImGui::End();
 }
 
+void Editor::render_timeline()
+{
+  static int current_frame = 0;
+  static bool expanded = false;
+  static int selected_entry = -1;
+  static int first_frame = 0;
+
+  ImGui::Begin("Timeline");
+
+  ImSequencer::Sequencer(
+      &timeline,
+      &current_frame,
+      &expanded,
+      &selected_entry,
+      &first_frame,
+      ImSequencer::SEQUENCER_EDIT_ALL |
+          ImSequencer::SEQUENCER_ADD |
+          ImSequencer::SEQUENCER_DEL |
+          ImSequencer::SEQUENCER_COPYPASTE |
+          ImSequencer::SEQUENCER_CHANGE_FRAME);
+
+  ImGui::End();
+}
+
+#pragma region Dialogs
+
 void Editor::display_dialogs()
 {
   // Audio track load dialog
@@ -429,6 +457,8 @@ void Editor::open_save_project_dialog()
   ImGuiFileDialog::Instance()->OpenDialog(kSaveProjectDlgKey, "Save Project", ".nagproj", config);
 }
 
+#pragma region Main loop
+
 void Editor::main_event_loop()
 {
   bool running = true;
@@ -476,6 +506,7 @@ void Editor::main_event_loop()
     ImGui::Text("Project: %s", current_project.get_name().c_str());
     ImGui::End();
 
+    render_timeline();
     render_fx_preview();
     render_audio_tracks();
 
