@@ -30,12 +30,12 @@ The following system packages are required under APT-based GNU/Linux distros (li
 ### Bugs 🐛
 
 - Audio buzzing when the slider is moved while playing
-- crash on mp3 load
 - audio track UI/info is cluttered and ugly
-- the timeline allows deleting all tracks, included the effects
+- the timeline allows deleting all tracks, included the effects: it should not allow deletion of effects and link audio_tracks editor member to the corresponding timelines.
 
 ### Editor Features 🚀
 
+- Support loading of mp3 audio files
 - popup notifications (toasts) - info/warning/error
 - keyframe class
 - timeline view

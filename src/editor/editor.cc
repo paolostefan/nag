@@ -250,7 +250,7 @@ void Editor::render_menu()
   ImGui::EndMainMenuBar();
 }
 
-#pragma region Audio Tracks
+#pragma region Render Audio Tracks
 
 void Editor::render_audio_tracks()
 {
@@ -265,7 +265,7 @@ void Editor::render_audio_tracks()
 
   for (const AudioTrack &track : current_project.get_audio_tracks())
   {
-    ImGui::TextUnformatted(track.get_name().c_str());
+    ImGui::TextUnformatted(track.get_title().c_str());
     ImGui::SameLine();
 
     IAudioPlayer &player = *track.get_player();

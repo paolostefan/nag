@@ -38,6 +38,12 @@ public:
 
 protected:
   std::filesystem::path audio_path{};
+  std::atomic<PlaybackState> playback_state{PlaybackState::STOPPED};
+
+  std::atomic<bool> seek_requested{false};
+  std::atomic<double> seek_position{0.0};
+
+  SDL_AudioDeviceID device{};
 };
 
 #endif // NAG_ENGINE_INTERFACE_AUDIO_PLAYER_H

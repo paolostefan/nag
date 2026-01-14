@@ -6,6 +6,7 @@
 #include <string>
 
 #include "engine/i_audio_player.h"
+#include "engine/mp3_player.h"
 #include "engine/openmpt_player.h"
 
 class AudioTrack
@@ -19,16 +20,23 @@ public:
   AudioTrack(AudioTrack &&) noexcept = default;
   AudioTrack &operator=(AudioTrack &&) noexcept = default;
 
-  AudioTrack(const std::string &name,
-             const std::filesystem::path &path,
+  AudioTrack(const std::filesystem::path &path,
              double start_seconds = 0.0)
-      : name(name), path(path), start_seconds(start_seconds)
+      : path(path), start_seconds(start_seconds)
   {
+    // TODO use a nicer way to determine the track title
+    title = path.stem().string();
     const std::string extension = path.extension().string();
     if (extension == ".mod" || extension == ".xm")
     {
       player = std::make_unique<OpenMptPlayer>();
       track_is_module = true;
+    }
+    else if (extension == ".mp3")
+    {
+      // MP3 player
+      player = std::make_unique<Mp3Player>();
+      track_is_module = false;
     }
     else
       throw std::runtime_error("Unsupported audio format: " + extension);
@@ -43,7 +51,7 @@ public:
   constexpr bool is_module() const noexcept { return track_is_module; }
 
   inline IAudioPlayer *get_player() const noexcept { return player.get(); }
-  inline const std::string &get_name() const noexcept { return name; }
+  inline const std::string &get_title() const noexcept { return title; }
   inline const std::filesystem::path &get_path() const noexcept { return path; }
 
   /// @brief Set the audio player associated with this track.
@@ -55,7 +63,7 @@ public:
   }
 
 private:
-  std::string name;
+  std::string title;
   std::filesystem::path path;
   std::unique_ptr<IAudioPlayer> player;
   double start_seconds = 0.0;

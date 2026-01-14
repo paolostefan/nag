@@ -90,6 +90,7 @@ target_link_libraries(nag_engine_lib PUBLIC
   OpenGL::GL
   GLEW::GLEW
   SDL2::SDL2
+  mpg123
   spdlog
   ${OPENMPT_LIBRARIES}
   nlohmann_json::nlohmann_json

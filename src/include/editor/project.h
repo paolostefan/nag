@@ -26,10 +26,9 @@ public:
   }
 
   inline void add_audio_track(const std::string &path,
-                              double start_seconds = 0.0)
+                              const double start_seconds = 0.0)
   {
-
-    audio_tracks.emplace_back(std::filesystem::path(path).stem().string(), path, start_seconds);
+    audio_tracks.emplace_back(path, start_seconds);
     pristine = false;
   }
 
@@ -55,7 +54,7 @@ public:
       for (const auto &track : audio_tracks)
       {
         nlohmann::json track_json;
-        track_json["name"] = track.get_name();
+        track_json["title"] = track.get_title();
         track_json["path"] = track.get_path();
         track_json["start_seconds"] = track.get_start_seconds();
 
@@ -97,7 +96,6 @@ public:
       for (const auto &track : j["audio_tracks"])
       {
         audio_tracks.emplace_back(
-            track["name"].get<std::string>(),
             track["path"].get<std::filesystem::path>(),
             track["start_seconds"].get<double>());
       }
