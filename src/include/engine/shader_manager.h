@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "engine/engine.h"
+#include "GL/glew.h"
 
 class ShaderProgram
 {
@@ -58,7 +58,7 @@ public:
 
 private:
   ShaderManager() = default;
-  
+
   std::unordered_map<std::string, std::shared_ptr<ShaderProgram>> shaders;
 };
 

@@ -1,20 +1,12 @@
 #ifndef NAG_ENGINE_ENGINE_H
 #define NAG_ENGINE_ENGINE_H
 
-#include "GL/glew.h"
-
-#include "asset.h"
-
+// Engine core class. Rather empty for now.
 class Engine
 {
 public:
   Engine() = default;
   ~Engine() = default;
-
-  bool LoadAsset(const std::string_view &assetName) noexcept;
-
-private:
-  std::vector<Asset> assets;
 };
 
 #endif // NAG_ENGINE_ENGINE_H

@@ -89,6 +89,7 @@ target_include_directories(nag_engine_lib PUBLIC
 target_link_libraries(nag_engine_lib PUBLIC 
   OpenGL::GL
   GLEW::GLEW
+  SDL2::SDL2
   spdlog
   ${OPENMPT_LIBRARIES}
   nlohmann_json::nlohmann_json
@@ -97,12 +98,15 @@ target_link_libraries(nag_engine_lib PUBLIC
 target_compile_options(nag_engine_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
 
 # Editor library
-add_library(nag_editor_lib src/editor/editor.cc)
+add_library(nag_editor_lib 
+  src/editor/editor.cc
+  src/_3rd_party/ImGuizmo/ImSequencer.cpp
+)
+target_include_directories(nag_editor_lib PUBLIC src/_3rd_party/ImGuizmo)
 target_link_libraries(nag_editor_lib PUBLIC
-  SDL2::SDL2
+  nag_engine_lib
   imgui
   imgui_fd
-  nag_engine_lib
 )
 
 # Editor

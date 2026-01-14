@@ -3,7 +3,7 @@
 #include "SDL.h"
 #include "spdlog/spdlog.h"
 
-#include "editor.h"
+#include "editor/editor.h"
 
 int main(int argc, char **argv)
 {

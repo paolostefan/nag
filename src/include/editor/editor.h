@@ -12,10 +12,11 @@
 #include "SDL_opengl.h"
 #include "spdlog/spdlog.h"
 
+#include "editor/project.h"
+#include "editor/timeline.h"
 #include "engine/engine.h"
+#include "engine/openmpt_player.h"
 #include "fx/mandelbrot_effect.h"
-#include "openmpt_player.h"
-#include "project.h"
 
 class Editor
 {
@@ -44,18 +45,33 @@ private:
            std::to_string(secs);
   }
 
+  // TODO: use the same function and pass in EditorStyle as argument
   static void style_purple(ImGuiStyle &style);
   static void style_win11dark(ImGuiStyle &style);
 
+  /// @brief Initializes the FX rendering system.
   void init_fx_system();
+
+  /// @brief Initializes the current project.
+  void init_project();
 
   void main_event_loop();
 
+  /**
+   * Renders a preview of the Mandelbrot effect, and allows the user
+   * to modify the effect's parameters.
+   *
+   * The preview is rendered in a 400x300 pixel window, and is
+   * updated when the user changes any of the effect's parameters.
+   */
   void render_fx_preview();
+
+  /// @brief Renders the main menu bar.
+  void render_audio_tracks();
   void render_menu();
   void render_preview_image();
-  void render_audio_tracks();
-  
+  void render_timeline();
+
   void display_dialogs();
 
   void open_audio_track_dialog();
@@ -66,8 +82,9 @@ private:
   ImGuiIO *io{nullptr};
 
   Engine engine;
-  OpenMptPlayer player;
   Project current_project;
+
+  EditorTimeline timeline;
 
   std::unique_ptr<MandelbrotEffect> mandel_effect;
   GLuint fx_fbo{0};

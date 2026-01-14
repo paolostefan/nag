@@ -32,11 +32,11 @@ The following system packages are required under APT-based GNU/Linux distros (li
 - Audio buzzing when the slider is moved while playing
 - crash on mp3 load
 - audio track UI/info is cluttered and ugly
+- the timeline allows deleting all tracks, included the effects
 
 ### Editor Features 🚀
 
 - popup notifications (toasts) - info/warning/error
-- timeline class
 - keyframe class
 - timeline view
 - interactively set and edit keyframes on every effect parameter
