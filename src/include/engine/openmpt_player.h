@@ -10,7 +10,7 @@
 #include "libopenmpt/libopenmpt.hpp"
 #include "SDL2/SDL.h"
 
-#include "i_audio_player.h"
+#include "engine/i_audio_player.h"
 
 class OpenMptPlayer : public IAudioPlayer
 {

@@ -12,6 +12,9 @@ enum class PlaybackState : uint8_t
   PAUSED
 };
 
+/**
+ * @brief Interface for audio player implementations.
+ */
 class IAudioPlayer
 {
 public:

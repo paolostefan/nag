@@ -111,19 +111,13 @@ void Editor::render_preview_image()
   glClearColor(.0f, .0f, .0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  double current_time = player.get_position_ms();
+  double current_time = (double)current_project.current_frame /
+                        (double)current_project.fps;
   mandel_effect->render(fx_preview_width, fx_preview_height, current_time);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-/**
- * Renders a preview of the Mandelbrot effect, and allows the user
- * to modify the effect's parameters.
- *
- * The preview is rendered in a 400x300 pixel window, and is
- * updated when the user changes any of the effect's parameters.
- */
 void Editor::render_fx_preview()
 {
   if (!mandel_effect)
@@ -218,6 +212,8 @@ void Editor::render_fx_preview()
   ImGui::End();
 }
 
+#pragma region Menu
+
 void Editor::render_menu()
 {
   ImGui::BeginMainMenuBar();
@@ -254,6 +250,8 @@ void Editor::render_menu()
   ImGui::EndMainMenuBar();
 }
 
+#pragma region Audio Tracks
+
 void Editor::render_audio_tracks()
 {
   ImGui::Begin("Audio Tracks");
@@ -263,32 +261,35 @@ void Editor::render_audio_tracks()
     open_audio_track_dialog();
   }
 
-  const std::string audio_file = player.get_audio_path_str();
-  if (!audio_file.empty())
-  {
-    ImGui::SameLine();
-    ImGui::Text("Audio path: %s", audio_file.c_str());
-    ImGui::Separator();
+  uint8_t track_no = 0;
 
+  for (const AudioTrack &track : current_project.get_audio_tracks())
+  {
+    ImGui::TextUnformatted(track.get_name().c_str());
+    ImGui::SameLine();
+
+    IAudioPlayer &player = *track.get_player();
     const PlaybackState state = player.get_playback_state();
+
+    const std::string track_no_s = std::to_string(track_no);
 
     if (state == PlaybackState::PLAYING)
     {
-      if (ImGui::Button("Pause"))
+      if (ImGui::Button(("Pause##" + track_no_s).c_str()))
       {
         player.pause();
       }
     }
     else
     {
-      if (ImGui::Button("Play"))
+      if (ImGui::Button(("Play##" + track_no_s).c_str()))
       {
         player.play();
       }
     }
 
     ImGui::SameLine();
-    if (ImGui::Button("Stop"))
+    if (ImGui::Button(("Stop##" + track_no_s).c_str()))
     {
       player.stop();
     }
@@ -299,47 +300,41 @@ void Editor::render_audio_tracks()
     const double current_seconds = current_ms / 1000.0;
     const double total_seconds = duration_ms / 1000.0;
 
-    if (duration_ms > 0)
+    if (duration_ms > 0.05)
     {
+      ImGui::SameLine();
       const float progress = static_cast<float>(current_ms * 100.0 / duration_ms);
       float slider_value = progress;
-      if (ImGui::SliderFloat("Progress", &slider_value, 0.0f, 100.0f, "%.2f%%"))
+
+      if (ImGui::SliderFloat(("##TrackProg_" + track_no_s).c_str(),
+                             &slider_value, 0.0f, 100.0f, "%.2f%%"))
       {
-        double new_pos_ms = duration_ms * slider_value / 100.0;
+        const double new_pos_ms = duration_ms * slider_value / 100.0;
         player.seek(new_pos_ms);
         spdlog::debug("Seeking to {}ms (slider {})", new_pos_ms, slider_value);
       }
 
-      ImGui::Text("Time: %s / %s", format_time(current_seconds).c_str(), format_time(total_seconds).c_str());
+      ImGui::SameLine();
+      ImGui::Text("%s / %s", format_time(current_seconds).c_str(), format_time(total_seconds).c_str());
 
-      ImGui::Text("BPM: %.2f", player.get_bpm());
-      ImGui::Text("Pattern/Row: %d/%02x", player.get_pattern(), player.get_row());
+      if (track.is_module())
+      {
+        ImGui::SameLine();
+        ImGui::Text("%.1f BPM, %d/%02x", player.get_bpm(), player.get_pattern(), player.get_row());
+      }
     }
 
-    // State indicator
-    const char *stateText = "";
-    switch (state)
-    {
-    case PlaybackState::STOPPED:
-      stateText = "Stopped";
-      break;
-    case PlaybackState::PLAYING:
-      stateText = "Playing";
-      break;
-    case PlaybackState::PAUSED:
-      stateText = "Paused";
-      break;
-    }
-    ImGui::Text("Status: %s", stateText);
+    ++track_no;
   }
 
   ImGui::End();
 }
 
+#pragma region Timeline
+
 void Editor::render_timeline()
 {
-  static int current_frame = 0;
-  static bool expanded = false;
+  static bool expanded = true;
   static int selected_entry = -1;
   static int first_frame = 0;
 
@@ -347,7 +342,7 @@ void Editor::render_timeline()
 
   ImSequencer::Sequencer(
       &timeline,
-      &current_frame,
+      &current_project.current_frame,
       &expanded,
       &selected_entry,
       &first_frame,
@@ -371,14 +366,14 @@ void Editor::display_dialogs()
     {
       const std::string audio_file_path = ImGuiFileDialog::Instance()->GetFilePathName();
 
-      if (!player.load(audio_file_path))
-      {
-        spdlog::error("Error loading asset {}", audio_file_path);
-      }
-      else
+      try
       {
         current_project.add_audio_track(audio_file_path);
-        player.play();
+      }
+      catch (const std::exception &e)
+      {
+        spdlog::error("Error loading audio track '{}': {}",
+                      audio_file_path, e.what());
       }
     }
 
@@ -415,14 +410,12 @@ void Editor::open_audio_track_dialog()
 {
   static IGFD::FileDialogConfig config;
 
-  player.pause();
-
   if (current_project.get_audio_tracks().empty())
     config.path = "~";
   else
   {
     const auto &last_track = current_project.get_audio_tracks().back();
-    config.path = last_track.path.parent_path().string();
+    config.path = last_track.get_path().parent_path().string();
   }
 
   ImGuiFileDialog::Instance()->OpenDialog(kChooseAudioDlgKey, "Choose audio file", ".mod,.xm,.mp3", config);
@@ -431,8 +424,6 @@ void Editor::open_audio_track_dialog()
 void Editor::open_load_project_dialog()
 {
   static IGFD::FileDialogConfig config;
-
-  player.pause();
 
   if (current_project.get_path().empty())
     config.path = "~";
@@ -445,8 +436,6 @@ void Editor::open_load_project_dialog()
 void Editor::open_save_project_dialog()
 {
   static IGFD::FileDialogConfig config;
-
-  player.pause();
 
   // Open save file dialog
   if (current_project.get_path().empty())
@@ -484,7 +473,6 @@ void Editor::main_event_loop()
 
     if (!running)
     {
-      player.stop();
       break;
     }
 

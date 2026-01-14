@@ -12,11 +12,11 @@
 #include "SDL_opengl.h"
 #include "spdlog/spdlog.h"
 
-#include "engine/engine.h"
+#include "editor/project.h"
 #include "editor/timeline.h"
+#include "engine/engine.h"
+#include "engine/openmpt_player.h"
 #include "fx/mandelbrot_effect.h"
-#include "openmpt_player.h"
-#include "project.h"
 
 class Editor
 {
@@ -57,6 +57,13 @@ private:
 
   void main_event_loop();
 
+  /**
+   * Renders a preview of the Mandelbrot effect, and allows the user
+   * to modify the effect's parameters.
+   *
+   * The preview is rendered in a 400x300 pixel window, and is
+   * updated when the user changes any of the effect's parameters.
+   */
   void render_fx_preview();
 
   /// @brief Renders the main menu bar.
@@ -75,7 +82,6 @@ private:
   ImGuiIO *io{nullptr};
 
   Engine engine;
-  OpenMptPlayer player;
   Project current_project;
 
   EditorTimeline timeline;

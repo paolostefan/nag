@@ -8,7 +8,7 @@
 #include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 
-#include "audio_track.h"
+#include "engine/audio_track.h"
 
 class Project
 {
@@ -28,12 +28,8 @@ public:
   inline void add_audio_track(const std::string &path,
                               double start_seconds = 0.0)
   {
-    AudioTrack track;
-    track.name = std::filesystem::path(path).stem().string();
-    track.path = path;
-    track.start_seconds = start_seconds;
 
-    audio_tracks.push_back(track);
+    audio_tracks.emplace_back(std::filesystem::path(path).stem().string(), path, start_seconds);
     pristine = false;
   }
 
@@ -59,9 +55,9 @@ public:
       for (const auto &track : audio_tracks)
       {
         nlohmann::json track_json;
-        track_json["name"] = track.name;
-        track_json["path"] = track.path;
-        track_json["start_seconds"] = track.start_seconds;
+        track_json["name"] = track.get_name();
+        track_json["path"] = track.get_path();
+        track_json["start_seconds"] = track.get_start_seconds();
 
         j["audio_tracks"].push_back(track_json);
       }
@@ -100,12 +96,10 @@ public:
 
       for (const auto &track : j["audio_tracks"])
       {
-        AudioTrack audio_track;
-        audio_track.name = track["name"];
-        audio_track.path = track["path"].get<std::filesystem::path>();
-        audio_track.start_seconds = track["start_seconds"];
-
-        audio_tracks.push_back(audio_track);
+        audio_tracks.emplace_back(
+            track["name"].get<std::string>(),
+            track["path"].get<std::filesystem::path>(),
+            track["start_seconds"].get<double>());
       }
 
       result = true;
@@ -117,6 +111,10 @@ public:
 
     return result;
   }
+
+public:
+  int current_frame{0};
+  uint8_t fps{60};
 
 private:
   /// Path to the project descriptor file

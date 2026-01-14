@@ -47,7 +47,7 @@ struct EditorTimeline : public ImSequencer::SequenceInterface
       *type = static_cast<int>(track.type);
 
     if (color)
-      *color = track.type == TrackType::AUDIO ? 0xFF80A0FF : 0xFFFF8080;
+      *color = track.type == TrackType::AUDIO ? 0xFF80A0FF : 0xFF80FF80;
   }
 
   void Add(int type) override
