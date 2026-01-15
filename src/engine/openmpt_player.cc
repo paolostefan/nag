@@ -1,5 +1,7 @@
 #include "engine/openmpt_player.h"
 
+#include "spdlog/spdlog.h"
+
 double OpenMptPlayer::get_position_ms() const
 {
   std::lock_guard<std::mutex> lock(mod_mx);
@@ -29,14 +31,14 @@ int OpenMptPlayer::get_pattern() const
   return mod ? mod->get_current_pattern() : -1;
 }
 
+PlaybackState OpenMptPlayer::get_playback_state() const
+{
+  std::lock_guard<std::mutex> lock(mod_mx);
+  return playback_state;
+}
+
 bool OpenMptPlayer::load(const std::string &path)
 {
-  if (mod)
-  {
-    stop();
-    mod.reset();
-  }
-
   std::lock_guard<std::mutex> lock(mod_mx);
 
   audio_path = path;
@@ -52,51 +54,34 @@ bool OpenMptPlayer::load(const std::string &path)
   duration = mod->get_duration_seconds() * 1000.0;
   playback_state = PlaybackState::STOPPED;
 
-  return true;
-}
+  SDL_AudioSpec want{};
+  want.freq = samplerate;
+  want.format = AUDIO_F32SYS;
+  want.channels = 2;
+  want.samples = 1024;
+  want.callback = audio_callback;
+  want.userdata = this;
 
-PlaybackState OpenMptPlayer::get_playback_state() const
-{
-  std::lock_guard<std::mutex> lock(mod_mx);
-  return playback_state;
+  device = SDL_OpenAudioDevice(nullptr, 0, &want, &obtained, 0);
+  if (!device)
+  {
+    spdlog::error("SDL_OpenAudioDevice failed");
+    return false;
+  }
+
+  return true;
 }
 
 void OpenMptPlayer::play()
 {
   std::lock_guard<std::mutex> lock(mod_mx);
 
-  if (!mod)
-  {
-    return;
-  }
-
-  if (playback_state == PlaybackState::PAUSED)
+  if (playback_state != PlaybackState::PLAYING)
   {
     // Resume playback
     SDL_PauseAudioDevice(device, 0);
     playback_state = PlaybackState::PLAYING;
-    return;
   }
-
-  SDL_AudioSpec spec;
-  SDL_zero(spec);
-
-  spec.freq = samplerate;
-  spec.format = AUDIO_F32SYS;
-  spec.channels = 2;
-  spec.samples = 1024;
-  spec.callback = audio_callback;
-  spec.userdata = this;
-
-  if (device)
-    SDL_CloseAudioDevice(device);
-
-  device = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
-  if (!device)
-    return;
-
-  playback_state = PlaybackState::PLAYING;
-  SDL_PauseAudioDevice(device, 0);
 }
 
 void OpenMptPlayer::pause()

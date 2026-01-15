@@ -4,7 +4,22 @@
 
 #include "spdlog/spdlog.h"
 
-static std::atomic<bool> mpg123_initialized = false;
+double Mp3Player::get_position_ms() const
+{
+  off_t sample_offset = mpg123_tell(mh.get());
+  return (static_cast<double>(sample_offset) / static_cast<double>(samplerate)) * 1000.0;
+}
+
+double Mp3Player::get_duration_ms() const
+{
+  off_t total_samples = mpg123_length(mh.get());
+  return (static_cast<double>(total_samples) / static_cast<double>(samplerate)) * 1000.0;
+}
+
+PlaybackState Mp3Player::get_playback_state() const
+{
+  return playback_state.load();
+}
 
 Mp3Player::Mp3Player()
 {
@@ -91,23 +106,6 @@ void Mp3Player::seek(const double position_ms)
   const off_t sample_offset = static_cast<off_t>(
       (position_ms / 1000.0) * static_cast<double>(samplerate));
   mpg123_seek(mh.get(), sample_offset, SEEK_SET);
-}
-
-double Mp3Player::get_position_ms() const
-{
-  off_t sample_offset = mpg123_tell(mh.get());
-  return (static_cast<double>(sample_offset) / static_cast<double>(samplerate)) * 1000.0;
-}
-
-double Mp3Player::get_duration_ms() const
-{
-  off_t total_samples = mpg123_length(mh.get());
-  return (static_cast<double>(total_samples) / static_cast<double>(samplerate)) * 1000.0;
-}
-
-PlaybackState Mp3Player::get_playback_state() const
-{
-  return playback_state.load();
 }
 
 void Mp3Player::audio_callback(void *userdata, Uint8 *stream, int len)

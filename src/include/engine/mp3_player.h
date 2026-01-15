@@ -34,9 +34,10 @@ private:
   void decode(float *out, int frames);
   static void audio_callback(void *userdata, Uint8 *stream, int len);
 
-  SDL_AudioSpec obtained{};
-  mutable std::mutex decode_mx;
+private:
+  static inline std::atomic<bool> mpg123_initialized = false;
 
+  mutable std::mutex decode_mx;
   std::atomic<PlaybackState> playback_state{PlaybackState::STOPPED};
 
   struct Mpg123Deleter

@@ -44,6 +44,7 @@ protected:
   std::atomic<double> seek_position{0.0};
 
   SDL_AudioDeviceID device{};
+  SDL_AudioSpec obtained{};
 };
 
 #endif // NAG_ENGINE_INTERFACE_AUDIO_PLAYER_H
