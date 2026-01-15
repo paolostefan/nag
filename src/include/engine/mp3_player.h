@@ -35,8 +35,6 @@ private:
   static void audio_callback(void *userdata, Uint8 *stream, int len);
 
 private:
-  static inline std::atomic<bool> mpg123_initialized = false;
-
   mutable std::mutex decode_mx;
   std::atomic<PlaybackState> playback_state{PlaybackState::STOPPED};
 
