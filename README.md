@@ -2,20 +2,40 @@
 
 A simple SDL2 demo engine.
 
-## Dependecies policy
+## What to do next
 
-Some deps are loaded through the system package manager, and some others through CMake.
+### Bugs 🐛
 
-### CMake-managed deps
+- Audio buzzing when the slider is moved while playing
+- audio track UI/info is cluttered and ugly
+- the timeline allows deleting all tracks, included the effects: it should not allow deletion of effects and link audio_tracks editor member to the corresponding timelines.
 
-- SDL2
-- imgui
-- imguifiledialog
-- nlohmann/json
+### New engine features 🚀
 
-The above dependencies are managed using the [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) CMake module.
+- Update Mandelbrot coloring (which now sucks)
+- Add some effects:
+  - Julia quaternions
+  - plasma
+  - fire
+  - noise
 
-### System prerequisites
+### New editor Features 🚀
+
+- popup notifications (toasts) - info/warning/error
+- keyframe class
+- timeline view
+- interactively set and edit keyframes on every effect parameter
+- interactively select tween keyframe method
+- set the start/end of an effect via UI
+- fine movements in mod-audio tracks: step forward/backward in pattern
+
+## Building the project
+
+So far (January 2026), the project is Linux-only.
+
+Some dependencies are loaded through the system package manager, some others through CMake. The latter don't need any intervention, as they will be downloaded from github at Cmake configure step.
+
+### System dependencies
 
 The following system packages are required under APT-based GNU/Linux distros (like Ubuntu and Debian):
 
@@ -25,24 +45,16 @@ The following system packages are required under APT-based GNU/Linux distros (li
 - libopenmpt-dev
 - pkg-config
 
-## What to do next
+### CMake-managed deps
 
-### Bugs 🐛
+These dependencies are automatically downloaded using the [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) CMake module.
 
-- Audio buzzing when the slider is moved while playing
-- audio track UI/info is cluttered and ugly
-- the timeline allows deleting all tracks, included the effects: it should not allow deletion of effects and link audio_tracks editor member to the corresponding timelines.
+- SDL2
+- imgui
+- imguifiledialog
+- nlohmann/json
 
-### Editor Features 🚀
-
-- Support loading of mp3 audio files
-- popup notifications (toasts) - info/warning/error
-- keyframe class
-- timeline view
-- interactively set and edit keyframes on every effect parameter
-- interactively select tween keyframe method
-- set the start/end of an effect via UI
-- fine movements in audio tracks (mods): step forward/backward, seek
+---
 
 ## The project name
 

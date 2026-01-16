@@ -11,7 +11,7 @@ int Editor::run()
 
   // Main window
   window = SDL_CreateWindow(
-      "Demo Editor",
+      "Nag Editor",
       SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
       1280, 720,
       SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
@@ -310,8 +310,11 @@ void Editor::render_audio_tracks()
                              &slider_value, 0.0f, 100.0f, "%.2f%%"))
       {
         const double new_pos_ms = duration_ms * slider_value / 100.0;
-        player.seek(new_pos_ms);
-        spdlog::debug("Seeking to {}ms (slider {})", new_pos_ms, slider_value);
+        if (std::abs(new_pos_ms - current_ms) > 20.0)
+        {
+          player.seek(new_pos_ms);
+        }
+        // spdlog::debug("Seeking to {}ms (slider {})", new_pos_ms, slider_value);
       }
 
       ImGui::SameLine();
@@ -455,7 +458,7 @@ void Editor::main_event_loop()
   SDL_Event event;
 
   // style_purple(ImGui::GetStyle());
-  style_win11dark(ImGui::GetStyle());
+  // style_win11dark(ImGui::GetStyle());
 
   while (running)
   {
