@@ -1,5 +1,10 @@
 #include "editor/editor.h"
 
+#include "IconsFontAwesome6.h"
+
+#include "fa-solid-900.h"
+#include "editor/toast_manager.h"
+
 int Editor::run()
 {
   // OpenGL version
@@ -38,6 +43,23 @@ int Editor::run()
   ImGui::CreateContext();
   io = &ImGui::GetIO();
   io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+  // Load Font Awesome 6
+  io->Fonts->AddFontDefault();
+  static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+  ImFontConfig icons_config;
+  icons_config.MergeMode = true;
+  icons_config.PixelSnapH = true;
+  icons_config.GlyphMaxAdvanceX = 13.0f;     // Use if you want to make the icon monospaced
+  icons_config.FontDataOwnedByAtlas = false; // We don't want ImGui to free the font data
+
+  io->Fonts->AddFontFromMemoryTTF(
+      (void *)font_awesome_6_free_solid_900_otf,
+      font_awesome_6_free_solid_900_otf_len,
+      13.0f,
+      &icons_config,
+      icons_ranges);
+  // End of font loading stuff
 
   ImGui::StyleColorsDark();
 
@@ -220,7 +242,7 @@ void Editor::render_menu()
 
   if (ImGui::BeginMenu("File"))
   {
-    if (ImGui::MenuItem("Open project..."))
+    if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN " Open project..."))
     {
       open_load_project_dialog();
     }
@@ -372,6 +394,7 @@ void Editor::display_dialogs()
       try
       {
         current_project.add_audio_track(audio_file_path);
+        ToastManager::instance().add_toast(ToastType::SUCCESS, "Audio track loaded successfully");
       }
       catch (const std::exception &e)
       {
@@ -389,8 +412,14 @@ void Editor::display_dialogs()
     {
       const std::string project_path = ImGuiFileDialog::Instance()->GetFilePathName();
 
-      spdlog::info("Opening project '{}'...", project_path);
-      current_project.load(project_path);
+      if (current_project.load(project_path))
+      {
+        ToastManager::instance().add_toast(ToastType::SUCCESS, "Project loaded successfully");
+      }
+      else
+      {
+        ToastManager::instance().add_toast(ToastType::ERROR, "Error loading project");
+      }
     }
 
     ImGuiFileDialog::Instance()->Close();
@@ -493,6 +522,38 @@ void Editor::main_event_loop()
     render_menu();
 
     // Main UI window
+
+    if constexpr (kDebugToasts)
+    {
+      ImGui::Begin("Debug Toasts");
+      if (ImGui::Button("Info Toast"))
+      {
+        ToastManager::instance().add_toast(ToastType::INFO, "This is an info toast");
+      }
+
+      ImGui::SameLine();
+
+      if (ImGui::Button("Success Toast"))
+      {
+        ToastManager::instance().add_toast(ToastType::SUCCESS, "This is a success toast");
+      }
+
+      ImGui::SameLine();
+
+      if (ImGui::Button("Warning Toast"))
+      {
+        ToastManager::instance().add_toast(ToastType::WARNING, "This is a warning toast");
+      }
+
+      ImGui::SameLine();
+
+      if (ImGui::Button("Error Toast"))
+      {
+        ToastManager::instance().add_toast(ToastType::ERROR, "This is an error toast");
+      }
+      ImGui::End();
+    }
+
     ImGui::Begin("Project Info", nullptr, ImGuiWindowFlags_NoDecoration);
     ImGui::Text("Project: %s", current_project.get_name().c_str());
     ImGui::End();
@@ -500,6 +561,8 @@ void Editor::main_event_loop()
     render_timeline();
     render_fx_preview();
     render_audio_tracks();
+
+    ToastManager::instance().render();
 
     display_dialogs();
 

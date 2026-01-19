@@ -26,6 +26,10 @@ public:
   int run();
 
 private:
+
+  /// @brief Whether to add an imgui window with buttons to show debug toasts
+  static constexpr bool kDebugToasts = false;
+
   enum class EditorStyle : uint8_t
   {
     PURPLE,

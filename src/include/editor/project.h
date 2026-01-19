@@ -79,7 +79,7 @@ public:
     return result;
   }
 
-  inline bool load(const std::string &load_path)
+  inline bool load(const std::string &load_path) noexcept
   {
     path = load_path;
 
