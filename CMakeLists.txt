@@ -10,6 +10,10 @@ find_package(OpenGL REQUIRED)
 # GLEW is required by the ShaderManager
 find_package(GLEW REQUIRED)
 
+# ============================================================================
+# DEPENDENCIES managed by FetchContent
+# ============================================================================
+
 # SDL2
 include(FetchContent)
 FetchContent_Declare(
@@ -78,6 +82,20 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(spdlog)
 
+# IconFontCppHeaders
+FetchContent_Declare(
+  iconfontcppheaders
+  GIT_REPOSITORY https://github.com/juliettef/IconFontCppHeaders.git
+  GIT_TAG main
+)
+
+FetchContent_MakeAvailable(iconfontcppheaders)
+Message(STATUS "iconfontcppheaders source dir: ${iconfontcppheaders_SOURCE_DIR}")
+
+# ============================================================================
+# END DEPENDENCIES
+# ============================================================================
+
 # Engine
 file(GLOB ENGINE_SRCS src/engine/*.cc src/fx/*.cc)
 add_library(nag_engine_lib ${ENGINE_SRCS})
@@ -101,9 +119,15 @@ target_compile_options(nag_engine_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
 # Editor library
 add_library(nag_editor_lib 
   src/editor/editor.cc
+  src/editor/toast_manager.cc
   src/_3rd_party/ImGuizmo/ImSequencer.cpp
 )
-target_include_directories(nag_editor_lib PUBLIC src/_3rd_party/ImGuizmo)
+
+target_include_directories(nag_editor_lib PUBLIC
+  src/_3rd_party/ImGuizmo
+  ${iconfontcppheaders_SOURCE_DIR}/
+)
+
 target_link_libraries(nag_editor_lib PUBLIC
   nag_engine_lib
   imgui
