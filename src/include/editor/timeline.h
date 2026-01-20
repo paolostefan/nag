@@ -18,6 +18,14 @@ static const char *const kTrackTypeNames[] = {
     "Audio",
     "Effect"};
 
+struct TimelineTrack
+{
+  TrackType type;
+  int frameStart;
+  int frameEnd;
+  bool expanded;
+};
+
 struct EditorTimeline : public ImSequencer::SequenceInterface
 {
   int GetFrameMin() const override { return 0; }
@@ -72,14 +80,6 @@ struct EditorTimeline : public ImSequencer::SequenceInterface
         .frameEnd = track.frameEnd,
         .expanded = false});
   }
-
-  struct TimelineTrack
-  {
-    TrackType type;
-    int frameStart;
-    int frameEnd;
-    bool expanded;
-  };
 
   std::vector<TimelineTrack> tracks{};
 };

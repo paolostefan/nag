@@ -19,9 +19,16 @@ A simple SDL2 demo engine.
   - fire
   - noise
 
-### New editor Features 🚀
+### Editor Features
 
-- popup notifications (toasts) - info/warning/error
+#### WIP 🚧
+
+Here should go stuff which is currently developed, but not 100% ready.
+  
+- "Add effect" button -> generate an effect timeline spanning all the project's duration.
+
+#### To be 🚀
+
 - keyframe class
 - timeline view
 - interactively set and edit keyframes on every effect parameter

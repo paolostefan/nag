@@ -90,7 +90,11 @@ private:
 
   EditorTimeline timeline;
 
-  std::unique_ptr<MandelbrotEffect> mandel_effect;
+  std::array<std::unique_ptr<IEffect>,1> effects;
+  int selected_effect = 0;
+  /// For ImGui Combobox
+  std::array<const char *,1> effect_names = { "Mandelbrot" };
+
   GLuint fx_fbo{0};
   GLuint fx_texture{0};
 

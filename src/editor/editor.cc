@@ -5,6 +5,7 @@
 #include "fa-solid-900.h"
 #include "editor/toast_manager.h"
 
+#pragma region Run
 int Editor::run()
 {
   // OpenGL version
@@ -85,11 +86,11 @@ int Editor::run()
 
 void Editor::init_fx_system()
 {
-  mandel_effect = std::make_unique<MandelbrotEffect>();
-  if (!mandel_effect->initialize())
+  effects[0] = std::make_unique<MandelbrotEffect>();
+  if (!effects[0]->initialize())
   {
     spdlog::error("Error initializing mandelbrot effect");
-    mandel_effect.reset();
+    effects[0].reset();
     return;
   }
 
@@ -120,8 +121,6 @@ void Editor::init_fx_system()
 void Editor::init_project()
 {
   // todo reload last project from ...?
-
-  timeline.Add(TrackType::EFFECT);
 }
 
 void Editor::render_preview_image()
@@ -135,23 +134,22 @@ void Editor::render_preview_image()
 
   double current_time = (double)current_project.current_frame /
                         (double)current_project.fps;
-  mandel_effect->render(fx_preview_width, fx_preview_height, current_time);
+  effects[selected_effect]->render(fx_preview_width, fx_preview_height, current_time);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Editor::render_fx_preview()
 {
-  if (!mandel_effect)
-  {
-    return;
-  }
-
   ImGui::Begin("FX Preview");
 
-  if (ImGui::CollapsingHeader("Mandelbrot", ImGuiTreeNodeFlags_DefaultOpen))
+  ImGui::Combo("Effect", &selected_effect,
+               effect_names.data(), static_cast<int>(effect_names.size()));
+
+  if (selected_effect >= 0 && selected_effect < effects.size() &&
+      ImGui::CollapsingHeader(effect_names[selected_effect], ImGuiTreeNodeFlags_DefaultOpen))
   {
-    auto &params = mandel_effect->get_parameters();
+    auto &params = effects[selected_effect]->get_parameters();
     for (auto &param : params)
     {
       const std::string &name = param.get_name();
@@ -226,9 +224,25 @@ void Editor::render_fx_preview()
       render_preview_image();
     }
 
+    // Get available width
+    const float avail_width = ImGui::GetContentRegionAvail().x;
+
+    // Draw effect Image to the max space available
     ImGui::Image((void *)(intptr_t)fx_texture,
-                 ImVec2(400, 300),
+                 ImVec2(avail_width, fx_preview_height * (avail_width / fx_preview_width)),
                  ImVec2(0, 1), ImVec2(1, 0));
+
+    // ImGui::Image((void *)(intptr_t)fx_texture,
+    //              ImVec2(400, 300),
+    //              ImVec2(0, 1), ImVec2(1, 0));
+
+    if(ImGui::Button(ICON_FA_PLUS " Add to timeline"))
+    {
+      timeline.Add(TrackType::EFFECT);
+      TimelineTrack &new_track = timeline.tracks.back();
+      new_track.frameStart = current_project.current_frame;
+      new_track.frameEnd = timeline.GetFrameMax();
+    }
   }
 
   ImGui::End();
