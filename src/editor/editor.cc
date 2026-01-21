@@ -139,6 +139,8 @@ void Editor::render_preview_image()
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+#pragma region FX Preview
+
 void Editor::render_fx_preview()
 {
   ImGui::Begin("FX Preview");
@@ -236,12 +238,14 @@ void Editor::render_fx_preview()
     //              ImVec2(400, 300),
     //              ImVec2(0, 1), ImVec2(1, 0));
 
-    if(ImGui::Button(ICON_FA_PLUS " Add to timeline"))
+    if (ImGui::Button(ICON_FA_PLUS " Add to timeline"))
     {
-      timeline.Add(TrackType::EFFECT);
-      TimelineTrack &new_track = timeline.tracks.back();
+      current_project.timeline.Add(TrackType::EFFECT);
+      current_project.pristine = false;
+
+      TimelineTrack &new_track = current_project.timeline.tracks.back();
       new_track.frameStart = current_project.current_frame;
-      new_track.frameEnd = timeline.GetFrameMax();
+      new_track.frameEnd = current_project.timeline.GetFrameMax();
     }
   }
 
@@ -299,12 +303,12 @@ void Editor::render_audio_tracks()
 
   uint8_t track_no = 0;
 
-  for (const AudioTrack &track : current_project.get_audio_tracks())
+  for (const AudioTrack &track : current_project.audio_tracks)
   {
-    ImGui::TextUnformatted(track.get_title().c_str());
+    ImGui::TextUnformatted(track.title.c_str());
     ImGui::SameLine();
 
-    IAudioPlayer &player = *track.get_player();
+    IAudioPlayer &player = *track.player;
     const PlaybackState state = player.get_playback_state();
 
     const std::string track_no_s = std::to_string(track_no);
@@ -356,7 +360,7 @@ void Editor::render_audio_tracks()
       ImGui::SameLine();
       ImGui::Text("%s / %s", format_time(current_seconds).c_str(), format_time(total_seconds).c_str());
 
-      if (track.is_module())
+      if (track.track_is_module)
       {
         ImGui::SameLine();
         ImGui::Text("%.1f BPM, %d/%02x", player.get_bpm(), player.get_pattern(), player.get_row());
@@ -380,7 +384,7 @@ void Editor::render_timeline()
   ImGui::Begin("Timeline");
 
   ImSequencer::Sequencer(
-      &timeline,
+      &current_project.timeline,
       &current_project.current_frame,
       &expanded,
       &selected_entry,
@@ -426,7 +430,7 @@ void Editor::display_dialogs()
     {
       const std::string project_path = ImGuiFileDialog::Instance()->GetFilePathName();
 
-      if (current_project.load(project_path))
+      if (load_project(project_path))
       {
         ToastManager::instance().add_toast(ToastType::SUCCESS, "Project loaded successfully");
       }
@@ -445,7 +449,7 @@ void Editor::display_dialogs()
     {
       const std::string project_save_path = ImGuiFileDialog::Instance()->GetFilePathName();
 
-      current_project.save(project_save_path);
+      save_project(project_save_path);
     }
 
     ImGuiFileDialog::Instance()->Close();
@@ -456,12 +460,12 @@ void Editor::open_audio_track_dialog()
 {
   static IGFD::FileDialogConfig config;
 
-  if (current_project.get_audio_tracks().empty())
+  if (current_project.audio_tracks.empty())
     config.path = "~";
   else
   {
-    const auto &last_track = current_project.get_audio_tracks().back();
-    config.path = last_track.get_path().parent_path().string();
+    const auto &last_track = current_project.audio_tracks.back();
+    config.path = last_track.path.parent_path().string();
   }
 
   ImGuiFileDialog::Instance()->OpenDialog(kChooseAudioDlgKey, "Choose audio file", ".mod,.xm,.mp3", config);
@@ -471,10 +475,10 @@ void Editor::open_load_project_dialog()
 {
   static IGFD::FileDialogConfig config;
 
-  if (current_project.get_path().empty())
+  if (current_project.path.empty())
     config.path = "~";
   else
-    config.path = current_project.get_path().string();
+    config.path = current_project.path.string();
 
   ImGuiFileDialog::Instance()->OpenDialog(kLoadProjectDlgKey, "Load Project", ".nagproj", config);
 }
@@ -484,10 +488,10 @@ void Editor::open_save_project_dialog()
   static IGFD::FileDialogConfig config;
 
   // Open save file dialog
-  if (current_project.get_path().empty())
+  if (current_project.path.empty())
     config.path = "~";
   else
-    config.path = current_project.get_path().string();
+    config.path = current_project.path.string();
 
   ImGuiFileDialog::Instance()->OpenDialog(kSaveProjectDlgKey, "Save Project", ".nagproj", config);
 }
@@ -569,7 +573,7 @@ void Editor::main_event_loop()
     }
 
     ImGui::Begin("Project Info", nullptr, ImGuiWindowFlags_NoDecoration);
-    ImGui::Text("Project: %s", current_project.get_name().c_str());
+    ImGui::TextUnformatted(current_project.name.c_str());
     ImGui::End();
 
     render_timeline();
@@ -771,4 +775,70 @@ void Editor::style_win11dark(ImGuiStyle &style)
   style.Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.0f, 1.0f, 1.0f, 0.7f);
   style.Colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.2f);
   style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.35f);
+}
+
+bool Editor::save_project(const std::string &save_path) noexcept
+{
+  if (current_project.pristine)
+  {
+    spdlog::error("Cowardly refusing to save an unmodified project");
+    return false;
+  }
+
+  spdlog::info("Saving project to '{}'...", save_path);
+  current_project.path = save_path;
+
+  bool result = false;
+
+  try
+  {
+    nlohmann::json j(current_project);
+
+    {
+      std::ofstream save_file(save_path);
+      save_file << std::setw(2) << j << std::endl;
+    }
+
+    current_project.pristine = true;
+    result = true;
+
+    spdlog::info("Project saved successfully");
+  }
+  catch (const std::exception &e)
+  {
+    spdlog::error("Failed to save project: {}", e.what());
+  }
+
+  return result;
+}
+
+bool Editor::load_project(const std::string &load_path) noexcept
+{
+  current_project.path = load_path;
+
+  bool result = false; // Assume failure
+  try
+  {
+    std::ifstream load_file(load_path);
+    nlohmann::json j;
+    load_file >> j;
+
+    current_project.name = j["name"];
+    current_project.audio_tracks.clear();
+
+    for (const auto &track : j["audio_tracks"])
+    {
+      current_project.audio_tracks.emplace_back(
+          track["path"].get<std::filesystem::path>(),
+          track["start_seconds"].get<double>());
+    }
+
+    result = true;
+  }
+  catch (const std::exception &e)
+  {
+    spdlog::error("Failed to load project: {}", e.what());
+  }
+
+  return result;
 }

@@ -18,6 +18,11 @@ static const char *const kTrackTypeNames[] = {
     "Audio",
     "Effect"};
 
+NLOHMANN_JSON_SERIALIZE_ENUM(TrackType, {
+  {TrackType::AUDIO, "Audio"},
+  {TrackType::EFFECT, "Effect"},
+})
+
 struct TimelineTrack
 {
   TrackType type;
@@ -26,7 +31,24 @@ struct TimelineTrack
   bool expanded;
 };
 
-struct EditorTimeline : public ImSequencer::SequenceInterface
+inline void to_json(nlohmann::json &j, const TimelineTrack &track)
+{
+  j = nlohmann::json{
+      {"type", track.type},
+      {"frameStart", track.frameStart},
+      {"frameEnd", track.frameEnd},
+      {"expanded", track.expanded}};
+}
+
+inline void from_json(const nlohmann::json &j, TimelineTrack &track)
+{
+  j.at("type").get_to(track.type);
+  j.at("frameStart").get_to(track.frameStart);
+  j.at("frameEnd").get_to(track.frameEnd);
+  j.at("expanded").get_to(track.expanded);
+}
+
+struct Timeline : public ImSequencer::SequenceInterface
 {
   int GetFrameMin() const override { return 0; }
   int GetFrameMax() const override { return 1000; }
@@ -83,5 +105,16 @@ struct EditorTimeline : public ImSequencer::SequenceInterface
 
   std::vector<TimelineTrack> tracks{};
 };
+
+inline void to_json(nlohmann::json &j, const Timeline &timeline)
+{
+  j = nlohmann::json{
+      {"tracks", timeline.tracks}};
+}
+
+inline void from_json(const nlohmann::json &j, Timeline &timeline)
+{
+  j.at("tracks").get_to(timeline.tracks);
+}
 
 #endif // NAG_EDITOR_TIMELINE_H

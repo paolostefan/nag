@@ -5,20 +5,22 @@
 #include <memory>
 #include <string>
 
+#include "nlohmann/json.hpp"
+
 #include "engine/i_audio_player.h"
 #include "engine/mp3_player.h"
 #include "engine/openmpt_player.h"
 
-class AudioTrack
+struct AudioTrack
 {
-public:
-  // Delete copy constructors and assignment operators
-  AudioTrack(const AudioTrack &) = delete;
-  AudioTrack &operator=(const AudioTrack &) = delete;
+  std::string title;
+  std::filesystem::path path;
+  std::unique_ptr<IAudioPlayer> player;
+  double start_seconds = 0.0;
+  bool track_is_module;
 
-  // Movable but not copyable
-  AudioTrack(AudioTrack &&) noexcept = default;
-  AudioTrack &operator=(AudioTrack &&) noexcept = default;
+
+  AudioTrack() = default;
 
   AudioTrack(const std::filesystem::path &path,
              double start_seconds = 0.0)
@@ -47,13 +49,6 @@ public:
     }
   }
 
-  constexpr double get_start_seconds() const noexcept { return start_seconds; }
-  constexpr bool is_module() const noexcept { return track_is_module; }
-
-  inline IAudioPlayer *get_player() const noexcept { return player.get(); }
-  inline const std::string &get_title() const noexcept { return title; }
-  inline const std::filesystem::path &get_path() const noexcept { return path; }
-
   /// @brief Set the audio player associated with this track.
   /// @param p A unique pointer to an IAudioPlayer implementation.
   /// The ownership of the pointer is transferred to this object.
@@ -61,13 +56,21 @@ public:
   {
     player = std::move(p);
   }
-
-private:
-  std::string title;
-  std::filesystem::path path;
-  std::unique_ptr<IAudioPlayer> player;
-  double start_seconds = 0.0;
-  bool track_is_module;
 };
+
+inline void to_json(nlohmann::json &j, const AudioTrack &track)
+{
+  j = nlohmann::json{
+      {"path", track.path.string()},
+      {"start_seconds", track.start_seconds},
+  };
+}
+
+inline void from_json(const nlohmann::json &j, AudioTrack &track)
+{
+  track = AudioTrack(
+      j.at("path").get<std::filesystem::path>(),
+      j.at("start_seconds").get<double>());
+}
 
 #endif // NAG_ENGINE_AUDIO_TRACK_H

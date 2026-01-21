@@ -13,7 +13,6 @@
 #include "spdlog/spdlog.h"
 
 #include "editor/project.h"
-#include "editor/timeline.h"
 #include "engine/engine.h"
 #include "engine/openmpt_player.h"
 #include "fx/mandelbrot_effect.h"
@@ -82,13 +81,14 @@ private:
   void open_load_project_dialog();
   void open_save_project_dialog();
 
+  bool save_project(const std::string &save_path) noexcept;
+  bool load_project(const std::string &load_path) noexcept;
+
   SDL_Window *window{nullptr};
   ImGuiIO *io{nullptr};
 
   Engine engine;
   Project current_project;
-
-  EditorTimeline timeline;
 
   std::array<std::unique_ptr<IEffect>,1> effects;
   int selected_effect = 0;
