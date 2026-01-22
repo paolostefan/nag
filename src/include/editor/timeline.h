@@ -29,6 +29,11 @@ struct TimelineTrack
   int frameStart;
   int frameEnd;
   bool expanded;
+
+  union {
+    size_t audio_track_index;
+    size_t effect_id;
+  };
 };
 
 inline void to_json(nlohmann::json &j, const TimelineTrack &track)
@@ -38,6 +43,11 @@ inline void to_json(nlohmann::json &j, const TimelineTrack &track)
       {"frameStart", track.frameStart},
       {"frameEnd", track.frameEnd},
       {"expanded", track.expanded}};
+
+  if (track.type == TrackType::AUDIO)
+    j["audio_track_index"] = track.audio_track_index;
+  else
+    j["effect_id"] = track.effect_id;
 }
 
 inline void from_json(const nlohmann::json &j, TimelineTrack &track)
@@ -46,6 +56,11 @@ inline void from_json(const nlohmann::json &j, TimelineTrack &track)
   j.at("frameStart").get_to(track.frameStart);
   j.at("frameEnd").get_to(track.frameEnd);
   j.at("expanded").get_to(track.expanded);
+
+  if (track.type == TrackType::AUDIO)
+    j.at("audio_track_index").get_to(track.audio_track_index);
+  else
+    j.at("effect_id").get_to(track.effect_id);
 }
 
 struct Timeline : public ImSequencer::SequenceInterface

@@ -151,3 +151,6 @@ message(STATUS "Shaders copied to ${CMAKE_BINARY_DIR}/shaders: ${SHADER_FILES}")
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/src/shaders/" 
         DESTINATION "shaders"
         FILES_MATCHING PATTERN "*.vert" PATTERN "*.frag" PATTERN "*.comp")
+
+# Enable testing
+add_subdirectory(tests)

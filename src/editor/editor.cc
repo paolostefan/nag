@@ -823,15 +823,7 @@ bool Editor::load_project(const std::string &load_path) noexcept
     nlohmann::json j;
     load_file >> j;
 
-    current_project.name = j["name"];
-    current_project.audio_tracks.clear();
-
-    for (const auto &track : j["audio_tracks"])
-    {
-      current_project.audio_tracks.emplace_back(
-          track["path"].get<std::filesystem::path>(),
-          track["start_seconds"].get<double>());
-    }
+    current_project = j.get<Project>();
 
     result = true;
   }

@@ -37,10 +37,6 @@ struct Project
     audio_tracks.emplace_back(path, start_seconds);
     pristine = false;
   }
-
-  bool save_project(const std::string &save_path);
-  bool load_project(const std::string &load_path) noexcept;
-
 };
 
 inline void to_json(nlohmann::json &j, const Project &p)
@@ -54,13 +50,28 @@ inline void to_json(nlohmann::json &j, const Project &p)
   };
 }
 
-inline void from_json(const nlohmann::json &j, Project &p)
+inline void from_json(const nlohmann::json &j, Project &p) noexcept
 {
-  j.at("name").get_to(p.name);
-  j.at("current_frame").get_to(p.current_frame);
-  j.at("fps").get_to(p.fps);
-  j.at("audio_tracks").get_to(p.audio_tracks);
-  j.at("timeline").get_to(p.timeline);
+  try
+  {
+    j.at("name").get_to(p.name);
+    p.audio_tracks.clear();
+
+    for (const auto &track : j.at("audio_tracks"))
+    {
+      p.audio_tracks.emplace_back(
+          track.at("path").get<std::filesystem::path>(),
+          track.at("start_seconds").get<double>());
+    }
+
+    j.at("current_frame").get_to(p.current_frame);
+    j.at("fps").get_to(p.fps);
+    j.at("timeline").get_to(p.timeline);
+  }
+  catch (const std::exception &e)
+  {
+    spdlog::warn("Failed to load fields from project: {}", e.what());
+  }
 }
 
 #endif // NAG_ENGINE_PROJECT_H
