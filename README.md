@@ -25,7 +25,7 @@ A simple SDL2 demo engine.
 
 Here should go stuff which is currently developed, but not 100% ready.
   
-- "Add effect" button -> generate an effect timeline spanning all the project's duration.
+- Test json (de)serialization
 
 #### To be 🚀
 

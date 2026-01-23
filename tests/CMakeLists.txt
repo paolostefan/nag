@@ -24,7 +24,8 @@ enable_testing()
 # ============================================================================
 add_executable(
   timeline_test
-  timeline_test.cc
+        timeline_json_test.cc
+        timeline_test.cc
 )
 
 # Link Google Test and nlohmann/json to the test executable

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "nlohmann/json.hpp"
 #include "imgui.h"
 #include "ImSequencer.h"
 
@@ -21,7 +22,7 @@ static const char *const kTrackTypeNames[] = {
 NLOHMANN_JSON_SERIALIZE_ENUM(TrackType, {
   {TrackType::AUDIO, "Audio"},
   {TrackType::EFFECT, "Effect"},
-})
+});
 
 struct TimelineTrack
 {
@@ -108,7 +109,7 @@ struct Timeline : public ImSequencer::SequenceInterface
 
   void Del(const int index) override { tracks.erase(tracks.begin() + index); }
 
-  void Duplicate(int index) override
+  void Duplicate(const int index) override
   {
     const TimelineTrack &track = tracks[index];
     tracks.push_back(TimelineTrack{
@@ -116,6 +117,14 @@ struct Timeline : public ImSequencer::SequenceInterface
         .frameStart = track.frameStart,
         .frameEnd = track.frameEnd,
         .expanded = false});
+
+    TimelineTrack &new_track = tracks.back();
+
+    if (track.type == TrackType::AUDIO) {
+      new_track.audio_track_index = track.audio_track_index;
+    } else {
+      new_track.effect_id = track.effect_id;
+    }
   }
 
   std::vector<TimelineTrack> tracks{};
