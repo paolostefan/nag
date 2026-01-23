@@ -1,13 +1,13 @@
 #include "editor/editor.h"
 
+#include "backends/imgui_impl_opengl3.h"
+
 #include "IconsFontAwesome6.h"
 
 #include "fa-solid-900.h"
 #include "editor/toast_manager.h"
 
-#pragma region Run
-int Editor::run()
-{
+int Editor::run() {
   // OpenGL version
   const char *glsl_version = "#version 150";
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
@@ -17,10 +17,10 @@ int Editor::run()
 
   // Main window
   window = SDL_CreateWindow(
-      "Nag Editor",
-      SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-      1280, 720,
-      SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+    "Nag Editor",
+    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+    1280, 720,
+    SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 
   SDL_GLContext gl_context = SDL_GL_CreateContext(window);
   SDL_GL_MakeCurrent(window, gl_context);
@@ -28,16 +28,14 @@ int Editor::run()
 
   // IMPORTANT: Initialize GLEW AFTER creating the OpenGL context
   glewExperimental = GL_TRUE; // Needed for core profile
-  GLenum glew_err = glewInit();
-  if (glew_err != GLEW_OK)
-  {
+  if (GLenum glew_err = glewInit(); glew_err != GLEW_OK) {
     spdlog::critical("GLEW initialization failed: {}",
-                     (const char *)glewGetErrorString(glew_err));
+                     reinterpret_cast<const char *>(glewGetErrorString(glew_err)));
     return -1;
   }
 
-  spdlog::info("OpenGL version: {}", (const char *)glGetString(GL_VERSION));
-  spdlog::info("GLSL version: {}", (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION));
+  spdlog::info("OpenGL version: {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
+  spdlog::info("GLSL version: {}", reinterpret_cast<const char *>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
 
   // Setup Dear ImGui
   IMGUI_CHECKVERSION();
@@ -47,19 +45,19 @@ int Editor::run()
 
   // Load Font Awesome 6
   io->Fonts->AddFontDefault();
-  static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+  static constexpr ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
   ImFontConfig icons_config;
   icons_config.MergeMode = true;
   icons_config.PixelSnapH = true;
-  icons_config.GlyphMaxAdvanceX = 13.0f;     // Use if you want to make the icon monospaced
+  icons_config.GlyphMaxAdvanceX = 13.0f; // Use if you want to make the icon monospaced
   icons_config.FontDataOwnedByAtlas = false; // We don't want ImGui to free the font data
 
   io->Fonts->AddFontFromMemoryTTF(
-      (void *)font_awesome_6_free_solid_900_otf,
-      font_awesome_6_free_solid_900_otf_len,
-      13.0f,
-      &icons_config,
-      icons_ranges);
+    (void *) font_awesome_6_free_solid_900_otf,
+    font_awesome_6_free_solid_900_otf_len,
+    13.0f,
+    &icons_config,
+    icons_ranges);
   // End of font loading stuff
 
   ImGui::StyleColorsDark();
@@ -84,11 +82,9 @@ int Editor::run()
   return 0;
 }
 
-void Editor::init_fx_system()
-{
+void Editor::init_fx_system() {
   effects[0] = std::make_unique<MandelbrotEffect>();
-  if (!effects[0]->initialize())
-  {
+  if (!effects[0]->initialize()) {
     spdlog::error("Error initializing mandelbrot effect");
     effects[0].reset();
     return;
@@ -110,21 +106,18 @@ void Editor::init_fx_system()
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                          GL_TEXTURE_2D, fx_texture, 0);
 
-  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-  {
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
     spdlog::error("FX framebuffer not complete");
   }
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Editor::init_project()
-{
+void Editor::init_project() {
   // todo reload last project from ...?
 }
 
-void Editor::render_preview_image()
-{
+void Editor::render_preview_image() const {
   glBindFramebuffer(GL_FRAMEBUFFER, fx_fbo);
   glViewport(0, 0, fx_preview_width, fx_preview_height);
 
@@ -132,97 +125,87 @@ void Editor::render_preview_image()
   glClearColor(.0f, .0f, .0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  double current_time = (double)current_project.current_frame /
-                        (double)current_project.fps;
+  double current_time = (double) current_project.current_frame /
+                        (double) current_project.fps;
   effects[selected_effect]->render(fx_preview_width, fx_preview_height, current_time);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-#pragma region FX Preview
-
-void Editor::render_fx_preview()
-{
+void Editor::render_fx_preview() {
   ImGui::Begin("FX Preview");
 
   ImGui::Combo("Effect", &selected_effect,
                effect_names.data(), static_cast<int>(effect_names.size()));
 
   if (selected_effect >= 0 && selected_effect < effects.size() &&
-      ImGui::CollapsingHeader(effect_names[selected_effect], ImGuiTreeNodeFlags_DefaultOpen))
-  {
+      ImGui::CollapsingHeader(effect_names[selected_effect], ImGuiTreeNodeFlags_DefaultOpen)) {
     auto &params = effects[selected_effect]->get_parameters();
-    for (auto &param : params)
-    {
+    for (auto &param: params) {
       const std::string &name = param.get_name();
       const std::string &fmt = param.get_fmt();
       const ParameterType type = param.get_type();
 
-      switch (type)
-      {
-      case ParameterType::FLOAT:
-      {
-        float val = std::get<float>(param.get_value());
+      switch (type) {
+        case ParameterType::FLOAT: {
+          float val = std::get<float>(param.get_value());
 
-        const float min_val = std::get<float>(param.get_min_value());
-        const float max_val = std::get<float>(param.get_max_value());
-        const float step = std::get<float>(param.get_step());
+          const float min_val = std::get<float>(param.get_min_value());
+          const float max_val = std::get<float>(param.get_max_value());
+          const float step = std::get<float>(param.get_step());
 
-        if (ImGui::DragFloat(name.c_str(), &val,
-                             step, min_val, max_val,
-                             fmt == "" ? "%.3f" : fmt.c_str()))
-        {
-          param.set_value(val);
-          fx_preview_dirty = true;
+          if (ImGui::DragFloat(name.c_str(), &val,
+                               step, min_val, max_val,
+                               fmt == "" ? "%.3f" : fmt.c_str())) {
+            param.set_value(val);
+            fx_preview_dirty = true;
+          }
+          break;
         }
-        break;
-      }
-      case ParameterType::INT:
-      {
-        int val = std::get<int>(param.get_value());
+        case ParameterType::INT: {
+          int val = std::get<int>(param.get_value());
 
-        const int min_val = std::get<int>(param.get_min_value());
-        const int max_val = std::get<int>(param.get_max_value());
-        const int step = std::get<int>(param.get_step());
+          const int min_val = std::get<int>(param.get_min_value());
+          const int max_val = std::get<int>(param.get_max_value());
+          const int step = std::get<int>(param.get_step());
 
-        if (ImGui::DragInt(name.c_str(), &val, step, min_val, max_val,
-                           fmt == "" ? "%d" : fmt.c_str()))
-        {
-          param.set_value(val);
-          fx_preview_dirty = true;
+          if (ImGui::DragInt(name.c_str(), &val, step, min_val, max_val,
+                             fmt == "" ? "%d" : fmt.c_str())) {
+            param.set_value(val);
+            fx_preview_dirty = true;
+          }
+          break;
         }
-        break;
-      }
-      case ParameterType::VEC2:
-      {
-        Vec2 val = std::get<Vec2>(param.get_value());
+        case ParameterType::VEC2: {
+          Vec2 val = std::get<Vec2>(param.get_value());
 
-        const Vec2 min_val = std::get<Vec2>(param.get_min_value());
-        const Vec2 max_val = std::get<Vec2>(param.get_max_value());
-        const Vec2 step = std::get<Vec2>(param.get_step());
+          const Vec2 min_val = std::get<Vec2>(param.get_min_value());
+          const Vec2 max_val = std::get<Vec2>(param.get_max_value());
+          const Vec2 step = std::get<Vec2>(param.get_step());
 
-        bool changed = false;
+          bool changed = false;
 
-        changed |= ImGui::DragFloat((name + ".x").c_str(), &val.x,
-                                    step.x, min_val.x, max_val.x,
-                                    fmt == "" ? "%.3f" : fmt.c_str());
-        changed |= ImGui::DragFloat((name + ".y").c_str(), &val.y,
-                                    step.y, min_val.y, max_val.y,
-                                    fmt == "" ? "%.3f" : fmt.c_str());
+          changed |= ImGui::DragFloat((name + ".x").c_str(), &val.x,
+                                      step.x, min_val.x, max_val.x,
+                                      fmt == "" ? "%.3f" : fmt.c_str());
+          changed |= ImGui::DragFloat((name + ".y").c_str(), &val.y,
+                                      step.y, min_val.y, max_val.y,
+                                      fmt == "" ? "%.3f" : fmt.c_str());
 
-        if (changed)
-        {
-          param.set_value(val);
-          fx_preview_dirty = true;
+          if (changed) {
+            param.set_value(val);
+            fx_preview_dirty = true;
+          }
+          break;
         }
-        break;
-      }
+        default:
+          spdlog::error("Unknown parameter type for {}", name);
+          break;
       }
     }
 
     // Render effect preview
-    if (fx_preview_dirty)
-    {
+    if (fx_preview_dirty) {
       render_preview_image();
     }
 
@@ -230,7 +213,7 @@ void Editor::render_fx_preview()
     const float avail_width = ImGui::GetContentRegionAvail().x;
 
     // Draw effect Image to the max space available
-    ImGui::Image((void *)(intptr_t)fx_texture,
+    ImGui::Image((void *) (intptr_t) fx_texture,
                  ImVec2(avail_width, fx_preview_height * (avail_width / fx_preview_width)),
                  ImVec2(0, 1), ImVec2(1, 0));
 
@@ -238,8 +221,7 @@ void Editor::render_fx_preview()
     //              ImVec2(400, 300),
     //              ImVec2(0, 1), ImVec2(1, 0));
 
-    if (ImGui::Button(ICON_FA_PLUS " Add to timeline"))
-    {
+    if (ImGui::Button(ICON_FA_PLUS " Add to timeline")) {
       current_project.timeline.Add(TrackType::EFFECT);
       current_project.pristine = false;
 
@@ -252,33 +234,25 @@ void Editor::render_fx_preview()
   ImGui::End();
 }
 
-#pragma region Menu
-
-void Editor::render_menu()
-{
+void Editor::render_menu() {
   ImGui::BeginMainMenuBar();
 
-  if (ImGui::BeginMenu("File"))
-  {
-    if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN " Open project..."))
-    {
+  if (ImGui::BeginMenu("File")) {
+    if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN " Open project...")) {
       open_load_project_dialog();
     }
 
-    if (ImGui::MenuItem("Save project as..."))
-    {
+    if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK " Save project as...")) {
       open_save_project_dialog();
     }
 
-    if (ImGui::MenuItem("Load audio track"))
-    {
+    if (ImGui::MenuItem(ICON_FA_VOLUME_HIGH " Load audio track")) {
       open_audio_track_dialog();
     }
 
     ImGui::Separator();
 
-    if (ImGui::MenuItem("Exit"))
-    {
+    if (ImGui::MenuItem(ICON_FA_RIGHT_FROM_BRACKET " Exit")) {
       SDL_Event quit_event;
       quit_event.type = SDL_QUIT;
       SDL_PushEvent(&quit_event);
@@ -290,21 +264,16 @@ void Editor::render_menu()
   ImGui::EndMainMenuBar();
 }
 
-#pragma region Render Audio Tracks
-
-void Editor::render_audio_tracks()
-{
+void Editor::render_audio_tracks() {
   ImGui::Begin("Audio Tracks");
 
-  if (ImGui::Button("Load audio track"))
-  {
+  if (ImGui::Button("Load audio track")) {
     open_audio_track_dialog();
   }
 
   uint8_t track_no = 0;
 
-  for (const AudioTrack &track : current_project.audio_tracks)
-  {
+  for (const AudioTrack &track: current_project.audio_tracks) {
     ImGui::TextUnformatted(track.title.c_str());
     ImGui::SameLine();
 
@@ -313,24 +282,18 @@ void Editor::render_audio_tracks()
 
     const std::string track_no_s = std::to_string(track_no);
 
-    if (state == PlaybackState::PLAYING)
-    {
-      if (ImGui::Button(("Pause##" + track_no_s).c_str()))
-      {
+    if (state == PlaybackState::PLAYING) {
+      if (ImGui::Button((ICON_FA_PAUSE "##" + track_no_s).c_str())) {
         player.pause();
       }
-    }
-    else
-    {
-      if (ImGui::Button(("Play##" + track_no_s).c_str()))
-      {
+    } else {
+      if (ImGui::Button((ICON_FA_PLAY "##" + track_no_s).c_str())) {
         player.play();
       }
     }
 
     ImGui::SameLine();
-    if (ImGui::Button(("Stop##" + track_no_s).c_str()))
-    {
+    if (ImGui::Button((ICON_FA_STOP "##" + track_no_s).c_str())) {
       player.stop();
     }
 
@@ -340,18 +303,15 @@ void Editor::render_audio_tracks()
     const double current_seconds = current_ms / 1000.0;
     const double total_seconds = duration_ms / 1000.0;
 
-    if (duration_ms > 0.05)
-    {
+    if (duration_ms > 0.05) {
       ImGui::SameLine();
-      const float progress = static_cast<float>(current_ms * 100.0 / duration_ms);
+      const auto progress = static_cast<float>(current_ms * 100.0 / duration_ms);
       float slider_value = progress;
 
       if (ImGui::SliderFloat(("##TrackProg_" + track_no_s).c_str(),
-                             &slider_value, 0.0f, 100.0f, "%.2f%%"))
-      {
+                             &slider_value, 0.0f, 100.0f, "%.2f%%")) {
         const double new_pos_ms = duration_ms * slider_value / 100.0;
-        if (std::abs(new_pos_ms - current_ms) > 20.0)
-        {
+        if (std::abs(new_pos_ms - current_ms) > 20.0) {
           player.seek(new_pos_ms);
         }
         // spdlog::debug("Seeking to {}ms (slider {})", new_pos_ms, slider_value);
@@ -360,8 +320,7 @@ void Editor::render_audio_tracks()
       ImGui::SameLine();
       ImGui::Text("%s / %s", format_time(current_seconds).c_str(), format_time(total_seconds).c_str());
 
-      if (track.track_is_module)
-      {
+      if (track.track_is_module) {
         ImGui::SameLine();
         ImGui::Text("%.1f BPM, %d/%02x", player.get_bpm(), player.get_pattern(), player.get_row());
       }
@@ -373,10 +332,7 @@ void Editor::render_audio_tracks()
   ImGui::End();
 }
 
-#pragma region Timeline
-
-void Editor::render_timeline()
-{
+void Editor::render_timeline() {
   static bool expanded = true;
   static int selected_entry = -1;
   static int first_frame = 0;
@@ -384,38 +340,30 @@ void Editor::render_timeline()
   ImGui::Begin("Timeline");
 
   ImSequencer::Sequencer(
-      &current_project.timeline,
-      &current_project.current_frame,
-      &expanded,
-      &selected_entry,
-      &first_frame,
-      ImSequencer::SEQUENCER_EDIT_ALL |
-          ImSequencer::SEQUENCER_ADD |
-          ImSequencer::SEQUENCER_DEL |
-          ImSequencer::SEQUENCER_COPYPASTE |
-          ImSequencer::SEQUENCER_CHANGE_FRAME);
+    &current_project.timeline,
+    &current_project.current_frame,
+    &expanded,
+    &selected_entry,
+    &first_frame,
+    ImSequencer::SEQUENCER_EDIT_ALL |
+    ImSequencer::SEQUENCER_ADD |
+    ImSequencer::SEQUENCER_DEL |
+    ImSequencer::SEQUENCER_COPYPASTE |
+    ImSequencer::SEQUENCER_CHANGE_FRAME);
 
   ImGui::End();
 }
 
-#pragma region Dialogs
-
-void Editor::display_dialogs()
-{
+void Editor::display_dialogs() {
   // Audio track load dialog
-  if (ImGuiFileDialog::Instance()->Display(kChooseAudioDlgKey))
-  {
-    if (ImGuiFileDialog::Instance()->IsOk())
-    {
+  if (ImGuiFileDialog::Instance()->Display(kChooseAudioDlgKey)) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
       const std::string audio_file_path = ImGuiFileDialog::Instance()->GetFilePathName();
 
-      try
-      {
+      try {
         current_project.add_audio_track(audio_file_path);
         ToastManager::instance().add_toast(ToastType::SUCCESS, "Audio track loaded successfully");
-      }
-      catch (const std::exception &e)
-      {
+      } catch (const std::exception &e) {
         spdlog::error("Error loading audio track '{}': {}",
                       audio_file_path, e.what());
       }
@@ -424,18 +372,13 @@ void Editor::display_dialogs()
     ImGuiFileDialog::Instance()->Close();
   }
 
-  if (ImGuiFileDialog::Instance()->Display(kLoadProjectDlgKey))
-  {
-    if (ImGuiFileDialog::Instance()->IsOk())
-    {
+  if (ImGuiFileDialog::Instance()->Display(kLoadProjectDlgKey)) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
       const std::string project_path = ImGuiFileDialog::Instance()->GetFilePathName();
 
-      if (load_project(project_path))
-      {
+      if (load_project(project_path)) {
         ToastManager::instance().add_toast(ToastType::SUCCESS, "Project loaded successfully");
-      }
-      else
-      {
+      } else {
         ToastManager::instance().add_toast(ToastType::ERROR, "Error loading project");
       }
     }
@@ -443,10 +386,8 @@ void Editor::display_dialogs()
     ImGuiFileDialog::Instance()->Close();
   }
 
-  if (ImGuiFileDialog::Instance()->Display(kSaveProjectDlgKey))
-  {
-    if (ImGuiFileDialog::Instance()->IsOk())
-    {
+  if (ImGuiFileDialog::Instance()->Display(kSaveProjectDlgKey)) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
       const std::string project_save_path = ImGuiFileDialog::Instance()->GetFilePathName();
 
       save_project(project_save_path);
@@ -456,14 +397,12 @@ void Editor::display_dialogs()
   }
 }
 
-void Editor::open_audio_track_dialog()
-{
+void Editor::open_audio_track_dialog() const {
   static IGFD::FileDialogConfig config;
 
   if (current_project.audio_tracks.empty())
     config.path = "~";
-  else
-  {
+  else {
     const auto &last_track = current_project.audio_tracks.back();
     config.path = last_track.path.parent_path().string();
   }
@@ -471,8 +410,7 @@ void Editor::open_audio_track_dialog()
   ImGuiFileDialog::Instance()->OpenDialog(kChooseAudioDlgKey, "Choose audio file", ".mod,.xm,.mp3", config);
 }
 
-void Editor::open_load_project_dialog()
-{
+void Editor::open_load_project_dialog() const {
   static IGFD::FileDialogConfig config;
 
   if (current_project.path.empty())
@@ -483,8 +421,7 @@ void Editor::open_load_project_dialog()
   ImGuiFileDialog::Instance()->OpenDialog(kLoadProjectDlgKey, "Load Project", ".nagproj", config);
 }
 
-void Editor::open_save_project_dialog()
-{
+void Editor::open_save_project_dialog() const {
   static IGFD::FileDialogConfig config;
 
   // Open save file dialog
@@ -496,10 +433,7 @@ void Editor::open_save_project_dialog()
   ImGuiFileDialog::Instance()->OpenDialog(kSaveProjectDlgKey, "Save Project", ".nagproj", config);
 }
 
-#pragma region Main loop
-
-void Editor::main_event_loop()
-{
+void Editor::main_event_loop() {
   bool running = true;
 
   SDL_Event event;
@@ -507,11 +441,9 @@ void Editor::main_event_loop()
   // style_purple(ImGui::GetStyle());
   // style_win11dark(ImGui::GetStyle());
 
-  while (running)
-  {
+  while (running) {
     // Event handling
-    while (SDL_PollEvent(&event))
-    {
+    while (SDL_PollEvent(&event)) {
       ImGui_ImplSDL2_ProcessEvent(&event);
 
       if (event.type == SDL_QUIT ||
@@ -521,8 +453,7 @@ void Editor::main_event_loop()
         running = false;
     }
 
-    if (!running)
-    {
+    if (!running) {
       break;
     }
 
@@ -541,32 +472,27 @@ void Editor::main_event_loop()
 
     // Main UI window
 
-    if constexpr (kDebugToasts)
-    {
+    if constexpr (kDebugToasts) {
       ImGui::Begin("Debug Toasts");
-      if (ImGui::Button("Info Toast"))
-      {
+      if (ImGui::Button("Info Toast")) {
         ToastManager::instance().add_toast(ToastType::INFO, "This is an info toast");
       }
 
       ImGui::SameLine();
 
-      if (ImGui::Button("Success Toast"))
-      {
+      if (ImGui::Button("Success Toast")) {
         ToastManager::instance().add_toast(ToastType::SUCCESS, "This is a success toast");
       }
 
       ImGui::SameLine();
 
-      if (ImGui::Button("Warning Toast"))
-      {
+      if (ImGui::Button("Warning Toast")) {
         ToastManager::instance().add_toast(ToastType::WARNING, "This is a warning toast");
       }
 
       ImGui::SameLine();
 
-      if (ImGui::Button("Error Toast"))
-      {
+      if (ImGui::Button("Error Toast")) {
         ToastManager::instance().add_toast(ToastType::ERROR, "This is an error toast");
       }
       ImGui::End();
@@ -586,7 +512,7 @@ void Editor::main_event_loop()
 
     // Render UI
     ImGui::Render();
-    glViewport(0, 0, (int)io->DisplaySize.x, (int)io->DisplaySize.y);
+    glViewport(0, 0, (int) io->DisplaySize.x, (int) io->DisplaySize.y);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -595,10 +521,7 @@ void Editor::main_event_loop()
   }
 }
 
-#pragma region Styles
-
-void Editor::style_purple(ImGuiStyle &style)
-{
+void Editor::style_purple(ImGuiStyle &style) {
   // Purple Comfy style by RegularLunar from ImThemes
   style.Alpha = 1.0f;
   style.DisabledAlpha = 0.1f;
@@ -687,8 +610,7 @@ void Editor::style_purple(ImGuiStyle &style)
   style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.35f);
 }
 
-void Editor::style_win11dark(ImGuiStyle &style)
-{
+void Editor::style_win11dark(ImGuiStyle &style) {
   // Windark style by DestroyerDarkNess from ImThemes
   style.Alpha = 1.0f;
   style.DisabledAlpha = 0.6f;
@@ -777,10 +699,8 @@ void Editor::style_win11dark(ImGuiStyle &style)
   style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.8f, 0.8f, 0.8f, 0.35f);
 }
 
-bool Editor::save_project(const std::string &save_path) noexcept
-{
-  if (current_project.pristine)
-  {
+bool Editor::save_project(const std::string &save_path) noexcept {
+  if (current_project.pristine) {
     spdlog::error("Cowardly refusing to save an unmodified project");
     return false;
   }
@@ -790,35 +710,27 @@ bool Editor::save_project(const std::string &save_path) noexcept
 
   bool result = false;
 
-  try
-  {
-    nlohmann::json j(current_project);
-
-    {
-      std::ofstream save_file(save_path);
-      save_file << std::setw(2) << j << std::endl;
-    }
+  try {
+    const nlohmann::json j(current_project);
+    std::ofstream save_file(save_path);
+    save_file << std::setw(2) << j << std::endl;
 
     current_project.pristine = true;
     result = true;
 
     spdlog::info("Project saved successfully");
-  }
-  catch (const std::exception &e)
-  {
+  } catch (const std::exception &e) {
     spdlog::error("Failed to save project: {}", e.what());
   }
 
   return result;
 }
 
-bool Editor::load_project(const std::string &load_path) noexcept
-{
+bool Editor::load_project(const std::string &load_path) noexcept {
   current_project.path = load_path;
 
   bool result = false; // Assume failure
-  try
-  {
+  try {
     std::ifstream load_file(load_path);
     nlohmann::json j;
     load_file >> j;
@@ -826,9 +738,7 @@ bool Editor::load_project(const std::string &load_path) noexcept
     current_project = j.get<Project>();
 
     result = true;
-  }
-  catch (const std::exception &e)
-  {
+  } catch (const std::exception &e) {
     spdlog::error("Failed to load project: {}", e.what());
   }
 

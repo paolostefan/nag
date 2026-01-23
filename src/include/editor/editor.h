@@ -6,15 +6,12 @@
 #include "GL/glew.h"
 #include "imgui.h"
 #include "backends/imgui_impl_sdl2.h"
-#include "backends/imgui_impl_opengl3.h"
 #include "ImGuiFileDialog.h"
 #include "SDL.h"
-#include "SDL_opengl.h"
 #include "spdlog/spdlog.h"
 
 #include "editor/project.h"
 #include "engine/engine.h"
-#include "engine/openmpt_player.h"
 #include "fx/mandelbrot_effect.h"
 
 class Editor
@@ -35,9 +32,9 @@ private:
     WIN11DARK
   };
 
-  static constexpr const char *const kChooseAudioDlgKey = "ChooseAudioDlgKey";
-  static constexpr const char *const kLoadProjectDlgKey = "LoadProjectDlgKey";
-  static constexpr const char *const kSaveProjectDlgKey = "SaveProjectDlgKey";
+  static constexpr auto kChooseAudioDlgKey = "ChooseAudioDlgKey";
+  static constexpr auto kLoadProjectDlgKey = "LoadProjectDlgKey";
+  static constexpr auto kSaveProjectDlgKey = "SaveProjectDlgKey";
 
   static inline std::string format_time(double seconds)
   {
@@ -61,10 +58,10 @@ private:
   void main_event_loop();
 
   /**
-   * Renders a preview of the Mandelbrot effect, and allows the user
+   * Renders a preview of the Mandelbrot effect and allows the user
    * to modify the effect's parameters.
    *
-   * The preview is rendered in a 400x300 pixel window, and is
+   * The preview is rendered in a 400x300 pixel window and is
    * updated when the user changes any of the effect's parameters.
    */
   void render_fx_preview();
@@ -72,14 +69,14 @@ private:
   /// @brief Renders the main menu bar.
   void render_audio_tracks();
   void render_menu();
-  void render_preview_image();
+  void render_preview_image() const;
   void render_timeline();
 
   void display_dialogs();
 
-  void open_audio_track_dialog();
-  void open_load_project_dialog();
-  void open_save_project_dialog();
+  void open_audio_track_dialog() const;
+  void open_load_project_dialog() const;
+  void open_save_project_dialog() const;
 
   bool save_project(const std::string &save_path) noexcept;
   bool load_project(const std::string &load_path) noexcept;
