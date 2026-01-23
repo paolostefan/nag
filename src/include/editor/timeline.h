@@ -65,15 +65,15 @@ inline void from_json(const nlohmann::json &j, TimelineTrack &track)
 
 struct Timeline : public ImSequencer::SequenceInterface
 {
-  int GetFrameMin() const override { return 0; }
-  int GetFrameMax() const override { return 1000; }
-  int GetItemCount() const override { return static_cast<int>(tracks.size()); }
+  [[nodiscard]] int GetFrameMin() const override { return 0; }
+  [[nodiscard]] int GetFrameMax() const override { return 1000; }
+  [[nodiscard]] int GetItemCount() const override { return static_cast<int>(tracks.size()); }
 
-  int GetItemTypeCount() const override { return 2; }
+  [[nodiscard]] int GetItemTypeCount() const override { return 2; }
 
-  const char *GetItemTypeName(int typeIndex) const override { return kTrackTypeNames[typeIndex]; }
+  [[nodiscard]] const char *GetItemTypeName(int typeIndex) const override { return kTrackTypeNames[typeIndex]; }
 
-  void Get(int index, int **start, int **end, int *type, unsigned int *color) override
+  void Get(const int index, int **start, int **end, int *type, unsigned int *color) override
   {
     if (index < 0 || index >= static_cast<int>(tracks.size()))
     {
@@ -106,7 +106,7 @@ struct Timeline : public ImSequencer::SequenceInterface
 
   constexpr void Add(TrackType t) { Add(static_cast<int>(t)); }
 
-  void Del(int index) override { tracks.erase(tracks.begin() + index); }
+  void Del(const int index) override { tracks.erase(tracks.begin() + index); }
 
   void Duplicate(int index) override
   {
