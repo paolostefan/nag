@@ -1,86 +1,9 @@
 #include "editor/editor.h"
 
-#include "backends/imgui_impl_opengl3.h"
-
 #include "IconsFontAwesome6.h"
 
-#include "fa-solid-900.h"
 #include "editor/toast_manager.h"
 
-int Editor::run() {
-  // OpenGL version
-  const char *glsl_version = "#version 150";
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-
-  // Main window
-  window = SDL_CreateWindow(
-    "Nag Editor",
-    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-    1280, 720,
-    SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-
-  SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-  SDL_GL_MakeCurrent(window, gl_context);
-  SDL_GL_SetSwapInterval(1); // V-Sync
-
-  // IMPORTANT: Initialize GLEW AFTER creating the OpenGL context
-  glewExperimental = GL_TRUE; // Needed for core profile
-  if (GLenum glew_err = glewInit(); glew_err != GLEW_OK) {
-    spdlog::critical("GLEW initialization failed: {}",
-                     reinterpret_cast<const char *>(glewGetErrorString(glew_err)));
-    return -1;
-  }
-
-  spdlog::info("OpenGL version: {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
-  spdlog::info("GLSL version: {}", reinterpret_cast<const char *>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
-
-  // Setup Dear ImGui
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  io = &ImGui::GetIO();
-  io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-  // Load Font Awesome 6
-  io->Fonts->AddFontDefault();
-  static constexpr ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
-  ImFontConfig icons_config;
-  icons_config.MergeMode = true;
-  icons_config.PixelSnapH = true;
-  icons_config.GlyphMaxAdvanceX = 13.0f; // Use if you want to make the icon monospaced
-  icons_config.FontDataOwnedByAtlas = false; // We don't want ImGui to free the font data
-
-  io->Fonts->AddFontFromMemoryTTF(
-    (void *) font_awesome_6_free_solid_900_otf,
-    font_awesome_6_free_solid_900_otf_len,
-    13.0f,
-    &icons_config,
-    icons_ranges);
-  // End of font loading stuff
-
-  ImGui::StyleColorsDark();
-
-  ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
-  ImGui_ImplOpenGL3_Init(glsl_version);
-
-  init_fx_system();
-
-  init_project();
-
-  main_event_loop();
-
-  // Cleanup
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplSDL2_Shutdown();
-  ImGui::DestroyContext();
-
-  SDL_GL_DeleteContext(gl_context);
-  SDL_DestroyWindow(window);
-  SDL_Quit();
-  return 0;
-}
 
 void Editor::init_fx_system() {
   effects[0] = std::make_unique<MandelbrotEffect>();
@@ -424,7 +347,7 @@ void Editor::open_load_project_dialog() const {
 void Editor::open_save_project_dialog() const {
   static IGFD::FileDialogConfig config;
 
-  // Open save file dialog
+  // Open the save file dialog
   if (current_project.path.empty())
     config.path = "~";
   else
@@ -434,91 +357,52 @@ void Editor::open_save_project_dialog() const {
 }
 
 void Editor::main_event_loop() {
-  bool running = true;
+  init_fx_system();
+  init_project();
 
-  SDL_Event event;
+  UIWindow::main_event_loop();
+}
 
-  // style_purple(ImGui::GetStyle());
-  // style_win11dark(ImGui::GetStyle());
+void Editor::render_ui() {
+  render_menu();
 
-  while (running) {
-    // Event handling
-    while (SDL_PollEvent(&event)) {
-      ImGui_ImplSDL2_ProcessEvent(&event);
-
-      if (event.type == SDL_QUIT ||
-          (event.type == SDL_WINDOWEVENT &&
-           event.window.event == SDL_WINDOWEVENT_CLOSE &&
-           event.window.windowID == SDL_GetWindowID(window)))
-        running = false;
+  if constexpr (kDebugToasts) {
+    ImGui::Begin("Debug Toasts");
+    if (ImGui::Button("Info Toast")) {
+      ToastManager::instance().add_toast(ToastType::INFO, "This is an info toast");
     }
 
-    if (!running) {
-      break;
+    ImGui::SameLine();
+
+    if (ImGui::Button("Success Toast")) {
+      ToastManager::instance().add_toast(ToastType::SUCCESS, "This is a success toast");
     }
 
-    // New imgui frame
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame();
-    ImGui::NewFrame();
+    ImGui::SameLine();
 
-    // Dockspace
-    ImGuiID dockspace_id = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(),
-                                                        ImGuiDockNodeFlags_PassthruCentralNode);
-
-    ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_FirstUseEver);
-
-    render_menu();
-
-    // Main UI window
-
-    if constexpr (kDebugToasts) {
-      ImGui::Begin("Debug Toasts");
-      if (ImGui::Button("Info Toast")) {
-        ToastManager::instance().add_toast(ToastType::INFO, "This is an info toast");
-      }
-
-      ImGui::SameLine();
-
-      if (ImGui::Button("Success Toast")) {
-        ToastManager::instance().add_toast(ToastType::SUCCESS, "This is a success toast");
-      }
-
-      ImGui::SameLine();
-
-      if (ImGui::Button("Warning Toast")) {
-        ToastManager::instance().add_toast(ToastType::WARNING, "This is a warning toast");
-      }
-
-      ImGui::SameLine();
-
-      if (ImGui::Button("Error Toast")) {
-        ToastManager::instance().add_toast(ToastType::ERROR, "This is an error toast");
-      }
-      ImGui::End();
+    if (ImGui::Button("Warning Toast")) {
+      ToastManager::instance().add_toast(ToastType::WARNING, "This is a warning toast");
     }
 
-    ImGui::Begin("Project Info", nullptr, ImGuiWindowFlags_NoDecoration);
-    ImGui::TextUnformatted(current_project.name.c_str());
+    ImGui::SameLine();
+
+    if (ImGui::Button("Error Toast")) {
+      ToastManager::instance().add_toast(ToastType::ERROR, "This is an error toast");
+    }
     ImGui::End();
-
-    render_timeline();
-    render_fx_preview();
-    render_audio_tracks();
-
-    ToastManager::instance().render();
-
-    display_dialogs();
-
-    // Render UI
-    ImGui::Render();
-    glViewport(0, 0, (int) io->DisplaySize.x, (int) io->DisplaySize.y);
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    SDL_GL_SwapWindow(window);
   }
+
+  ImGui::Begin("Project Info", nullptr, ImGuiWindowFlags_NoDecoration);
+  ImGui::TextUnformatted(current_project.name.c_str());
+  ImGui::End();
+
+  render_timeline();
+  render_fx_preview();
+  render_audio_tracks();
+
+  ToastManager::instance().render();
+
+  display_dialogs();
 }
 
 void Editor::style_purple(ImGuiStyle &style) {
