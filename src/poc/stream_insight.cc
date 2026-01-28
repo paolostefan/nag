@@ -1,7 +1,8 @@
 #include "SDL.h"
 #include "spdlog/spdlog.h"
 
-#include "editor/editor.h"
+#include "stream_insight.h"
+
 
 int main(int argc, char **argv)
 {
@@ -12,5 +13,14 @@ int main(int argc, char **argv)
     return -1;
   }
 
-  return Editor().run();
+  return StreamInsight().run();
+}
+
+void StreamInsight::render_ui()
+{
+  ImGui::Begin("Stream Insight");
+
+
+
+  ImGui::End();
 }

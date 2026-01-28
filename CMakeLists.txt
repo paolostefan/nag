@@ -17,43 +17,43 @@ find_package(GLEW REQUIRED)
 # SDL2
 include(FetchContent)
 FetchContent_Declare(
-  SDL2
-  GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-  GIT_TAG release-2.32.10
+    SDL2
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+    GIT_TAG release-2.32.10
 )
 FetchContent_MakeAvailable(SDL2)
 
 # Imgui
 FetchContent_Declare(
-  imgui
-  GIT_REPOSITORY https://github.com/ocornut/imgui.git
-  GIT_TAG docking
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG docking
 )
 FetchContent_MakeAvailable(imgui)
 
 add_library(imgui STATIC
-  ${imgui_SOURCE_DIR}/imgui.cpp
-  ${imgui_SOURCE_DIR}/imgui_demo.cpp
-  ${imgui_SOURCE_DIR}/imgui_draw.cpp
-  ${imgui_SOURCE_DIR}/imgui_tables.cpp
-  ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_demo.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
 )
 target_link_libraries(imgui PUBLIC SDL2::SDL2 OpenGL::GL)
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR}/)
 
-# Imguifiledialog
+# Imgui filedialog
 FetchContent_Declare(
-  imguifiledialog
-  GIT_REPOSITORY https://github.com/aiekick/ImGuiFileDialog.git
-  GIT_TAG master
+    imgui_filedialog
+    GIT_REPOSITORY https://github.com/aiekick/ImGuiFileDialog.git
+    GIT_TAG master
 )
-FetchContent_MakeAvailable(imguifiledialog)
+FetchContent_MakeAvailable(imgui_filedialog)
 
-add_library(imgui_fd STATIC
-${imguifiledialog_SOURCE_DIR}/ImGuiFileDialog.cpp  
-)
+#Message(STATUS "Imgui file dialog src dir: ${imgui_filedialog_SOURCE_DIR}")
+
+add_library(imgui_fd STATIC ${imgui_filedialog_SOURCE_DIR}/ImGuiFileDialog.cpp)
 target_link_libraries(imgui_fd PUBLIC imgui)
 target_include_directories(imgui_fd PUBLIC ${imgui_filedialog_SOURCE_DIR}/)
 
@@ -78,9 +78,9 @@ target_link_libraries(implot PUBLIC imgui)
 
 # nlohmann/json
 FetchContent_Declare(
-  nlohmann_json
-  GIT_REPOSITORY https://github.com/nlohmann/json.git
-  GIT_TAG develop
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG develop
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
@@ -88,28 +88,26 @@ FetchContent_MakeAvailable(nlohmann_json)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(OPENMPT REQUIRED libopenmpt)
 
-if(NOT OPENMPT_FOUND)
+if (NOT OPENMPT_FOUND)
   message(ERROR "OpenMPT not found")
-endif()
+endif ()
 
 # Spdlog
 FetchContent_Declare(
-  spdlog
-  GIT_REPOSITORY https://github.com/gabime/spdlog.git
-  GIT_TAG v2.x
+    spdlog
+    GIT_REPOSITORY https://github.com/gabime/spdlog.git
+    GIT_TAG v2.x
 )
-
 FetchContent_MakeAvailable(spdlog)
 
 # IconFontCppHeaders
 FetchContent_Declare(
-  iconfontcppheaders
-  GIT_REPOSITORY https://github.com/juliettef/IconFontCppHeaders.git
-  GIT_TAG main
+    iconfont_cppheaders
+    GIT_REPOSITORY https://github.com/juliettef/IconFontCppHeaders.git
+    GIT_TAG main
 )
-
-FetchContent_MakeAvailable(iconfontcppheaders)
-Message(STATUS "iconfontcppheaders source dir: ${iconfontcppheaders_SOURCE_DIR}")
+FetchContent_MakeAvailable(iconfont_cppheaders)
+#Message(STATUS "iconfont_cppheaders source dir: ${iconfont_cppheaders_SOURCE_DIR}")
 
 # ============================================================================
 # END DEPENDENCIES
@@ -117,40 +115,44 @@ Message(STATUS "iconfontcppheaders source dir: ${iconfontcppheaders_SOURCE_DIR}"
 
 # Engine
 file(GLOB ENGINE_SRCS src/engine/*.cc src/fx/*.cc)
-add_library(nag_engine_lib ${ENGINE_SRCS})
-target_include_directories(nag_engine_lib PUBLIC 
-  src/include
-  ${OPENMPT_INCLUDE_DIRS}
+add_library(nag_engine_lib ${ENGINE_SRCS}
+    src/include/engine/stream.cc
+    src/include/engine/stream.h)
+target_include_directories(nag_engine_lib PUBLIC
+    src/include
+    ${OPENMPT_INCLUDE_DIRS}
 )
 
-target_link_libraries(nag_engine_lib PUBLIC 
-  OpenGL::GL
-  GLEW::GLEW
-  SDL2::SDL2
-  mpg123
-  spdlog
-  ${OPENMPT_LIBRARIES}
-  nlohmann_json::nlohmann_json
-) 
+target_link_libraries(nag_engine_lib PUBLIC
+    OpenGL::GL
+    GLEW::GLEW
+    SDL2::SDL2
+    mpg123
+    spdlog
+    ${OPENMPT_LIBRARIES}
+    nlohmann_json::nlohmann_json
+)
 
 target_compile_options(nag_engine_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
 
 # Editor library
-add_library(nag_editor_lib 
-  src/editor/editor.cc
-  src/editor/toast_manager.cc
-  src/_3rd_party/ImGuizmo/ImSequencer.cpp
+add_library(nag_editor_lib
+    src/editor/editor.cc
+    src/editor/toast_manager.cc
+    src/_3rd_party/ImGuizmo/ImSequencer.cpp
+    src/editor/ui_window.cc
+    src/include/editor/ui_window.h
 )
 
 target_include_directories(nag_editor_lib PUBLIC
-  src/_3rd_party/ImGuizmo
-  ${iconfontcppheaders_SOURCE_DIR}/
+    src/_3rd_party/ImGuizmo
+    ${iconfont_cppheaders_SOURCE_DIR}/
 )
 
 target_link_libraries(nag_editor_lib PUBLIC
-  nag_engine_lib
-  imgui
-  imgui_fd
+    nag_engine_lib
+    imgui
+    imgui_fd
     implot
 )
 
@@ -162,15 +164,19 @@ target_link_libraries(editor PRIVATE nag_editor_lib)
 add_executable(dummy_sdl_win src/poc/dummy_sdl_win.cc)
 target_link_libraries(dummy_sdl_win PRIVATE SDL2::SDL2 SDL2::SDL2main)
 
+add_executable(stream_insight src/poc/stream_insight.cc
+    src/poc/stream_insight.h)
+target_link_libraries(stream_insight PRIVATE nag_editor_lib)
+
 # Copy shaders to build directory
 file(GLOB SHADER_FILES "${CMAKE_SOURCE_DIR}/src/shaders/*")
 file(COPY ${SHADER_FILES} DESTINATION "${CMAKE_BINARY_DIR}/shaders")
 message(STATUS "Shaders copied to ${CMAKE_BINARY_DIR}/shaders: ${SHADER_FILES}")
 
 # Install shaders
-install(DIRECTORY "${CMAKE_SOURCE_DIR}/src/shaders/" 
-        DESTINATION "shaders"
-        FILES_MATCHING PATTERN "*.vert" PATTERN "*.frag" PATTERN "*.comp")
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/src/shaders/"
+    DESTINATION "shaders"
+    FILES_MATCHING PATTERN "*.vert" PATTERN "*.frag" PATTERN "*.comp")
 
 # Enable testing
 add_subdirectory(tests)
