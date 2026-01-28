@@ -1,17 +1,15 @@
-#include <utility>
-
-#include "../include/editor/ui_window.h"
+#include "editor/ui_window.h"
 
 #include "fa-solid-900.h"
 #include "IconsFontAwesome6.h"
+#include "implot.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "backends/imgui_impl_sdl2.h"
 #include "GL/glew.h"
 #include "spdlog/spdlog.h"
 
 UIWindow::UIWindow(std::string title, const int width, const int height)
-    : title(std::move(title)), start_width(width), start_height(height)
-{
+  : title(std::move(title)), start_width(width), start_height(height) {
 }
 
 int UIWindow::run() {
@@ -47,6 +45,9 @@ int UIWindow::run() {
   // Setup Dear ImGui
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
+
+  ImPlot::CreateContext();
+
   io = &ImGui::GetIO();
   io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
@@ -77,6 +78,8 @@ int UIWindow::run() {
   // Cleanup
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplSDL2_Shutdown();
+
+  ImPlot::DestroyContext();
   ImGui::DestroyContext();
 
   SDL_GL_DeleteContext(gl_context);
