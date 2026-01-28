@@ -55,7 +55,26 @@ add_library(imgui_fd STATIC
 ${imguifiledialog_SOURCE_DIR}/ImGuiFileDialog.cpp  
 )
 target_link_libraries(imgui_fd PUBLIC imgui)
-target_include_directories(imgui_fd PUBLIC ${imguifiledialog_SOURCE_DIR}/)
+target_include_directories(imgui_fd PUBLIC ${imgui_filedialog_SOURCE_DIR}/)
+
+# ImPlot
+FetchContent_Declare(
+    implot_repo
+    GIT_REPOSITORY https://github.com/epezent/implot.git
+    GIT_TAG master
+)
+FetchContent_MakeAvailable(implot_repo)
+
+#Message(STATUS "Implot src dir: ${implot_repo_SOURCE_DIR}")
+
+add_library(implot STATIC
+    ${implot_repo_SOURCE_DIR}/implot.h
+    ${implot_repo_SOURCE_DIR}/implot_internal.h
+    ${implot_repo_SOURCE_DIR}/implot.cpp
+    ${implot_repo_SOURCE_DIR}/implot_items.cpp
+)
+target_include_directories(implot PUBLIC ${implot_repo_SOURCE_DIR})
+target_link_libraries(implot PUBLIC imgui)
 
 # nlohmann/json
 FetchContent_Declare(
@@ -132,6 +151,7 @@ target_link_libraries(nag_editor_lib PUBLIC
   nag_engine_lib
   imgui
   imgui_fd
+    implot
 )
 
 # Editor
