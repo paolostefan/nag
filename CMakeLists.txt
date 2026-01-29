@@ -113,11 +113,15 @@ FetchContent_MakeAvailable(iconfont_cppheaders)
 # END DEPENDENCIES
 # ============================================================================
 
-# Engine
+# Nag Engine
+
 file(GLOB ENGINE_SRCS src/engine/*.cc src/fx/*.cc)
-add_library(nag_engine_lib ${ENGINE_SRCS}
-    src/include/engine/stream.cc
-    src/include/engine/stream.h)
+
+add_library(nag_engine_lib
+    ${ENGINE_SRCS}
+    src/include/engine/stream.h
+    src/include/engine/node.h
+)
 target_include_directories(nag_engine_lib PUBLIC
     src/include
     ${OPENMPT_INCLUDE_DIRS}
@@ -157,16 +161,19 @@ target_link_libraries(nag_editor_lib PUBLIC
 )
 
 # Editor
-add_executable(editor src/editor/main.cc)
+add_executable(editor src/editor/main.cc
+    src/include/editor/scrolling_buffer.h)
 target_link_libraries(editor PRIVATE nag_editor_lib)
 
 # Proofs of concept
 add_executable(dummy_sdl_win src/poc/dummy_sdl_win.cc)
 target_link_libraries(dummy_sdl_win PRIVATE SDL2::SDL2 SDL2::SDL2main)
 
-add_executable(stream_insight src/poc/stream_insight.cc
-    src/poc/stream_insight.h)
+add_executable(stream_insight src/poc/stream_insight.cc src/poc/stream_insight.h)
 target_link_libraries(stream_insight PRIVATE nag_editor_lib)
+
+add_executable(node_insight src/poc/node_insight.cc src/poc/node_insight.h)
+target_link_libraries(node_insight PRIVATE nag_editor_lib)
 
 # Copy shaders to build directory
 file(GLOB SHADER_FILES "${CMAKE_SOURCE_DIR}/src/shaders/*")
