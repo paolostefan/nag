@@ -5,6 +5,8 @@
 
 #include "stream_insight.h"
 
+#include <IconsFontAwesome6.h>
+
 #include "engine/stream.h"
 
 
@@ -22,26 +24,51 @@ void StreamInsight::render_ui() {
   ImGui::Begin("Stream Insight");
 
   static ScrollingBuffer buffer_x(1000);
-
   static SinStream sin_stream;
-
   static float t = 0.0f;
-  t += ImGui::GetIO().DeltaTime;
-
-  buffer_x.AddPoint(t, sin_stream.at(t));
-
+  static bool flow = true;
   static float history = 10.0f;
+
+  if (!flow) {
+    if (ImGui::Button(ICON_FA_PLAY "##play")) {
+      flow = true;
+    }
+  }
+  else if (ImGui::Button(ICON_FA_PAUSE "##pause")) {
+    flow = false;
+  }
+
+  ImGui::SameLine();
+  ImGui::Text("t = %.2f", t);
+  ImGui::SameLine();
+  if (ImGui::Button("Reset")) {
+    t = 0.0f;
+    buffer_x.Erase();
+  }
+
+  ImGui::SameLine();
+  ImGui::SliderFloat("History", &history, 1.0f, 30.0f);
+
+  if (flow) {
+    t += ImGui::GetIO().DeltaTime;
+    buffer_x.AddPoint(t, sin_stream.at(t));
+  }
+
   static ImPlotAxisFlags axis_flags = ImPlotAxisFlags_AutoFit;
 
   if (ImPlot::BeginPlot("##plot", ImVec2(-1, 150))) {
     ImPlot::SetupAxes(nullptr, nullptr, axis_flags, axis_flags);
-    ImPlot::SetupAxisLimits(ImAxis_X1, t - history, t, ImGuiCond_Always);
+    ImPlot::SetupAxisLimits(ImAxis_X1,
+                            std::max(t - history, 0.0f), std::max(history, t),
+                            ImGuiCond_Always);
     ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
 
-    ImPlot::PlotLine("Mouse X",
-                     &buffer_x.Data[0].x, &buffer_x.Data[0].y,
-                     buffer_x.Data.size(),
-                     0, buffer_x.Offset, 2 * sizeof(float));
+    if (!buffer_x.Data.empty()) {
+      ImPlot::PlotLine("Sin stream",
+                       &buffer_x.Data[0].x, &buffer_x.Data[0].y,
+                       buffer_x.Data.size(),
+                       0, buffer_x.Offset, 2 * sizeof(float));
+    }
 
     ImPlot::EndPlot();
   }
