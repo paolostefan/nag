@@ -18,7 +18,7 @@ struct StreamBase {
 };
 
 template<typename T>
-struct Stream : public StreamBase {
+struct Stream : StreamBase {
 
   // Default implementation for at(): return the current value ignoring time.
   virtual T at(double time) { return value; };

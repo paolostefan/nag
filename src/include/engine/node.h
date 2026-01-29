@@ -20,7 +20,7 @@ struct Node {
   virtual void evaluate() = 0;
 };
 
-struct AddFloatNode : public Node {
+struct AddFloatNode : Node {
   AddFloatNode()
       : Node({nullptr, nullptr}, {nullptr}) {
   }
