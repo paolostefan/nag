@@ -3,29 +3,40 @@
 #include "IconsFontAwesome6.h"
 #include "implot.h"
 
-#include "engine/node.h"
 #include "editor/scrolling_buffer.h"
 
-int main(int argc, char **argv) {
+int main(int, char **) {
   return NodeInsight().run();
 }
 
-void NodeInsight::render_ui()
-{
+NodeInsight::NodeInsight() : UIWindow("Node Insight", 1280, 720),
+                             sin_a(&time_stream, &sin_stream_out, 3.111, 1.75),
+                             sin_b(&time_stream, &cos_stream_out, 1.0, 12.1, M_PI / 2.0),
+                             adding_node(sin_a.out, sin_b.out, &out_stream) {
+  graph = {&sin_a, &sin_b, &adding_node};
+}
+
+void NodeInsight::evaluate_node_graph() const {
+  bool progress;
+  do {
+    progress = false;
+
+    for (Node *node: graph) {
+      if (node->needs_evaluation()) {
+        node->evaluate();
+        progress = true;
+      }
+    }
+  } while (progress);
+}
+
+void NodeInsight::render_ui() {
   ImGui::Begin("Node Insight");
 
   static ScrollingBuffer buffer_in_a(1000);
   static ScrollingBuffer buffer_in_b(1000);
   static ScrollingBuffer buffer_out(1000);
 
-  static SinStream sin_stream(3.111, 1.75);
-  static SinStream cos_stream(1.0, 2.1, M_PI / 2.0);
-
-  static Stream<float> out_stream;
-
-  static AddFloatNode adding_node(&sin_stream, &cos_stream, &out_stream);
-
-  static float t = 0.0f;
   static bool flow = true;
   static float history = 10.0f;
 
@@ -33,16 +44,15 @@ void NodeInsight::render_ui()
     if (ImGui::Button(ICON_FA_PLAY "##play")) {
       flow = true;
     }
-  }
-  else if (ImGui::Button(ICON_FA_PAUSE "##pause")) {
+  } else if (ImGui::Button(ICON_FA_PAUSE "##pause")) {
     flow = false;
   }
 
   ImGui::SameLine();
-  ImGui::Text("Time: %.2fs", t);
+  ImGui::Text("Time: %.2fs", time_stream.value);
   ImGui::SameLine();
   if (ImGui::Button("Reset")) {
-    t = 0.0f;
+    time_stream.update( 0.0f);
     buffer_in_a.Erase();
     buffer_in_b.Erase();
     buffer_out.Erase();
@@ -52,13 +62,13 @@ void NodeInsight::render_ui()
   ImGui::SliderFloat("History", &history, 1.0f, 30.0f);
 
   if (flow) {
-    t += ImGui::GetIO().DeltaTime;
-    buffer_in_a.AddPoint(t, sin_stream.at(t));
-    buffer_in_b.AddPoint(t, cos_stream.at(t));
+    time_stream.update(time_stream.value + ImGui::GetIO().DeltaTime);
 
-    adding_node.evaluate();
+    evaluate_node_graph();
 
-    buffer_out.AddPoint(t, out_stream.value);
+    buffer_in_a.AddPoint(time_stream.value, sin_stream_out.value);
+    buffer_in_b.AddPoint(time_stream.value, cos_stream_out.value);
+    buffer_out.AddPoint(time_stream.value, out_stream.value);
   }
 
   static ImPlotAxisFlags axis_flags = ImPlotAxisFlags_AutoFit;
@@ -66,7 +76,7 @@ void NodeInsight::render_ui()
   if (ImPlot::BeginPlot("##plot", ImVec2(-1, 150))) {
     ImPlot::SetupAxes(nullptr, nullptr, axis_flags, axis_flags);
     ImPlot::SetupAxisLimits(ImAxis_X1,
-                            std::max(t - history, 0.0f), std::max(history, t),
+                            std::max(time_stream.value - history, 0.0f), std::max(history, time_stream.value),
                             ImGuiCond_Always);
     ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
 
@@ -96,4 +106,3 @@ void NodeInsight::render_ui()
 
   ImGui::End();
 }
-
