@@ -14,8 +14,8 @@ protected:
   void evaluate_node_graph() const;
 
   Stream<float> time_stream;
-  Stream<float> sin_stream_out;
-  Stream<float> cos_stream_out;
+  Stream<float> sin_a_stream_out;
+  Stream<float> sin_b_stream_out;
 
   SinNode sin_a;
   SinNode sin_b;

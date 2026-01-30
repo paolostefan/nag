@@ -10,9 +10,9 @@ int main(int, char **) {
 }
 
 NodeInsight::NodeInsight() : UIWindow("Node Insight", 1280, 720),
-                             sin_a(&time_stream, &sin_stream_out, 3.111, 1.75),
-                             sin_b(&time_stream, &cos_stream_out, 1.0, 12.1, M_PI / 2.0),
-                             adding_node(sin_a.out, sin_b.out, &out_stream) {
+                             sin_a(&time_stream, &sin_a_stream_out, 3., 2),
+                             sin_b(&time_stream, &sin_b_stream_out, 1.7, 15.1, 1),
+                             adding_node(&sin_a_stream_out, &sin_b_stream_out, &out_stream) {
   graph = {&sin_a, &sin_b, &adding_node};
 }
 
@@ -52,7 +52,7 @@ void NodeInsight::render_ui() {
   ImGui::Text("Time: %.2fs", time_stream.value);
   ImGui::SameLine();
   if (ImGui::Button("Reset")) {
-    time_stream.update( 0.0f);
+    time_stream.update(0.0f);
     buffer_in_a.Erase();
     buffer_in_b.Erase();
     buffer_out.Erase();
@@ -66,8 +66,8 @@ void NodeInsight::render_ui() {
 
     evaluate_node_graph();
 
-    buffer_in_a.AddPoint(time_stream.value, sin_stream_out.value);
-    buffer_in_b.AddPoint(time_stream.value, cos_stream_out.value);
+    buffer_in_a.AddPoint(time_stream.value, sin_a_stream_out.value);
+    buffer_in_b.AddPoint(time_stream.value, sin_b_stream_out.value);
     buffer_out.AddPoint(time_stream.value, out_stream.value);
   }
 

@@ -5,29 +5,31 @@
 
 #include "engine/stream.h"
 
+enum PinDirection:uint8_t {
+  Input,
+  Output
+};
+
+struct Pin {
+  PinDirection direction;
+  StreamBase *stream{nullptr};
+  uint64_t last_seen_version{0}; // Used only by input pins
+  const char *name{nullptr};
+};
+
 struct Node {
+  std::vector<Pin> inputs;
+  std::vector<Pin> outputs;
+
   Node() = default;
 
-  explicit Node(std::vector<StreamBase *> _inputs,
-                std::vector<StreamBase *> _outputs)
-    : last_seen_input_versions(_inputs.size(), 0),
-      inputs(std::move(_inputs)),
-      outputs(std::move(_outputs)) {
-  }
-
   virtual ~Node() = default;
-
-  std::vector<uint64_t> last_seen_input_versions;
-
-  std::vector<StreamBase *> inputs;
-  std::vector<StreamBase *> outputs;
 
   virtual void evaluate() = 0;
 
   [[nodiscard]] bool needs_evaluation() const {
-    for (size_t i = 0; i < inputs.size(); i++) {
-      auto *const input = inputs[i];
-      if (input->version != last_seen_input_versions[i]) {
+    for (auto const &pin: inputs) {
+      if (pin.stream->version != pin.last_seen_version) {
         return true;
       }
     }
@@ -35,8 +37,8 @@ struct Node {
   }
 
   void mark_inputs_consumed() {
-    for (size_t i = 0; i < inputs.size(); i++) {
-      last_seen_input_versions[i] = inputs[i]->version;
+    for (auto &pin: inputs) {
+      pin.last_seen_version = pin.stream->version;
     }
   }
 };
@@ -44,14 +46,16 @@ struct Node {
 // ===========================================================================
 
 struct AddFloatNode : Node {
-  AddFloatNode(Stream<float> *in_a, Stream<float> *in_b, Stream<float> *out)
-    : Node({in_a, in_b}, {out}) {
+  AddFloatNode(Stream<float> *in_a, Stream<float> *in_b, Stream<float> *out) {
+    inputs.push_back({Input, in_a, 0, "a"});
+    inputs.push_back({Input, in_b, 0, "b"});
+    outputs.push_back({Output, out, 0, "out"});
   }
 
   void evaluate() override {
-    auto *const in_a = dynamic_cast<Stream<float> *>(inputs[0]);
-    auto *const in_b = dynamic_cast<Stream<float> *>(inputs[1]);
-    auto *const out = dynamic_cast<Stream<float> *>(outputs[0]);
+    auto const *const in_a = dynamic_cast<Stream<float> *>(inputs[0].stream);
+    auto const *const in_b = dynamic_cast<Stream<float> *>(inputs[1].stream);
+    auto *const out = dynamic_cast<Stream<float> *>(outputs[0].stream);
 
     if (in_a && in_b && out) {
       out->update(in_a->value + in_b->value);
@@ -64,31 +68,28 @@ struct AddFloatNode : Node {
 // ===========================================================================
 
 struct SinNode : Node {
-  Stream<float> *time{};
-  Stream<float> *out{};
-
   float amplitude{1.0f};
   float frequency{1.0f};
   float phase{0.0f};
 
 
-  SinNode(Stream<float> *in, Stream<float> *_out)
-    : Node({in}, {_out}) {
-    time = in;
-    out = _out;
+  SinNode(Stream<float> *in, Stream<float> *_out) {
+    inputs.push_back({Input, in, 0, "time"});
+    outputs.push_back({Output, _out, 0, "out"});
   }
 
   SinNode(Stream<float> *in, Stream<float> *_out,
-          const float _amplitude = 1.0f, float _frequency = 1.0f, float _phase = 0.0f)
-    : Node({in}, {_out}) {
-    time = in;
-    out = _out;
+          const float _amplitude, float _frequency = 1.0f, float _phase = 0.0f)
+    : SinNode(in, _out) {
     amplitude = _amplitude;
     frequency = _frequency;
     phase = _phase;
   }
 
   void evaluate() override {
+    auto *time = static_cast<Stream<float> *>(inputs[0].stream);
+    auto *out = static_cast<Stream<float> *>(outputs[0].stream);
+
     out->update(amplitude * std::sin(frequency * time->value + phase));
     mark_inputs_consumed();
   }
