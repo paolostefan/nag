@@ -121,6 +121,8 @@ add_library(nag_engine_lib
     ${ENGINE_SRCS}
     src/include/engine/stream.h
     src/include/engine/node.h
+    src/include/engine/node_graph.h
+    src/engine/node_graph.cc
 )
 target_include_directories(nag_engine_lib PUBLIC
     src/include
@@ -131,6 +133,7 @@ target_link_libraries(nag_engine_lib PUBLIC
     OpenGL::GL
     GLEW::GLEW
     SDL2::SDL2
+    imgui
     mpg123
     spdlog
     ${OPENMPT_LIBRARIES}
@@ -171,6 +174,9 @@ target_link_libraries(dummy_sdl_win PRIVATE SDL2::SDL2 SDL2::SDL2main)
 
 add_executable(node_insight src/poc/node_insight.cc src/poc/node_insight.h)
 target_link_libraries(node_insight PRIVATE nag_editor_lib)
+
+add_executable(graph_insight src/poc/graph_insight.cc src/poc/graph_insight.h)
+target_link_libraries(graph_insight PRIVATE nag_editor_lib)
 
 # Copy shaders to build directory
 file(GLOB SHADER_FILES "${CMAKE_SOURCE_DIR}/src/shaders/*")

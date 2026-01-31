@@ -1,7 +1,10 @@
 #ifndef NAG_NODE_H
 #define NAG_NODE_H
 
+#include <cmath>
 #include <vector>
+
+#include "imgui.h"
 
 #include "engine/stream.h"
 
@@ -20,6 +23,12 @@ struct Pin {
 struct Node {
   std::vector<Pin> inputs;
   std::vector<Pin> outputs;
+
+  uint64_t id{};
+  std::string name{"<unnamed>"};
+
+  ImVec2 position{};
+  ImVec2 size{120, 80};
 
   Node() = default;
 
