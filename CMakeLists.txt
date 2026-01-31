@@ -169,9 +169,6 @@ target_link_libraries(editor PRIVATE nag_editor_lib)
 add_executable(dummy_sdl_win src/poc/dummy_sdl_win.cc)
 target_link_libraries(dummy_sdl_win PRIVATE SDL2::SDL2 SDL2::SDL2main)
 
-add_executable(stream_insight src/poc/stream_insight.cc src/poc/stream_insight.h)
-target_link_libraries(stream_insight PRIVATE nag_editor_lib)
-
 add_executable(node_insight src/poc/node_insight.cc src/poc/node_insight.h)
 target_link_libraries(node_insight PRIVATE nag_editor_lib)
 
