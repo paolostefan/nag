@@ -14,26 +14,29 @@ enum PinDirection:uint8_t {
 };
 
 struct Pin {
-  PinDirection direction;
+  uint64_t id{};
+  std::string name{"<unnamed>"};
+
+  ImVec2 position{};
+
+  PinDirection direction{Input};
   StreamBase *stream{nullptr};
+
   uint64_t last_seen_version{0}; // Used only by input pins
-  const char *name{nullptr};
+
 };
 
 struct Node {
-  std::vector<Pin> inputs;
-  std::vector<Pin> outputs;
-
   uint64_t id{};
   std::string name{"<unnamed>"};
 
   ImVec2 position{};
   ImVec2 size{120, 80};
 
-  Node() = default;
+  std::vector<Pin> inputs;
+  std::vector<Pin> outputs;
 
   virtual ~Node() = default;
-
   virtual void evaluate() = 0;
 
   [[nodiscard]] bool needs_evaluation() const {
@@ -56,9 +59,9 @@ struct Node {
 
 struct AddFloatNode : Node {
   AddFloatNode(Stream<float> *in_a, Stream<float> *in_b, Stream<float> *out) {
-    inputs.push_back({Input, in_a, 0, "a"});
-    inputs.push_back({Input, in_b, 0, "b"});
-    outputs.push_back({Output, out, 0, "out"});
+    inputs.push_back({1, "a", {0,10}, Input, in_a, 0});
+    inputs.push_back({2, "b", {0,30}, Input, in_b, 0});
+    outputs.push_back({3, "out", {-1,10}, Output, out, 0});
   }
 
   void evaluate() override {
@@ -81,10 +84,9 @@ struct SinNode : Node {
   float frequency{1.0f};
   float phase{0.0f};
 
-
   SinNode(Stream<float> *in, Stream<float> *_out) {
-    inputs.push_back({Input, in, 0, "time"});
-    outputs.push_back({Output, _out, 0, "out"});
+    inputs.push_back({1, "time", {0,10}, Input, in, 0});
+    outputs.push_back({2, "out", {-1,10}, Output, _out, 0});
   }
 
   SinNode(Stream<float> *in, Stream<float> *_out,
@@ -93,6 +95,10 @@ struct SinNode : Node {
     amplitude = _amplitude;
     frequency = _frequency;
     phase = _phase;
+  }
+
+  explicit SinNode(const float _amplitude=1.0f, const float _frequency = 1.0f, const float _phase = 0.0f)
+    : amplitude(_amplitude), frequency(_frequency), phase(_phase) {
   }
 
   void evaluate() override {

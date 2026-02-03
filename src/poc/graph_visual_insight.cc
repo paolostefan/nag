@@ -1,4 +1,4 @@
-#include "graph_insight.h"
+#include "graph_visual_insight.h"
 
 #include "IconsFontAwesome6.h"
 #include "implot.h"
@@ -6,23 +6,42 @@
 #include "editor/scrolling_buffer.h"
 
 
-GraphInsight::GraphInsight() : UIWindow("Graph insight POC", 800, 600) {
-  sin_a = std::make_unique<SinNode>(&time_stream, &sin_a_stream_out, 3., 2);
-  sin_b = std::make_unique<SinNode>(&time_stream, &sin_b_stream_out, 1.7, 15.1, 1);
-  adding_node = std::make_unique<AddFloatNode>(&sin_a_stream_out, &sin_b_stream_out, &out_stream);
+GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC", 800, 600) {
+
+  auto sin_a = std::make_unique<SinNode>(&time_stream, &sin_a_stream_out, 3., 2);
+  auto sin_b = std::make_unique<SinNode>(&time_stream, &sin_b_stream_out, 1.7, 15.1, 1);
+  auto adding_node = std::make_unique<AddFloatNode>(&sin_a_stream_out, &sin_b_stream_out, &out_stream);
 
   sin_a->name = "Sin A";
+  sin_a->position = {10, 10};
 
   sin_b->name = "Sin B";
+  sin_b->position = {10, 150};
 
   adding_node->name = "Add";
-  graph.nodes.emplace_back(std::move(sin_a));
-  graph.nodes.emplace_back(std::move(sin_b));
-  graph.nodes.emplace_back(std::move(adding_node));
+  adding_node->position = {250, 90};
+
+  graph.add_node(std::move(sin_a));
+  graph.add_node(std::move(sin_b));
+  graph.add_node(std::move(adding_node));
+
+  ImNodes::CreateContext();
+  editor_context = ImNodes::EditorContextCreate();
+
+  // from example imnodes code
+  ImNodes::PushAttributeFlag(ImNodesAttributeFlags_EnableLinkDetachWithDragClick);
+
+  ImNodesIO& io = ImNodes::GetIO();
+  io.LinkDetachWithModifierClick.Modifier = &ImGui::GetIO().KeyCtrl;
+  io.MultipleSelectModifier.Modifier = &ImGui::GetIO().KeyCtrl;
+
+  ImNodesStyle& style = ImNodes::GetStyle();
+  style.Flags |= ImNodesStyleFlags_GridLinesPrimary | ImNodesStyleFlags_GridSnapping;
 }
 
 
-void GraphInsight::render_ui() {
+void GraphVisualInsight::render_ui() {
+
   ImGui::Begin("Graph Insight", nullptr, ImGuiWindowFlags_NoDecoration);
 
   static ScrollingBuffer buffer_in_a(1000);
@@ -96,31 +115,41 @@ void GraphInsight::render_ui() {
     ImPlot::EndPlot();
   }
 
-  for (auto const &node: graph.nodes) {
-    ImGui::Begin(node->name.c_str());
+  // Node editor
+  ImNodes::EditorContextSet(editor_context);
+  ImGui::Begin("Node Editor");
+  ImNodes::BeginNodeEditor();
 
-    ImGui::Text("Inputs:");
-    for (auto const &pin: node->inputs) {
-      ImGui::BulletText("%s: %s (v=%lu)", pin.name.c_str(),
-                        pin.stream ? pin.stream->name() : "null",
-                        pin.stream ? pin.stream->version : 0);
+  for (const auto &node: graph.nodes) {
+
+    ImNodes::BeginNode(static_cast<int>(node->id));
+
+    ImNodes::BeginNodeTitleBar();
+    ImGui::TextUnformatted(node->name.c_str());
+    ImNodes::EndNodeTitleBar();
+
+    for (const auto &pin: node->inputs) {
+      ImNodes::BeginInputAttribute(static_cast<int>(pin.id));
+      ImGui::TextUnformatted(pin.name.c_str());
+      ImNodes::EndInputAttribute();
     }
-    ImGui::Separator();
 
-    ImGui::Text("Outputs:");
-    for (auto const &pin: node->outputs) {
-      ImGui::BulletText("%s: %s (v=%lu)", pin.name.c_str(),
-                        pin.stream ? pin.stream->name() : "null",
-                        pin.stream ? pin.stream->version : 0);
+    for (const auto &pin: node->outputs) {
+      ImNodes::BeginOutputAttribute(static_cast<int>(pin.id));
+      ImGui::TextUnformatted(pin.name.c_str());
+      ImNodes::EndOutputAttribute();
     }
 
-
-    ImGui::End();
+    ImNodes::EndNode();
   }
+
+  ImNodes::EndNodeEditor();
+  ImGui::End();
+  // End node editor
 
   ImGui::End();
 }
 
 int main(int, char **) {
-  return GraphInsight().run();
+  return GraphVisualInsight().run();
 }

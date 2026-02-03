@@ -119,7 +119,7 @@ bool UIWindow::initialize() {
   icons_config.FontDataOwnedByAtlas = false; // We don't want ImGui to free the font data
 
   io->Fonts->AddFontFromMemoryTTF(
-    (void *) font_awesome_6_free_solid_900_otf,
+    font_awesome_6_free_solid_900_otf,
     font_awesome_6_free_solid_900_otf_len,
     13.0f,
     &icons_config,

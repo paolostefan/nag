@@ -123,6 +123,7 @@ add_library(nag_engine_lib
     src/include/engine/node.h
     src/include/engine/node_graph.h
     src/engine/node_graph.cc
+    src/include/engine/id_generator.h
 )
 target_include_directories(nag_engine_lib PUBLIC
     src/include
@@ -147,12 +148,14 @@ add_library(nag_editor_lib
     src/editor/editor.cc
     src/editor/toast_manager.cc
     src/_3rd_party/ImGuizmo/ImSequencer.cpp
+    src/_3rd_party/imnodes/imnodes.cpp
     src/editor/ui_window.cc
     src/include/editor/ui_window.h
 )
 
 target_include_directories(nag_editor_lib PUBLIC
     src/_3rd_party/ImGuizmo
+    src/_3rd_party/imnodes
     ${iconfont_cppheaders_SOURCE_DIR}/
 )
 
@@ -177,6 +180,11 @@ target_link_libraries(node_insight PRIVATE nag_editor_lib)
 
 add_executable(graph_insight src/poc/graph_insight.cc src/poc/graph_insight.h)
 target_link_libraries(graph_insight PRIVATE nag_editor_lib)
+
+add_executable(graph_visual_insight
+    src/poc/graph_visual_insight.cc
+    src/poc/graph_visual_insight.h)
+target_link_libraries(graph_visual_insight PRIVATE nag_editor_lib)
 
 # Copy shaders to build directory
 file(GLOB SHADER_FILES "${CMAKE_SOURCE_DIR}/src/shaders/*")

@@ -10,13 +10,13 @@
  */
 struct StreamBase {
   virtual ~StreamBase() = default;
-
   [[nodiscard]] virtual const std::type_info &type() const = 0;
-
   [[nodiscard]] virtual const char *name() const = 0;
 
-  // Dirty marker, evolved for fan-out
+  // Former dirty marker, evolved for fan-out
   uint64_t version{0};
+
+  std::string debug_name{};
 };
 
 template<typename T>
