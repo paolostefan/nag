@@ -8,36 +8,35 @@
 #include "engine/node.h"
 #include "engine/stream.h"
 
+struct Link {
+  uint64_t id{};
+  uint64_t start_pin_id{};
+  uint64_t end_pin_id{};
+};
 
 struct NodeGraph {
   uint64_t id;
 
   IdGenerator node_id_generator;
   IdGenerator pin_id_generator;
+  IdGenerator link_id_generator;
 
   std::string name{"<unnamed>"};
   std::vector<std::unique_ptr<Node> > nodes;
   std::vector<std::unique_ptr<StreamBase> > streams;
+  std::vector<Link> links;
 
   void evaluate() const;
 
-  void add_node(std::unique_ptr<Node> &&node) {
-    node->id = node_id_generator.generate_id();
-
-    for (auto &pin: node->inputs) {
-      pin.id = pin_id_generator.generate_id();
-    }
-
-    for (auto &pin: node->outputs) {
-      pin.id = pin_id_generator.generate_id();
-    }
-
-    nodes.emplace_back(std::move(node));
-  }
+  Node *add_node(std::unique_ptr<Node> &&node);
 
   void add_stream(std::unique_ptr<StreamBase> &&stream) {
     streams.emplace_back(std::move(stream));
   }
+
+  void add_link(const Pin &start_pin, const Pin &end_pin);
+  void add_link(uint64_t start_pin_id, uint64_t end_pin_id);
+
 };
 
 
