@@ -9,33 +9,43 @@
 
 
 GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC", 800, 600) {
+  time_stream = graph.create_external_stream<float>();
+
   auto sin_a_node = std::make_unique<SinNode>(3., 2);
 
-  sin_a_node->add_input(&time_stream, "time");
-  sin_a_node->add_output(&sin_a_stream_out, "Sin A");
+  sin_a_node->add_input("time");
+  sin_a_node->add_output("Sin A");
   sin_a_node->name = "Sin A";
   sin_a_node->position = {10, 30};
-
   Node *sin_a = graph.add_node(std::move(sin_a_node));
+  sin_a->inputs[0].stream = time_stream;
 
   auto sin_b_node = std::make_unique<SinNode>(1.7, 15.1, 1);
-  sin_b_node->add_input(&time_stream, "time");
-  sin_b_node->add_output(&sin_b_stream_out, "Sin B");
+  sin_b_node->add_input("time");
+  sin_b_node->add_output("Sin B");
   sin_b_node->name = "Sin B";
   sin_b_node->position = {10, 150};
-
   Node *sin_b = graph.add_node(std::move(sin_b_node));
+  sin_b->inputs[0].stream = time_stream;
 
   auto adding_node = std::make_unique<AddFloatNode>();
   adding_node->position = {250, 90};
-  adding_node->add_input(&sin_a_stream_out);
-  adding_node->add_input(&sin_b_stream_out);
-  adding_node->set_output(&out_stream);
-
+  adding_node->add_input();
+  adding_node->add_input();
+  adding_node->add_output("sum");
   Node *adding = graph.add_node(std::move(adding_node));
 
   graph.add_link(sin_a->outputs[0], adding->inputs[0]);
   graph.add_link(sin_b->outputs[0], adding->inputs[1]);
+
+
+  // ===============
+
+  // Set stream pointers
+  sin_a_stream_out = dynamic_cast<Stream<float> *>(sin_a->outputs[0].stream);
+  sin_b_stream_out = dynamic_cast<Stream<float> *>(sin_b->outputs[0].stream);
+  out_stream = dynamic_cast<Stream<float> *>(adding->outputs[0].stream);
+
   // ===============
 
   ImNodes::CreateContext();
@@ -72,10 +82,10 @@ void GraphVisualInsight::render_ui() {
   }
 
   ImGui::SameLine();
-  ImGui::Text("Time: %.2fs", time_stream.value);
+  ImGui::Text("Time: %.2fs", time_stream->value);
   ImGui::SameLine();
   if (ImGui::Button("Reset")) {
-    time_stream.update(0.0f);
+    time_stream->update(0.0f);
     buffer_in_a.Erase();
     buffer_in_b.Erase();
     buffer_out.Erase();
@@ -85,13 +95,13 @@ void GraphVisualInsight::render_ui() {
   ImGui::SliderFloat("History", &history, 1.0f, 30.0f);
 
   if (flow) {
-    time_stream.update(time_stream.value + ImGui::GetIO().DeltaTime);
+    time_stream->update(time_stream->value + ImGui::GetIO().DeltaTime);
 
     graph.evaluate();
 
-    buffer_in_a.AddPoint(time_stream.value, sin_a_stream_out.value);
-    buffer_in_b.AddPoint(time_stream.value, sin_b_stream_out.value);
-    buffer_out.AddPoint(time_stream.value, out_stream.value);
+    buffer_in_a.AddPoint(time_stream->value, sin_a_stream_out->value);
+    buffer_in_b.AddPoint(time_stream->value, sin_b_stream_out->value);
+    buffer_out.AddPoint(time_stream->value, out_stream->value);
   }
 
   static ImPlotAxisFlags axis_flags = ImPlotAxisFlags_AutoFit;
@@ -99,7 +109,7 @@ void GraphVisualInsight::render_ui() {
   if (ImPlot::BeginPlot("##plot", ImVec2(-1, 150))) {
     ImPlot::SetupAxes(nullptr, nullptr, axis_flags, axis_flags);
     ImPlot::SetupAxisLimits(ImAxis_X1,
-                            std::max(time_stream.value - history, 0.0f), std::max(history, time_stream.value),
+                            std::max(time_stream->value - history, 0.0f), std::max(history, time_stream->value),
                             ImGuiCond_Always);
     ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
 

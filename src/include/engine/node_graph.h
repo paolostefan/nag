@@ -35,8 +35,24 @@ struct NodeGraph {
   }
 
   void add_link(const Pin &start_pin, const Pin &end_pin);
+
   void add_link(uint64_t start_pin_id, uint64_t end_pin_id);
 
+  /**
+   * Create an external stream not connected to any node.
+   * Useful for streams like time_stream that are updated externally.
+   *
+   * @tparam T Type of the stream value
+   * @param initial_value Initial value for the stream
+   * @return Pointer to the created stream
+   */
+  template<typename T>
+  Stream<T> *create_external_stream(const T &initial_value = T{}) {
+    auto stream = std::make_unique<Stream<T> >(initial_value);
+    Stream<T> *ptr = stream.get();
+    streams.push_back(std::move(stream));
+    return ptr;
+  }
 };
 
 

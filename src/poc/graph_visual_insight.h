@@ -13,10 +13,11 @@ public:
 protected:
   void render_ui() override;
 
-  Stream<float> time_stream;
-  Stream<float> sin_a_stream_out;
-  Stream<float> sin_b_stream_out;
-  Stream<float> out_stream;
+  Stream<float> *time_stream{};
+
+  Stream<float> *sin_a_stream_out{};
+  Stream<float> *sin_b_stream_out{};
+  Stream<float> *out_stream{};
 
   NodeGraph graph;
 

@@ -13,6 +13,12 @@ enum PinDirection:uint8_t {
   Output
 };
 
+enum NodeType:uint8_t {
+  Default,
+  Add,
+  Sin,
+};
+
 struct Pin {
   uint64_t id{};
   std::string name{"<unnamed>"};
@@ -27,10 +33,10 @@ struct Pin {
 
 struct Node {
   uint64_t id{};
+  NodeType type{Default};
   std::string name{"<unnamed>"};
 
   ImVec2 position{};
-  ImVec2 size{120, 80};
 
   std::vector<Pin> inputs;
   std::vector<Pin> outputs;
@@ -61,22 +67,12 @@ struct Node {
     }
   }
 
-  void add_input(Stream<float> *in, const std::string &pin_name = "in") {
-    inputs.push_back({0, pin_name, {}, Input, in, 0});
+  void add_input(const std::string &pin_name = "in") {
+    inputs.push_back({0, pin_name, {}, Input, nullptr, 0});
   }
 
-  void add_output(Stream<float> *out, const std::string &pin_name = "out") {
-    outputs.push_back({0, pin_name, {}, Output, out, 0});
-  }
-
-  /**
-   * Set the passed in stream as the only output for this node.
-   *
-   * @param out The output stream
-   */
-  void set_output(Stream<float> *out) {
-    outputs.clear();
-    add_output(out);
+  void add_output(const std::string &pin_name = "out") {
+    outputs.push_back({0, pin_name, {}, Output, nullptr, 0});
   }
 };
 
@@ -86,23 +82,21 @@ struct AddFloatNode : Node {
   static constexpr auto *const kAlphabet{"abcdefghijklmnopqrstuvwxyz"};
 
   AddFloatNode() {
+    type = Add;
     name = "Add";
   }
 
   /**
    * Add an input stream to this node.
    * @note AddNode allows up to 26 input streams.
-   *
-   * @param in Input stream
-   *
    */
-  void add_input(Stream<float> *in) {
+  void add_input() {
     if (inputs.size() >= strlen(kAlphabet)) {
       throw std::runtime_error("Too many inputs");
     }
 
     // Add an input pin with name = nth letter of kAlphabet
-    Node::add_input(in, std::string(kAlphabet).substr(inputs.size(), 1));
+    Node::add_input(std::string(kAlphabet).substr(inputs.size(), 1));
   }
 
   /**
@@ -140,27 +134,19 @@ struct SinNode : Node {
 
   explicit SinNode(const float _amplitude = 1.0f, const float _frequency = 1.0f, const float _phase = 0.0f)
     : amplitude(_amplitude), frequency(_frequency), phase(_phase) {
+    type = Sin;
+    name = "Sin";
   }
-
-  SinNode(Stream<float> *in, Stream<float> *_out) {
-    inputs.push_back({1, "time", {0, 10}, Input, in, 0});
-    outputs.push_back({2, "out", {-1, 10}, Output, _out, 0});
-  }
-
-  SinNode(Stream<float> *in, Stream<float> *_out,
-          const float _amplitude, float _frequency = 1.0f, float _phase = 0.0f)
-    : SinNode(in, _out) {
-    amplitude = _amplitude;
-    frequency = _frequency;
-    phase = _phase;
-  }
-
 
   void evaluate() override {
-    const auto *time = dynamic_cast<Stream<float> *>(inputs[0].stream);
+    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream);
     auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream);
 
-    out->update(amplitude * std::sin(frequency * time->value + phase));
+    if (!in || !out) {
+      throw std::runtime_error("invalid connections");
+    }
+
+    out->update(amplitude * std::sin(frequency * in->value + phase));
     mark_inputs_consumed();
   }
 };
