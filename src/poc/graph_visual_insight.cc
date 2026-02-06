@@ -190,6 +190,28 @@ void GraphVisualInsight::render_ui() {
   // Handle link deletion
   int link_id;
   if (ImNodes::IsLinkDestroyed(&link_id)) {
+
+    for (auto &link: graph.links) {
+      if (link.id == static_cast<uint64_t>(link_id)) {
+        // Detach stream from destination pin: i.e., end pin must point to nullptr stream
+        bool end_pin_found = false;
+
+        for (const auto &node: graph.nodes) {
+          for (auto &pin: node->inputs) {
+            if (pin.id == link.end_pin_id) {
+              end_pin_found = true;
+              pin.stream = nullptr;
+              break;
+            }
+          }
+
+          if (end_pin_found) break;
+        }
+
+        if (end_pin_found) break;
+      }
+    }
+
     std::erase_if(graph.links, [link_id](const Link &link) {
       return link.id == static_cast<uint64_t>(link_id);
     });

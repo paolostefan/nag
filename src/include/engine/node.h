@@ -47,7 +47,7 @@ struct Node {
 
   [[nodiscard]] bool needs_evaluation() const noexcept {
     for (auto const &pin: inputs) {
-      if (pin.stream->version != pin.last_seen_version) {
+      if (pin.stream && pin.stream->version != pin.last_seen_version) {
         return true;
       }
     }
@@ -63,7 +63,9 @@ struct Node {
    */
   void mark_inputs_consumed() noexcept {
     for (auto &pin: inputs) {
-      pin.last_seen_version = pin.stream->version;
+      if (pin.stream) {
+        pin.last_seen_version = pin.stream->version;
+      }
     }
   }
 
@@ -111,11 +113,10 @@ struct AddFloatNode : Node {
 
       float sum = 0.0f;
       for (auto const &pin: inputs) {
-        auto const *const in = dynamic_cast<Stream<float> *>(pin.stream);
-        if (!in) {
-          throw std::runtime_error("Invalid input pin");
+        if (auto *const in = dynamic_cast<Stream<float> *>(pin.stream)) {
+          // This avoids crash on disconnected pins
+          sum += in->value;
         }
-        sum += in->value;
       }
 
       out->update(sum);
