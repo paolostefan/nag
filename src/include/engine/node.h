@@ -23,8 +23,6 @@ struct Pin {
   uint64_t id{};
   std::string name{"<unnamed>"};
 
-  ImVec2 position{};
-
   PinDirection direction{Input};
   StreamBase *stream{nullptr};
 
@@ -38,6 +36,7 @@ struct Node {
 
   ImVec2 position{};
 
+  // TODO: make these std:array's (a node can't have 2000+ pins)
   std::vector<Pin> inputs;
   std::vector<Pin> outputs;
 
@@ -70,11 +69,11 @@ struct Node {
   }
 
   void add_input(const std::string &pin_name = "in") {
-    inputs.push_back({0, pin_name, {}, Input, nullptr, 0});
+    inputs.push_back({0, pin_name, Input, nullptr, 0});
   }
 
   void add_output(const std::string &pin_name = "out") {
-    outputs.push_back({0, pin_name, {}, Output, nullptr, 0});
+    outputs.push_back({0, pin_name, Output, nullptr, 0});
   }
 };
 

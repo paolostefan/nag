@@ -48,8 +48,8 @@ void Editor::render_preview_image() const {
   glClearColor(.0f, .0f, .0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  double current_time = (double) current_project.current_frame /
-                        (double) current_project.fps;
+  const double current_time = static_cast<double>(current_project.current_frame) /
+                        static_cast<double>(current_project.fps);
   effects[selected_effect]->render(fx_preview_width, fx_preview_height, current_time);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);

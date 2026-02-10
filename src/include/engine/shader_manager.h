@@ -20,8 +20,8 @@ public:
   void use() const;
   void unuse() const;
 
-  inline GLuint get_program() const { return program; }
-  inline bool is_valid() const { return program != 0; }
+  constexpr GLuint get_program() const { return program; }
+  constexpr bool is_valid() const { return program != 0; }
 
   // Uniform setters
   void set_uniform(const std::string &name, float value);
