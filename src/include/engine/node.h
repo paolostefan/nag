@@ -1,5 +1,5 @@
-#ifndef NAG_NODE_H
-#define NAG_NODE_H
+#ifndef NAG_ENGINE_NODE_H
+#define NAG_ENGINE_NODE_H
 
 #include <cmath>
 #include <vector>
@@ -17,6 +17,11 @@ enum NodeType:uint8_t {
   Default,
   Add,
   Sin,
+  Constant,
+  Time,
+  Noise,
+  Random,
+  StepSequencer
 };
 
 struct Pin {

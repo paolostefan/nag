@@ -1,6 +1,7 @@
 #ifndef NAG_STREAM_H
 #define NAG_STREAM_H
 
+#include <cstdint>
 #include <typeinfo>
 
 /**

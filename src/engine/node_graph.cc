@@ -34,7 +34,7 @@ void NodeGraph::add_link(const Pin &start_pin, const Pin &end_pin) {
 
   // Find the actual pins in the graph
   Pin *actual_end_pin = nullptr;
-  Pin *actual_start_pin = nullptr;
+  const Pin *actual_start_pin = nullptr;
 
   for (const auto &node: nodes) {
     for (auto &pin: node->inputs) {
