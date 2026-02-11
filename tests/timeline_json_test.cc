@@ -3,7 +3,7 @@
 
 #include "editor/timeline.h"
 
-class TimelineJsonTest : public ::testing::Test
+class TimelineJsonTest : public testing::Test
 {
 protected:
   void SetUp() override

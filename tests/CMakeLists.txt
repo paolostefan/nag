@@ -20,27 +20,35 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 # ============================================================================
-# Timeline Test
+# Tests related to the engine
 # ============================================================================
 add_executable(
-  timeline_test
+    engine_tests
+    nodes_test.cc
+)
+
+target_link_libraries(
+    engine_tests
+    GTest::gtest_main
+    nag_engine_lib
+)
+
+# ============================================================================
+# Tests related to the editor
+# ============================================================================
+add_executable(
+  editor_tests
         timeline_json_test.cc
         timeline_test.cc
 )
 
-# Link Google Test and nlohmann/json to the test executable
 target_link_libraries(
-  timeline_test
+  editor_tests
   GTest::gtest_main
   nag_editor_lib
 )
 
-# Include directories for the test executable
-target_include_directories(
-  timeline_test PRIVATE
-  ${CMAKE_SOURCE_DIR}/src/include
-)
-
 # Add tests
 include(GoogleTest)
-gtest_discover_tests(timeline_test)
+gtest_discover_tests(engine_tests)
+gtest_discover_tests(editor_tests)

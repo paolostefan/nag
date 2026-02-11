@@ -2,7 +2,7 @@
 
 #include "editor/timeline.h"
 
-class TimelineTest : public ::testing::Test {
+class TimelineTest : public testing::Test {
 };
 
 // Timeline Tests
