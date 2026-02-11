@@ -125,6 +125,7 @@ add_library(nag_engine_lib
     src/engine/node_graph.cc
     src/include/engine/id_generator.h
     src/include/engine/generator_nodes.h
+    src/include/engine/math_nodes.h
 )
 target_include_directories(nag_engine_lib PUBLIC
     src/include

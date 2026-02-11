@@ -15,13 +15,44 @@ enum PinDirection:uint8_t {
 
 enum NodeType:uint8_t {
   Default,
-  Add,
-  Sin,
+
+  // Generators
   Constant,
   Time,
   Noise,
   Random,
-  StepSequencer
+  StepSequencer,
+
+  // Unary math operators
+  Abs,
+  Floor,
+  Ceil,
+  Round,
+  Sqrt,
+  Negate,
+
+  // Trigonometric functions
+  Sin,
+  Cos,
+  Tan,
+
+  // Binary math operators
+  Subtract,
+  Multiply,
+  Divide,
+  Modulo,
+  Power,
+
+  // N-ary math operators
+  Add,
+  Min,
+  Max,
+
+  // "Special" operators
+  Remap,
+  Clamp,
+  Lerp,
+  SmoothStep,
 };
 
 struct Pin {
@@ -82,78 +113,4 @@ struct Node {
   }
 };
 
-// ===========================================================================
-
-struct AddFloatNode : Node {
-  static constexpr auto *const kAlphabet{"abcdefghijklmnopqrstuvwxyz"};
-
-  AddFloatNode() {
-    type = Add;
-    name = "Add";
-  }
-
-  /**
-   * Add an input stream to this node.
-   * @note AddNode allows up to 26 input streams.
-   */
-  void add_input() {
-    if (inputs.size() >= strlen(kAlphabet)) {
-      throw std::runtime_error("Too many inputs");
-    }
-
-    // Add an input pin with name = nth letter of kAlphabet
-    Node::add_input(std::string(kAlphabet).substr(inputs.size(), 1));
-  }
-
-  /**
-   * Sum all input streams and write the result to the output stream.
-   */
-  void evaluate() override {
-    if (!outputs.empty()) {
-      auto *const out = dynamic_cast<Stream<float> *>(outputs[0].stream);
-      if (!out) {
-        throw std::runtime_error("Invalid output pin");
-      }
-
-      float sum = 0.0f;
-      for (auto const &pin: inputs) {
-        if (auto *const in = dynamic_cast<Stream<float> *>(pin.stream)) {
-          // This avoids crash on disconnected pins
-          sum += in->value;
-        }
-      }
-
-      out->update(sum);
-
-      mark_inputs_consumed();
-    }
-  }
-};
-
-// ===========================================================================
-
-struct SinNode : Node {
-  float amplitude{1.0f};
-  float frequency{1.0f};
-  float phase{0.0f};
-
-  explicit SinNode(const float _amplitude = 1.0f, const float _frequency = 1.0f, const float _phase = 0.0f)
-    : amplitude(_amplitude), frequency(_frequency), phase(_phase) {
-    type = Sin;
-    name = "Sin";
-  }
-
-  void evaluate() override {
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream);
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream);
-
-    if (!in || !out) {
-      throw std::runtime_error("invalid connections");
-    }
-
-    out->update(amplitude * std::sin(frequency * in->value + phase));
-    mark_inputs_consumed();
-  }
-};
-
-#endif //NAG_NODE_H
+#endif //NAG_ENGINE_NODE_H

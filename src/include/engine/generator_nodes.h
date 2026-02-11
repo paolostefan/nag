@@ -25,6 +25,12 @@ struct ConstantFloatNode : Node {
       }
     }
   }
+
+  static std::unique_ptr<Node> create(const float _value = 0.0f) {
+    auto node = std::make_unique<ConstantFloatNode>(_value);
+    node->add_output("out");
+    return node;
+  }
 };
 
 struct TimeNode : Node {

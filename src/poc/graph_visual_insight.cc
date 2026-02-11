@@ -6,6 +6,7 @@
 #include "implot.h"
 
 #include "engine/generator_nodes.h"
+#include "engine/math_nodes.h"
 #include "editor/scrolling_buffer.h"
 
 
