@@ -4,7 +4,9 @@
 #include "imnodes.h"
 
 #include "editor/ui_window.h"
+#include "engine/generator_nodes.h"
 #include "engine/node_graph.h"
+
 
 class GraphVisualInsight : public UIWindow {
 public:
@@ -17,6 +19,8 @@ protected:
   Stream<float> *sin_a_stream_out{};
   Stream<float> *sin_b_stream_out{};
   Stream<float> *out_stream{};
+
+  TimeNode *time_node{};
 
   NodeGraph graph;
 
