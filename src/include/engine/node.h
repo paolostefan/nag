@@ -53,6 +53,12 @@ enum NodeType:uint8_t {
   Clamp,
   Lerp,
   SmoothStep,
+
+  // Temporal modifiers
+  LFO,
+  Envelope,
+  Delay,
+  Smoother,
 };
 
 struct Pin {
@@ -60,7 +66,7 @@ struct Pin {
   std::string name{"<unnamed>"};
 
   PinDirection direction{Input};
-  StreamBase *stream{nullptr};
+  std::shared_ptr<StreamBase> stream{nullptr};
 
   uint64_t last_seen_version{0}; // Used only by input pins
 };

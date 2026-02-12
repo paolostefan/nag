@@ -2,6 +2,7 @@
 #define NAG_STREAM_H
 
 #include <cstdint>
+#include <memory>
 #include <typeinfo>
 
 /**
@@ -22,7 +23,6 @@ struct StreamBase {
 
 template<typename T>
 struct Stream : StreamBase {
-
   [[nodiscard]] const std::type_info &type() const override { return typeid(T); }
   [[nodiscard]] const char *name() const override { return typeid(T).name(); }
 
@@ -36,6 +36,19 @@ struct Stream : StreamBase {
     value = val;
     version++;
   }
+
+  /**
+   * Create an external stream not connected to any node.
+   * Useful for streams like time_stream that are updated externally.
+   *
+   * @tparam T Type of the stream value
+   * @param initial_value Initial value for the stream
+   * @return Pointer to the created stream
+   */
+  static std::unique_ptr<Stream> create(const T &initial_value = T{}) {
+    return std::make_unique<Stream>(initial_value);
+  }
 };
+
 
 #endif //NAG_STREAM_H
