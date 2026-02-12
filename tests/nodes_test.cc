@@ -3,6 +3,7 @@
 #include "engine/node.h"
 #include "engine/generator_nodes.h"
 #include "engine/math_nodes.h"
+#include "engine/temporal_nodes.h"
 #include "engine/node_graph.h"
 
 class NodesTest : public testing::Test {
@@ -53,7 +54,7 @@ TEST_F(NodesTest, MultiplyNode) {
   // Evaluation of multiply node should be triggered by the constant nodes
   node_graph->evaluate();
 
-  EXPECT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream)->value, 6.0f);
+  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 6.0f);
 }
 
 TEST_F(NodesTest, DivideNodeDivideByZero) {
@@ -86,7 +87,7 @@ TEST_F(NodesTest, DivideNodeDivideByZero) {
   // Evaluation of divide node should be triggered by the constant nodes
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream)->value,
+  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value,
                   2.0f/DivideNode::kEpsilon);
 }
 
@@ -108,5 +109,31 @@ TEST_F(NodesTest, RemapNode)
   // Evaluation of remap node should be triggered by the constant node
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream)->value, 50.0f);
+  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 50.0f);
+}
+
+TEST_F(NodesTest, LFONodeTest) {
+  auto node = LFONode::create(
+    .5f,
+    .5f,
+    LFONode::WaveShape::Sine,
+    0.f,
+    .5f);
+  EXPECT_EQ(node->type, LFO);
+  EXPECT_EQ(node->name, "LFO");
+  EXPECT_EQ(node->inputs.size(), 1);
+  EXPECT_EQ(node->outputs.size(), 1);
+
+  auto time_node = TimeNode::create();
+  const auto time_node_ptr = node_graph->add_node(std::move(time_node));
+  const auto lfo_node = node_graph->add_node(std::move(node));
+  node_graph->add_link(time_node_ptr->outputs[0], lfo_node->inputs[0]);
+
+  // Force evaluation of time node to start
+  time_node_ptr->evaluate();
+
+  // Trigger evaluation
+  node_graph->evaluate();
+
+  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(lfo_node->outputs[0].stream.get())->value, 0.5f);
 }
