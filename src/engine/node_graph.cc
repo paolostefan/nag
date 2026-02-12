@@ -11,9 +11,9 @@ Node *NodeGraph::add_node(std::unique_ptr<Node> &&node) {
     pin.id = pin_id_generator.generate_id();
 
     // Create a stream for each output pin
-    auto stream = std::make_unique<Stream<float> >();
-    pin.stream = stream.get();
-    streams.push_back(std::move(stream));
+    if (!pin.stream) {
+      pin.stream = std::make_shared<Stream<float>>();
+    }
   }
 
   nodes.emplace_back(std::move(node));

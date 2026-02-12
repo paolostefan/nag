@@ -20,7 +20,7 @@ struct ConstantFloatNode : Node {
 
   void evaluate() override {
     if (!outputs.empty()) {
-      if (auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream)) {
+      if (const auto out = dynamic_cast<Stream<float> *>(outputs[0].stream.get())) {
         out->update(value);
       }
     }
@@ -34,12 +34,32 @@ struct ConstantFloatNode : Node {
 };
 
 struct TimeNode : Node {
+  float time{0.0f};
+
   explicit TimeNode() {
     type = Time;
     name = "Time";
   }
 
-  void evaluate() override {
+  constexpr void evaluate() override {
+    if (!outputs.empty()) {
+      if (const auto out = dynamic_cast<Stream<float> *>(outputs[0].stream.get())) {
+        out->update(time);
+      }
+    }
+  }
+
+  constexpr void step(const float dt) {
+    time += dt;
+    evaluate();
+  }
+
+  static std::unique_ptr<Node> create() {
+    auto node = std::make_unique<TimeNode>();
+    node->add_output("time");
+    node->outputs[0].stream = std::make_shared<Stream<float> >();
+
+    return node;
   }
 };
 
@@ -49,23 +69,37 @@ struct TimeNode : Node {
  */
 struct NoiseNode : Node {
   float frequency{1.0f};
-  float amplitude{4.0f};
-  int octaves{3};
-  float persistence{0.8f};
+  float amplitude{1.0f};
+  int octaves{1};
+  float persistence{0.5f};
+
 
   NoiseNode() {
     type = Noise;
     name = "Noise";
   }
 
-  void evaluate() override {
+  static std::unique_ptr<NoiseNode> create(const float frequency = 1.0f,
+                                           const float amplitude = 1.0f,
+                                           const int octaves = 1,
+                                           const float persistence = 0.5f) {
+    auto node = std::make_unique<NoiseNode>();
+    node->frequency = frequency;
+    node->amplitude = amplitude;
+    node->octaves = octaves;
+    node->persistence = persistence;
+    node->add_input("x");
+    node->add_output("noise");
+    return node;
+  }
 
+  void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream);
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream);
+    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
+    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
 
     if (!in || !out) {
       return;
@@ -133,8 +167,8 @@ struct RandomNode : Node {
       return;
     }
 
-    const auto *trigger = dynamic_cast<Stream<float> *>(inputs[0].stream);
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream);
+    const auto *trigger = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
+    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
 
     if (!trigger || !out) {
       return;
@@ -179,8 +213,8 @@ struct StepSequencerNode : Node {
       return;
     }
 
-    const auto *trigger = dynamic_cast<Stream<float> *>(inputs[0].stream);
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream);
+    const auto *trigger = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
+    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
 
     if (!trigger || !out) {
       return;
