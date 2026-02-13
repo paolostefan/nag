@@ -6,6 +6,7 @@
 #include "editor/ui_window.h"
 #include "engine/generator_nodes.h"
 #include "engine/node_graph.h"
+#include "engine/visual_nodes.h"
 
 
 class GraphVisualInsight : public UIWindow {
@@ -14,6 +15,10 @@ public:
 
 protected:
   void render_ui() override;
+
+  static void render_visual_node_body(const VisualNode * visual_node);
+
+  void render_node_editor();
 
   Stream<float> *noise_stream_out{};
   Stream<float> *sin_a_stream_out{};

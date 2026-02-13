@@ -8,6 +8,7 @@
 #include "engine/math_nodes.h"
 #include "engine/temporal_nodes.h"
 #include "editor/scrolling_buffer.h"
+#include "engine/visual_nodes.h"
 
 
 GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC", 800, 600) {
@@ -28,37 +29,53 @@ GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC", 800, 60
   graph.add_link(time_node->outputs[0], noise_node_ptr->inputs[0]);
 
   // Oscillator connected to time
-  auto sin_a_node = LFONode::create(3.0f,
+  auto lfo_node = LFONode::create(3.0f,
                                     2.5f,
                                     LFONode::WaveShape::Sawtooth);
-  sin_a_node->name = "Oscillator A";
-  sin_a_node->position = {150, 110};
-  const Node *sin_a = graph.add_node(std::move(sin_a_node));
+  lfo_node->name = "Oscillator A";
+  lfo_node->position = {150, 110};
+  const Node *sin_a = graph.add_node(std::move(lfo_node));
   graph.add_link(time_node->outputs[0], sin_a->inputs[0]);
 
-  // Sin B node connected to time
-  auto sin_b_node = LFONode::create(15.7f,
-                                    1.1f,
-                                    LFONode::WaveShape::Sine);
-  sin_b_node->name = "Oscillator B";
-  sin_b_node->position = {150, 190};
-  const Node *sin_b = graph.add_node(std::move(sin_b_node));
-  graph.add_link(time_node->outputs[0], sin_b->inputs[0]);
+  // Oscillator B node connected to time
+  auto lfo_b_node = LFONode::create(5.7f,
+                                    1.0f,
+                                    LFONode::WaveShape::Sine,
+                                    0,
+                                    .5f);
+  lfo_b_node->name = "Oscillator B";
+  lfo_b_node->position = {150, 190};
+  const Node *lfo_b = graph.add_node(std::move(lfo_b_node));
+  graph.add_link(time_node->outputs[0], lfo_b->inputs[0]);
 
-  // Adding node connected to Sin A, Sin B and Noise
+  // Adding node connected to A, B and Noise
   auto adding_node = AddFloatNode::create(3);
-  adding_node->position = {290, 110};
+  adding_node->position = {290, 30};
   const Node *adding = graph.add_node(std::move(adding_node));
+
+  // Visual node
+  auto color_node = ClearColorNode::create(Color::red());
+  if (!color_node->initialize(400,300)) {
+    throw std::runtime_error("Unable to start");
+  }
+
+  color_node->position = {290, 120};
+  const Node *color = graph.add_node(std::move(color_node));
+
+  // Link stuff together
 
   graph.add_link(noise_node_ptr->outputs[0], adding->inputs[0]);
   graph.add_link(sin_a->outputs[0], adding->inputs[1]);
-  graph.add_link(sin_b->outputs[0], adding->inputs[2]);
+  graph.add_link(lfo_b->outputs[0], adding->inputs[2]);
+  graph.add_link(lfo_b->outputs[0], color->inputs[2] /* The blue component will oscillate */);
+
+
   // ===============
 
   // Set stream pointers
   noise_stream_out = dynamic_cast<Stream<float> *>(noise_node_ptr->outputs[0].stream.get());
   sin_a_stream_out = dynamic_cast<Stream<float> *>(sin_a->outputs[0].stream.get());
-  sin_b_stream_out = dynamic_cast<Stream<float> *>(sin_b->outputs[0].stream.get());
+  sin_b_stream_out = dynamic_cast<Stream<float> *>(lfo_b->outputs[0].stream.get());
   out_stream = dynamic_cast<Stream<float> *>(adding->outputs[0].stream.get());
 
   // ===============
@@ -97,8 +114,6 @@ void GraphVisualInsight::render_ui() {
   } else if (ImGui::Button(ICON_FA_PAUSE "##pause")) {
     flow = false;
   }
-
-
 
   ImGui::SameLine();
   ImGui::Text("Time: %.2fs", time_node->time);
@@ -165,7 +180,13 @@ void GraphVisualInsight::render_ui() {
     ImPlot::EndPlot();
   }
 
-  // Node editor
+  render_node_editor();
+
+  ImGui::End();
+}
+
+void GraphVisualInsight::render_node_editor() {
+
   ImNodes::EditorContextSet(editor_context);
   ImGui::Begin("Node Editor");
   ImNodes::BeginNodeEditor();
@@ -187,6 +208,10 @@ void GraphVisualInsight::render_ui() {
       ImNodes::BeginInputAttribute(static_cast<int>(pin.id));
       ImGui::TextUnformatted(pin.name.c_str());
       ImNodes::EndInputAttribute();
+    }
+
+    if (auto *visual_node = dynamic_cast<VisualNode *>(node.get())) {
+      render_visual_node_body(visual_node);
     }
 
     // switch (node->type) {
@@ -232,7 +257,7 @@ void GraphVisualInsight::render_ui() {
   // Handle link deletion
   int link_id;
   if (ImNodes::IsLinkDestroyed(&link_id)) {
-    for (auto &link: graph.links) {
+    for (const auto &link: graph.links) {
       if (link.id == static_cast<uint64_t>(link_id)) {
         // Detach stream from destination pin: i.e., end pin must point to nullptr stream
         bool end_pin_found = false;
@@ -259,9 +284,31 @@ void GraphVisualInsight::render_ui() {
   }
 
   ImGui::End();
-  // End node editor
+}
 
-  ImGui::End();
+void GraphVisualInsight::render_visual_node_body(const VisualNode *visual_node) {
+  if (!visual_node || !visual_node->render_target || !visual_node->render_target->is_valid()) {
+    ImGui::TextDisabled("(no texture)");
+    return;
+  }
+
+  const GLuint texture_id = visual_node->render_target->get_texture();
+
+  // Define preview size (adjust to your preference)
+  constexpr float preview_width = 200.0f;
+  const float aspect_ratio = static_cast<float>(visual_node->render_target->get_height()) /
+                             static_cast<float>(visual_node->render_target->get_width());
+  const float preview_height = preview_width * aspect_ratio;
+
+  // Center the image in the node
+  ImGui::SetCursorPosX(ImGui::GetCursorPosX() +
+                       (ImGui::GetContentRegionAvail().x - preview_width) * 0.5f);
+
+  // Draw texture (note: UV coords flipped for OpenGL)
+  ImGui::Image(texture_id,
+               ImVec2(preview_width, preview_height),
+               ImVec2(0, 1),  // UV top-left
+               ImVec2(1, 0)); // UV bottom-right
 }
 
 int main(int, char **) {
