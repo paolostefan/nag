@@ -44,7 +44,7 @@ void MandelbrotEffect::cleanup() {
   }
 }
 
-void MandelbrotEffect::render(int width, int height, double time_ms) {
+void MandelbrotEffect::render(const int width, const int height, const double time_ms) {
   if (!shader || !shader->is_valid())
     return;
 

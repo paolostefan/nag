@@ -27,7 +27,7 @@ public:
   /**
    * @brief Helper function to get a parameter by name
    */
-  inline EffectParameter *get_parameter(const std::string &name)
+  EffectParameter *get_parameter(const std::string &name)
   {
     auto &params = get_parameters();
 
@@ -42,7 +42,7 @@ public:
     return nullptr;
   }
 
-  inline void update_parameters(const double time_ms)
+  void update_parameters(const double time_ms)
   {
     auto &params = get_parameters();
 

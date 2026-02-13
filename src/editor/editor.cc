@@ -136,7 +136,7 @@ void Editor::render_fx_preview() {
     const float avail_width = ImGui::GetContentRegionAvail().x;
 
     // Draw effect Image to the max space available
-    ImGui::Image((void *) (intptr_t) fx_texture,
+    ImGui::Image(fx_texture,
                  ImVec2(avail_width, fx_preview_height * (avail_width / fx_preview_width)),
                  ImVec2(0, 1), ImVec2(1, 0));
 
