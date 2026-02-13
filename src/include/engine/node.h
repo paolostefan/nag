@@ -59,6 +59,9 @@ enum NodeType:uint8_t {
   Envelope,
   Delay,
   Smoother,
+
+  // Visual nodes
+  ClearColor,
 };
 
 struct Pin {

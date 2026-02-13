@@ -127,6 +127,10 @@ add_library(nag_engine_lib
     src/include/engine/generator_nodes.h
     src/include/engine/math_nodes.h
     src/include/engine/temporal_nodes.h
+    src/include/engine/visual_types.h
+    src/include/engine/visual_nodes.h
+    src/include/engine/render_target.cc
+    src/include/engine/render_target.h
 )
 target_include_directories(nag_engine_lib PUBLIC
     src/include
