@@ -12,8 +12,8 @@
 #include "engine/visual_nodes.h"
 
 
-GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC", 800, 600) {
-
+GraphVisualInsight::GraphVisualInsight() : UIWindow(
+  "Graph insight POC", 1024, 768) {
   // Init stuff
   ShaderQuadHelper::instance().initialize();
 
@@ -35,8 +35,8 @@ GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC", 800, 60
 
   // Oscillator connected to time
   auto lfo_node = LFONode::create(3.0f,
-                                    2.5f,
-                                    LFONode::WaveShape::Sawtooth);
+                                  2.5f,
+                                  LFONode::WaveShape::Sawtooth);
   lfo_node->name = "Oscillator A";
   lfo_node->position = {150, 110};
   const Node *sin_a = graph.add_node(std::move(lfo_node));
@@ -60,17 +60,17 @@ GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC", 800, 60
 
   // Visual node
   auto color_node = ClearColorNode::create(Color::red());
-  if (!color_node->initialize(400,300)) {
+  if (!color_node->initialize(400, 300)) {
     throw std::runtime_error("Unable to start");
   }
 
-  color_node->position = {290, 220};
+  color_node->position = {420, 220};
   const Node *color = graph.add_node(std::move(color_node));
 
   // Dangling gradient node
   auto grad_node = GradientNode::create(GradientNode::Type::Radial, Color::green(), Color::black());
-  grad_node->position = {390, 120};
-  grad_node->initialize(400,300);
+  grad_node->position = {420, 40};
+  grad_node->initialize(400, 300);
   // TODO: remove this, it's here only because the node is dangling
   grad_node->evaluate();
 
@@ -81,7 +81,6 @@ GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC", 800, 60
   graph.add_link(sin_a->outputs[0], adding->inputs[1]);
   graph.add_link(lfo_b->outputs[0], adding->inputs[2]);
   graph.add_link(lfo_b->outputs[0], color->inputs[2] /* The blue component will oscillate */);
-
 
   // ===============
 
@@ -199,7 +198,6 @@ void GraphVisualInsight::render_ui() {
 }
 
 void GraphVisualInsight::render_node_editor() {
-
   ImNodes::EditorContextSet(editor_context);
   ImGui::Begin("Node Editor");
   ImNodes::BeginNodeEditor();
@@ -320,7 +318,7 @@ void GraphVisualInsight::render_visual_node_body(const VisualNode *visual_node) 
   // Draw texture (note: UV coords flipped for OpenGL)
   ImGui::Image(texture_id,
                ImVec2(preview_width, preview_height),
-               ImVec2(0, 1),  // UV top-left
+               ImVec2(0, 1), // UV top-left
                ImVec2(1, 0)); // UV bottom-right
 }
 
