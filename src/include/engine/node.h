@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "imgui.h"
+#include "render_target.h"
 
 #include "engine/stream.h"
 
@@ -64,6 +65,7 @@ enum NodeType:uint8_t {
   ClearColor,
   Gradient,
   Circle,
+  Rectangle2D,
   Composite,
 };
 
@@ -71,10 +73,38 @@ struct Pin {
   uint64_t id{};
   std::string name{"<unnamed>"};
 
+  // Declared pin type
+  const std::type_info *data_type{&typeid(void)};
+
   PinDirection direction{Input};
   std::shared_ptr<StreamBase> stream{nullptr};
 
-  uint64_t last_seen_version{0}; // Used only by input pins
+  // Used only by input pins
+  uint64_t last_seen_version{0};
+
+  // Type-safe value access
+  template<typename T>
+  [[nodiscard]] T *try_get_value() const {
+    if (!stream || stream->type() != typeid(T)) {
+      return nullptr;
+    }
+
+    return &static_cast<Stream<T>*>(stream.get())->value;
+  }
+
+  template<typename T>
+  [[nodiscard]] const T *try_get_value() const {
+    if (!stream || stream->type() != typeid(T)) {
+      return nullptr;
+    }
+
+    return &static_cast<Stream<T>*>(stream.get())->value;
+  }
+
+  // Check compatibility for UI
+  [[nodiscard]] const char * get_type_name() const {
+    return data_type->name();
+  }
 };
 
 struct Node {
@@ -116,12 +146,33 @@ struct Node {
     }
   }
 
+  // Add typed input
+  template<typename T>
+  void add_typed_input(const std::string &pin_name = "in") {
+    Pin pin;
+    pin.name = pin_name;
+    pin.data_type = &typeid(T);
+    pin.direction = Input;
+    pin.stream = nullptr;
+    inputs.push_back(pin);
+  }
+
   void add_input(const std::string &pin_name = "in") {
-    inputs.push_back({0, pin_name, Input, nullptr, 0});
+    add_typed_input<float>(pin_name);
+  }
+
+  template<typename T>
+  void add_typed_output(const std::string &pin_name = "out") {
+    Pin pin;
+    pin.name = pin_name;
+    pin.direction = Output;
+    pin.data_type = &typeid(T);
+    pin.stream = std::make_shared<Stream<T>>();
+    outputs.push_back(pin);
   }
 
   void add_output(const std::string &pin_name = "out") {
-    outputs.push_back({0, pin_name, Output, nullptr, 0});
+    add_typed_output<float>(pin_name);
   }
 }; // Node
 
@@ -141,7 +192,7 @@ struct MultiInputNode : Node {
 
   /**
    * Add an input stream to this node.
-   * @note AddNode allows up to 26 input streams.
+   * @note MultiInputNode allows up to 26 input streams.
    */
   void add_input() {
     if (inputs.size() >= strlen(kAlphabet)) {
@@ -151,7 +202,6 @@ struct MultiInputNode : Node {
     // Add an input pin with name = nth letter of kAlphabet
     Node::add_input(std::string(kAlphabet).substr(inputs.size(), 1));
   }
-
 };
 
 #endif //NAG_ENGINE_NODE_H
