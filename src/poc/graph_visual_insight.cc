@@ -8,10 +8,15 @@
 #include "engine/math_nodes.h"
 #include "engine/temporal_nodes.h"
 #include "editor/scrolling_buffer.h"
+#include "engine/shader_quad_helper.h"
 #include "engine/visual_nodes.h"
 
 
 GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC", 800, 600) {
+
+  // Init stuff
+  ShaderQuadHelper::instance().initialize();
+
   // Create nodes
 
   // Time node
@@ -59,11 +64,19 @@ GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC", 800, 60
     throw std::runtime_error("Unable to start");
   }
 
-  color_node->position = {290, 120};
+  color_node->position = {290, 220};
   const Node *color = graph.add_node(std::move(color_node));
 
-  // Link stuff together
+  // Dangling gradient node
+  auto grad_node = GradientNode::create(GradientNode::Type::Radial, Color::green(), Color::black());
+  grad_node->position = {390, 120};
+  grad_node->initialize(400,300);
+  // TODO: remove this, it's here only because the node is dangling
+  grad_node->evaluate();
 
+  graph.add_node(std::move(grad_node));
+
+  // Link stuff together
   graph.add_link(noise_node_ptr->outputs[0], adding->inputs[0]);
   graph.add_link(sin_a->outputs[0], adding->inputs[1]);
   graph.add_link(lfo_b->outputs[0], adding->inputs[2]);
@@ -295,14 +308,14 @@ void GraphVisualInsight::render_visual_node_body(const VisualNode *visual_node) 
   const GLuint texture_id = visual_node->render_target->get_texture();
 
   // Define preview size (adjust to your preference)
-  constexpr float preview_width = 200.0f;
+  constexpr float preview_width = 150.0f;
   const float aspect_ratio = static_cast<float>(visual_node->render_target->get_height()) /
                              static_cast<float>(visual_node->render_target->get_width());
   const float preview_height = preview_width * aspect_ratio;
 
   // Center the image in the node
-  ImGui::SetCursorPosX(ImGui::GetCursorPosX() +
-                       (ImGui::GetContentRegionAvail().x - preview_width) * 0.5f);
+  // ImGui::SetCursorPosX(ImGui::GetCursorPosX() +
+  //                      (ImGui::GetContentRegionAvail().x - preview_width) * 0.5f);
 
   // Draw texture (note: UV coords flipped for OpenGL)
   ImGui::Image(texture_id,
