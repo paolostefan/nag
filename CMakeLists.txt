@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 project(nag LANGUAGES CXX)
 
+set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME "dependencies")
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -20,6 +23,7 @@ FetchContent_Declare(
     SDL2
     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
     GIT_TAG release-2.32.10
+    EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(SDL2)
 
@@ -28,6 +32,7 @@ FetchContent_Declare(
     imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG docking
+    EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(imgui)
 
@@ -43,25 +48,26 @@ add_library(imgui STATIC
 target_link_libraries(imgui PUBLIC SDL2::SDL2 OpenGL::GL)
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR}/)
 
+add_library(imgui::imgui ALIAS imgui)
+
 # Imgui filedialog
+set(IGFD_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     imgui_filedialog
     GIT_REPOSITORY https://github.com/aiekick/ImGuiFileDialog.git
     GIT_TAG master
+    EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(imgui_filedialog)
 
 #Message(STATUS "Imgui file dialog src dir: ${imgui_filedialog_SOURCE_DIR}")
-
-add_library(imgui_fd STATIC ${imgui_filedialog_SOURCE_DIR}/ImGuiFileDialog.cpp)
-target_link_libraries(imgui_fd PUBLIC imgui)
-target_include_directories(imgui_fd PUBLIC ${imgui_filedialog_SOURCE_DIR}/)
 
 # ImPlot
 FetchContent_Declare(
     implot_repo
     GIT_REPOSITORY https://github.com/epezent/implot.git
     GIT_TAG master
+    EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(implot_repo)
 
@@ -81,6 +87,7 @@ FetchContent_Declare(
     nlohmann_json
     GIT_REPOSITORY https://github.com/nlohmann/json.git
     GIT_TAG develop
+    EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
@@ -93,10 +100,12 @@ if (NOT OPENMPT_FOUND)
 endif ()
 
 # Spdlog
+set(SPDLOG_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
     spdlog
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
     GIT_TAG v2.x
+    EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(spdlog)
 
@@ -105,6 +114,7 @@ FetchContent_Declare(
     iconfont_cppheaders
     GIT_REPOSITORY https://github.com/juliettef/IconFontCppHeaders.git
     GIT_TAG main
+    EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(iconfont_cppheaders)
 #Message(STATUS "iconfont_cppheaders source dir: ${iconfont_cppheaders_SOURCE_DIR}")
@@ -152,6 +162,8 @@ target_compile_options(nag_engine_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
 
 # Editor library
 add_library(nag_editor_lib
+    ${imgui_filedialog_SOURCE_DIR}/ImGuiFileDialog.cpp
+    ${imgui_filedialog_SOURCE_DIR}/ImGuiFileDialog.h
     src/editor/editor.cc
     src/editor/toast_manager.cc
     src/_3rd_party/ImGuizmo/ImSequencer.cpp
@@ -164,12 +176,12 @@ target_include_directories(nag_editor_lib PUBLIC
     src/_3rd_party/ImGuizmo
     src/_3rd_party/imnodes
     ${iconfont_cppheaders_SOURCE_DIR}/
+    ${imgui_filedialog_SOURCE_DIR}/
 )
 
 target_link_libraries(nag_editor_lib PUBLIC
     nag_engine_lib
-    imgui
-    imgui_fd
+    imgui::imgui
     implot
 )
 
@@ -181,9 +193,6 @@ target_link_libraries(editor PRIVATE nag_editor_lib)
 # Proofs of concept
 add_executable(dummy_sdl_win src/poc/dummy_sdl_win.cc)
 target_link_libraries(dummy_sdl_win PRIVATE SDL2::SDL2 SDL2::SDL2main)
-
-add_executable(node_insight src/poc/node_insight.cc src/poc/node_insight.h)
-target_link_libraries(node_insight PRIVATE nag_editor_lib)
 
 add_executable(graph_insight src/poc/graph_insight.cc src/poc/graph_insight.h)
 target_link_libraries(graph_insight PRIVATE nag_editor_lib)
