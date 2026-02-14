@@ -34,7 +34,7 @@ GraphVisualInsight::GraphVisualInsight() : UIWindow(
   graph.add_link(time_node->outputs[0], noise_node_ptr->inputs[0]);
 
   // Oscillator connected to time
-  auto lfo_node = LFONode::create(3.0f,
+  auto lfo_node = LFONode::create(1.3f,
                                   2.5f,
                                   LFONode::WaveShape::Sawtooth);
   lfo_node->name = "Oscillator A";
@@ -43,7 +43,7 @@ GraphVisualInsight::GraphVisualInsight() : UIWindow(
   graph.add_link(time_node->outputs[0], sin_a->inputs[0]);
 
   // Oscillator B node connected to time
-  auto lfo_b_node = LFONode::create(5.7f,
+  auto lfo_b_node = LFONode::create(.7f,
                                     1.0f,
                                     LFONode::WaveShape::Sine,
                                     0,
@@ -59,7 +59,7 @@ GraphVisualInsight::GraphVisualInsight() : UIWindow(
   const Node *adding = graph.add_node(std::move(adding_node));
 
   // Visual node
-  auto color_node = ClearColorNode::create(Color::red());
+  auto color_node = ClearColorNode::create(Color::yellow());
   if (!color_node->initialize(400, 300)) {
     throw std::runtime_error("Unable to start");
   }
@@ -68,19 +68,33 @@ GraphVisualInsight::GraphVisualInsight() : UIWindow(
   const Node *color = graph.add_node(std::move(color_node));
 
   // Dangling gradient node
-  auto grad_node = GradientNode::create(GradientNode::Type::Radial, Color::green(), Color::black());
+  auto grad_node = GradientNode::create(GradientNode::Type::Radial,
+                                        Color::cyan(),
+                                        Color::transparent());
   grad_node->position = {420, 40};
   grad_node->initialize(400, 300);
   // TODO: remove this, it's here only because the node is dangling
   grad_node->evaluate();
+  const Node * grad = graph.add_node(std::move(grad_node));
 
-  graph.add_node(std::move(grad_node));
+  auto composite_node = CompositeNode::create(CompositeNode::BlendMode::Multiply);
+  composite_node->position = {620, 220};
+  composite_node->opacity = .5f;
+  if (!composite_node->initialize(400, 300)) {
+    throw std::runtime_error("Unable to start");
+  }
+
+  const Node *composite = graph.add_node(std::move(composite_node));
 
   // Link stuff together
   graph.add_link(noise_node_ptr->outputs[0], adding->inputs[0]);
   graph.add_link(sin_a->outputs[0], adding->inputs[1]);
   graph.add_link(lfo_b->outputs[0], adding->inputs[2]);
-  graph.add_link(lfo_b->outputs[0], color->inputs[2] /* The blue component will oscillate */);
+  graph.add_link(lfo_b->outputs[0], color->inputs[1] /* The green component will oscillate */);
+
+  // Link solid color and gradient to composite node
+  graph.add_link(color->outputs[0], composite->inputs[0]);
+  graph.add_link(grad->outputs[0], composite->inputs[1]);
 
   // ===============
 
@@ -223,34 +237,31 @@ void GraphVisualInsight::render_node_editor() {
     ImGui::TextUnformatted(node->name.c_str());
     ImNodes::EndNodeTitleBar();
 
+    //
     for (const auto &pin: node->inputs) {
+      ImNodes::PushColorStyle(ImNodesCol_Pin, get_pin_color(pin));
+
       ImNodes::BeginInputAttribute(static_cast<int>(pin.id));
+
       ImGui::TextUnformatted(pin.name.c_str());
+
       ImNodes::EndInputAttribute();
+      ImNodes::PopColorStyle();
     }
 
     if (auto *visual_node = dynamic_cast<VisualNode *>(node.get())) {
       render_visual_node_body(visual_node);
     }
 
-    // switch (node->type) {
-    //   case Time: {
-    //     const auto *_stream = dynamic_cast<Stream<float> *>(node->outputs[0].stream);
-    //     ImGui::Text("%.3f", _stream ? _stream->value : 0.0f);
-    //   }
-    //   break;
-    //   case Sin:
-    //     ImGui::TextUnformatted("Sin");
-    //     break;
-    //   default:
-    //     ImGui::TextUnformatted("Unknown");
-    //     break;
-    // }
-
     for (const auto &pin: node->outputs) {
+      ImNodes::PushColorStyle(ImNodesCol_Pin, get_pin_color(pin));
+
       ImNodes::BeginOutputAttribute(static_cast<int>(pin.id));
       ImGui::TextUnformatted(pin.name.c_str());
+
       ImNodes::EndOutputAttribute();
+
+      ImNodes::PopColorStyle();
     }
 
     ImNodes::EndNode();
@@ -328,6 +339,19 @@ void GraphVisualInsight::render_visual_node_body(const VisualNode *visual_node) 
                ImVec2(preview_width, preview_height),
                ImVec2(0, 1), // UV top-left
                ImVec2(1, 0)); // UV bottom-right
+}
+
+unsigned int GraphVisualInsight::get_pin_color(const Pin &pin) {
+  if (*pin.data_type == typeid(float)) {
+    return ImColor(100, 200, 100);  // Green
+  }
+  if (*pin.data_type == typeid(Texture *)) {
+    return ImColor(200, 100, 200);  // Magenta
+  }
+  if (*pin.data_type == typeid(void)) {
+    return ImColor(150, 150, 150);  // Grey (untyped)
+  }
+  return ImColor(100, 100, 200);    // Blue (other types)
 }
 
 int main(int, char **) {

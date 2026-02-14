@@ -18,6 +18,8 @@ protected:
 
   static void render_visual_node_body(const VisualNode * visual_node);
 
+  static unsigned int get_pin_color(const Pin & pin);
+
   void render_node_editor();
 
   Stream<float> *noise_stream_out{};
