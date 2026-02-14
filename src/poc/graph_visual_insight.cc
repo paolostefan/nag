@@ -153,6 +153,9 @@ void GraphVisualInsight::render_ui() {
   }
 
   static ImPlotAxisFlags axis_flags = ImPlotAxisFlags_AutoFit;
+  static ImPlotSpec spec;
+  spec.Size = 0;
+  spec.Stride = 2 * sizeof(float);
 
   if (ImPlot::BeginPlot("##plot", ImVec2(-1, 150))) {
     ImPlot::SetupAxes(nullptr, nullptr, axis_flags, axis_flags);
@@ -162,31 +165,36 @@ void GraphVisualInsight::render_ui() {
                             ImGuiCond_Always);
     ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
     if (!buffer_in_noise.Data.empty()) {
+      spec.Offset = buffer_in_noise.Offset;
+
       ImPlot::PlotLine("Noise",
                        &buffer_in_noise.Data[0].x, &buffer_in_noise.Data[0].y,
                        buffer_in_noise.Data.size(),
-                       0, buffer_in_noise.Offset, 2 * sizeof(float));
+                       spec);
     }
 
     if (!buffer_in_a.Data.empty()) {
+      spec.Offset = buffer_in_a.Offset;
       ImPlot::PlotLine("Sin A",
                        &buffer_in_a.Data[0].x, &buffer_in_a.Data[0].y,
                        buffer_in_a.Data.size(),
-                       0, buffer_in_a.Offset, 2 * sizeof(float));
+                       spec);
     }
 
     if (!buffer_in_b.Data.empty()) {
+      spec.Offset = buffer_in_b.Offset;
       ImPlot::PlotLine("Sin B",
                        &buffer_in_b.Data[0].x, &buffer_in_b.Data[0].y,
                        buffer_in_b.Data.size(),
-                       0, buffer_in_b.Offset, 2 * sizeof(float));
+                       spec);
     }
 
     if (!buffer_out.Data.empty()) {
+      spec.Offset = buffer_out.Offset;
       ImPlot::PlotLine("Sum",
                        &buffer_out.Data[0].x, &buffer_out.Data[0].y,
                        buffer_out.Data.size(),
-                       0, buffer_out.Offset, 2 * sizeof(float));
+                       spec);
     }
 
     ImPlot::EndPlot();
