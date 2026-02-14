@@ -8,6 +8,7 @@
 #include "engine/node.h"
 #include "engine/render_target.h"
 #include "engine/shader_manager.h"
+#include "engine/shader_quad_helper.h"
 #include "engine/visual_types.h"
 
 struct VisualNode : Node {
@@ -139,5 +140,94 @@ public:
   }
 };
 
+
+// ===========================================================================
+// GRADIENT NODE
+// ===========================================================================
+
+/**
+ * Renders a gradient to texture.
+ */
+struct GradientNode : VisualNode {
+  enum class Type : uint8_t {
+    Linear,
+    Radial,
+  };
+
+  Type gradient_type{Type::Linear};
+  Vec4 color_start{1.0f, 0.0f, 0.0f, 1.0f};
+  Vec4 color_end{0.0f, 0.0f, 1.0f, 1.0f};
+  Vec2 direction{1.0f, 0.0f};
+  Vec2 center{0.5f, 0.5f};
+
+  std::shared_ptr<ShaderProgram> shader;
+
+  GradientNode() {
+    type = Gradient;
+    name = "Gradient";
+  }
+
+  bool initialize(const int width, const int height) override {
+    if (!VisualNode::initialize(width, height)) {
+      return false;
+    }
+
+    shader = ShaderManager::instance().load(
+      "gradient",
+      "shaders/fullscreen_quad.vert",
+      "shaders/gradient.frag"
+    );
+
+    return shader && shader->is_valid();
+  }
+
+  void render() override {
+    if (!render_target || !render_target->is_valid() || !shader || !shader->is_valid()) {
+      return;
+    }
+
+    update_from_inputs();
+
+    render_target->bind();
+    render_target->clear(0.0f, 0.0f, 0.0f, 0.0f);
+
+    shader->use();
+
+    shader->set_uniform("u_resolution",
+                       static_cast<float>(render_target->get_width()),
+                       static_cast<float>(render_target->get_height()));
+    shader->set_uniform("u_gradient_type", static_cast<int>(gradient_type));
+    shader->set_uniform("u_color_start", color_start.x, color_start.y, color_start.z, color_start.w);
+    shader->set_uniform("u_color_end", color_end.x, color_end.y, color_end.z, color_end.w);
+    shader->set_uniform("u_direction", direction.x, direction.y);
+    shader->set_uniform("u_center", center.x, center.y);
+
+    ShaderQuadHelper::instance().render();
+
+    shader->unuse();
+    RenderTarget::unbind();
+  }
+
+private:
+  void update_from_inputs() {
+    // TODO: Add input connections for dynamic control
+  }
+
+public:
+  /**
+   * Create a gradient node.
+   */
+  static std::unique_ptr<GradientNode> create(
+      const Type gradient_type = Type::Linear,
+      const Vec4& color_start = Vec4::red(),
+      const Vec4& color_end = Vec4::blue()) {
+    auto node = std::make_unique<GradientNode>();
+    node->gradient_type = gradient_type;
+    node->color_start = color_start;
+    node->color_end = color_end;
+    node->add_output("texture");
+    return node;
+  }
+};
 
 #endif //NAG_ENGINE_VISUAL_NODES_H

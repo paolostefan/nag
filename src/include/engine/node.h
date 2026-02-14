@@ -62,6 +62,7 @@ enum NodeType:uint8_t {
 
   // Visual nodes
   ClearColor,
+  Gradient,
 };
 
 struct Pin {
