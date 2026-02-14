@@ -18,7 +18,7 @@ public:
   bool load_from_source(const std::string &vert_src, const std::string &frag_src);
 
   void use() const;
-  void unuse() const;
+  static void unuse();
 
   constexpr GLuint get_program() const { return program; }
   constexpr bool is_valid() const { return program != 0; }
@@ -37,9 +37,9 @@ private:
 
   std::unordered_map<std::string, GLint> uniform_cache;
 
-  GLuint compile_shader(GLenum type, const std::string &source);
+  static GLuint compile_shader(GLenum type, const std::string &source);
   GLint get_uniform_location(const std::string &name);
-  bool link_program();
+  bool link_program() const;
   void cleanup();
 };
 
