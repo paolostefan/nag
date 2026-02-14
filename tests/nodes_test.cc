@@ -355,9 +355,7 @@ TEST_F(NodesTest, PowerNode) {
 }
 
 TEST_F(NodesTest, MinNode) {
-  auto node = std::make_unique<MinNode>();
-  node->add_input("a");
-  node->add_input("b");
+  auto node = MinNode::create(2);
   node->add_output("min");
 
   EXPECT_EQ(node->type, Min);
@@ -381,9 +379,7 @@ TEST_F(NodesTest, MinNode) {
 }
 
 TEST_F(NodesTest, MaxNode) {
-  auto node = std::make_unique<MaxNode>();
-  node->add_input("a");
-  node->add_input("b");
+  auto node = MaxNode::create(2);
   node->add_output("max");
 
   EXPECT_EQ(node->type, Max);
