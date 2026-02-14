@@ -64,6 +64,8 @@ public:
   [[nodiscard]] constexpr GLuint get_fbo() const { return fbo_; }
   [[nodiscard]] constexpr int get_width() const { return width_; }
   [[nodiscard]] constexpr int get_height() const { return height_; }
+  [[nodiscard]] constexpr float get_fwidth() const { return static_cast<float>(width_); }
+  [[nodiscard]] constexpr float get_fheight() const { return static_cast<float>(height_); }
   [[nodiscard]] constexpr bool is_valid() const { return initialized_; }
 
 private:
