@@ -92,25 +92,10 @@ struct DivideNode : Node {
 /**
  * Adds two input streams and writes the result to the output stream.
  */
-struct AddFloatNode : Node {
-  static constexpr auto *const kAlphabet{"abcdefghijklmnopqrstuvwxyz"};
-
-  AddFloatNode() {
+struct AddFloatNode : MultiInputNode {
+  explicit AddFloatNode(const size_t num_inputs = 2) : MultiInputNode(num_inputs) {
     type = Add;
     name = "Add";
-  }
-
-  /**
-   * Add an input stream to this node.
-   * @note AddNode allows up to 26 input streams.
-   */
-  void add_input() {
-    if (inputs.size() >= strlen(kAlphabet)) {
-      throw std::runtime_error("Too many inputs");
-    }
-
-    // Add an input pin with name = nth letter of kAlphabet
-    Node::add_input(std::string(kAlphabet).substr(inputs.size(), 1));
   }
 
   /**
@@ -124,8 +109,8 @@ struct AddFloatNode : Node {
       }
 
       float sum = 0.0f;
-      for (auto const &pin: inputs) {
-        if (auto *const in = dynamic_cast<Stream<float> *>(pin.stream.get())) {
+      for (const auto &pin: inputs) {
+        if (const auto *const in = dynamic_cast<Stream<float> *>(pin.stream.get())) {
           // This avoids crash on disconnected pins
           sum += in->value;
         }
@@ -138,10 +123,7 @@ struct AddFloatNode : Node {
   }
 
   static std::unique_ptr<AddFloatNode> create(const size_t num_inputs = 2) {
-    auto node = std::make_unique<AddFloatNode>();
-    for (size_t i = 0; i < num_inputs; ++i) {
-      node->add_input();
-    }
+    auto node = std::make_unique<AddFloatNode>(num_inputs);
     node->add_output("sum");
     return node;
   }
@@ -231,8 +213,8 @@ struct PowerNode : Node {
 /**
  * Selects the smaller of two input streams and writes the result to the output stream.
  */
-struct MinNode : Node {
-  MinNode() {
+struct MinNode : MultiInputNode {
+  explicit MinNode(const uint8_t num_inputs = 2) : MultiInputNode(num_inputs) {
     type = Min;
     name = "Min";
   }
@@ -242,24 +224,38 @@ struct MinNode : Node {
       return;
     }
 
-    const auto *in_a = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    const auto *in_b = dynamic_cast<Stream<float> *>(inputs[1].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
+    auto *const out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
 
-    if (!in_a || !in_b || !out) {
+    if (!out) {
       return;
     }
 
-    out->update(std::min(in_a->value, in_b->value));
+    float min = std::numeric_limits<float>::max();
+
+    for (const auto &pin: inputs) {
+      // This if avoids crashes on disconnected pins
+      if (const auto *const in = dynamic_cast<Stream<float> *>(pin.stream.get())) {
+        min = std::min(min, in->value);
+      }
+    }
+
+
+    out->update(min);
     mark_inputs_consumed();
+  }
+
+  static std::unique_ptr<MinNode> create(const uint8_t num_inputs = 2) {
+    auto node = std::make_unique<MinNode>(num_inputs);
+    node->add_output("min");
+    return node;
   }
 };
 
 /**
  * Selects the larger of two input streams and writes the result to the output stream.
  */
-struct MaxNode : Node {
-  MaxNode() {
+struct MaxNode : MultiInputNode {
+  explicit MaxNode(const uint8_t num_inputs = 2) : MultiInputNode(num_inputs) {
     type = Max;
     name = "Max";
   }
@@ -269,16 +265,29 @@ struct MaxNode : Node {
       return;
     }
 
-    const auto *in_a = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    const auto *in_b = dynamic_cast<Stream<float> *>(inputs[1].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
+    auto *const out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
 
-    if (!in_a || !in_b || !out) {
+    if (!out) {
       return;
     }
 
-    out->update(std::max(in_a->value, in_b->value));
+    float max = std::numeric_limits<float>::min();
+
+    for (const auto &pin: inputs) {
+      // This if avoids crashes on disconnected pins
+      if (const auto *const in = dynamic_cast<Stream<float> *>(pin.stream.get())) {
+        max = std::max(max, in->value);
+      }
+    }
+
+    out->update(max);
     mark_inputs_consumed();
+  }
+
+  static std::unique_ptr<MaxNode> create(const uint8_t num_inputs = 2) {
+    auto node = std::make_unique<MaxNode>(num_inputs);
+    node->add_output("max");
+    return node;
   }
 };
 
@@ -449,7 +458,6 @@ struct NegateNode : Node {
  *  Computes the sine of the input stream and writes the result to the output stream.
  */
 struct SinNode : Node {
-
   explicit SinNode() {
     type = Sin;
     name = "Sin";

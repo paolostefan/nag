@@ -63,6 +63,8 @@ enum NodeType:uint8_t {
   // Visual nodes
   ClearColor,
   Gradient,
+  Circle,
+  Composite,
 };
 
 struct Pin {
@@ -82,7 +84,7 @@ struct Node {
 
   ImVec2 position{};
 
-  // TODO: make these std:array's (a node can't have 2000+ pins)
+  // TODO: make these std:array's of a reasonable size (10? 20? a node can't have 2000+ pins)
   std::vector<Pin> inputs;
   std::vector<Pin> outputs;
 
@@ -121,6 +123,35 @@ struct Node {
   void add_output(const std::string &pin_name = "out") {
     outputs.push_back({0, pin_name, Output, nullptr, 0});
   }
+}; // Node
+
+/**
+ * Node that supports up to 26 inputs (a-z)
+ */
+struct MultiInputNode : Node {
+  static constexpr auto *const kAlphabet{"abcdefghijklmnopqrstuvwxyz"};
+
+  MultiInputNode() = default;
+
+  explicit MultiInputNode(const uint8_t num_inputs) {
+    for (uint8_t i = 0; i < num_inputs; i++) {
+      add_input();
+    }
+  }
+
+  /**
+   * Add an input stream to this node.
+   * @note AddNode allows up to 26 input streams.
+   */
+  void add_input() {
+    if (inputs.size() >= strlen(kAlphabet)) {
+      throw std::runtime_error("Too many inputs");
+    }
+
+    // Add an input pin with name = nth letter of kAlphabet
+    Node::add_input(std::string(kAlphabet).substr(inputs.size(), 1));
+  }
+
 };
 
 #endif //NAG_ENGINE_NODE_H
