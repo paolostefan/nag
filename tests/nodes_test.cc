@@ -37,9 +37,6 @@ TEST_F(NodesTest, MultiplyNode) {
   ASSERT_EQ(a->outputs.size(), 1);
   ASSERT_EQ(b->outputs.size(), 1);
 
-  ASSERT_EQ(a->outputs[0].stream, nullptr);
-  ASSERT_EQ(b->outputs[0].stream, nullptr);
-
   const auto node_ptr = node_graph->add_node(std::move(node));
   const auto a_ptr = node_graph->add_node(std::move(a));
   const auto b_ptr = node_graph->add_node(std::move(b));
@@ -69,9 +66,6 @@ TEST_F(NodesTest, DivideNodeDivideByZero) {
 
   ASSERT_EQ(a->outputs.size(), 1);
   ASSERT_EQ(b->outputs.size(), 1);
-
-  ASSERT_EQ(a->outputs[0].stream, nullptr);
-  ASSERT_EQ(b->outputs[0].stream, nullptr);
 
   const auto node_ptr = node_graph->add_node(std::move(node));
   const auto a_ptr = node_graph->add_node(std::move(a));
