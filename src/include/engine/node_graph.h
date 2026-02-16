@@ -31,6 +31,8 @@ struct NodeGraph {
 
   void add_link(const Pin &start_pin, const Pin &end_pin);
 
+  void add_link(const Pin *start_pin, const Pin *end_pin) { add_link(*start_pin, *end_pin); }
+
   void add_link(uint64_t start_pin_id, uint64_t end_pin_id);
 };
 
