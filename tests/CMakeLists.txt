@@ -5,9 +5,9 @@ cmake_minimum_required(VERSION 3.14)
 # ============================================================================
 include(FetchContent)
 FetchContent_Declare(
-  googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG v1.17.0
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.17.0
 )
 
 # Windows: force gtest to use the static runtime
@@ -37,16 +37,25 @@ target_link_libraries(
 # Tests related to the editor
 # ============================================================================
 add_executable(
-  editor_tests
-        timeline_json_test.cc
-        timeline_test.cc
+    editor_tests
+    timeline_json_test.cc
+    timeline_test.cc
+    serialization_test.cc
 )
 
 target_link_libraries(
-  editor_tests
-  GTest::gtest_main
-  nag_editor_lib
+    editor_tests
+    GTest::gtest_main
+    nag_editor_lib
 )
+
+# Copy shaders to build directory
+file(GLOB SHADER_FILES "${CMAKE_SOURCE_DIR}/src/shaders/*")
+file(COPY ${SHADER_FILES} DESTINATION "${CMAKE_BINARY_DIR}/shaders")
+message(STATUS "Shaders copied to ${CMAKE_BINARY_DIR}/shaders:\n ${SHADER_FILES}")
+
+file(COPY ${SHADER_FILES} DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+message(STATUS "Shaders copied to ${CMAKE_CURRENT_BINARY_DIR}/shaders:\n ${SHADER_FILES}")
 
 # Add tests
 include(GoogleTest)
