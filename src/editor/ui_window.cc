@@ -29,7 +29,8 @@ void UIWindow::main_event_loop() {
   // style_purple(ImGui::GetStyle());
   // style_win11dark(ImGui::GetStyle());
 
-  do {
+  // ReSharper disable once CppDFAConstantConditions
+  while (running) {
     // Event handling
     while (SDL_PollEvent(&event)) {
       ImGui_ImplSDL2_ProcessEvent(&event);
@@ -61,21 +62,21 @@ void UIWindow::main_event_loop() {
     // Render UI
     ImGui::Render();
     glViewport(0, 0, static_cast<int>(io->DisplaySize.x), static_cast<int>(io->DisplaySize.y));
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClearColor(.1f, .1f, .1f, 1.f);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     SDL_GL_SwapWindow(window);
-  } while (running);
+  }
 }
 
 bool UIWindow::initialize() {
   // OpenGL version
-  const auto glsl_version = "#version 150";
+  const auto glsl_version = "#version 330";
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
   // Main window
   window = SDL_CreateWindow(

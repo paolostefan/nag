@@ -25,6 +25,17 @@ struct NodeGraph {
   std::vector<std::unique_ptr<Node> > nodes;
   std::vector<Link> links;
 
+  /**
+   * @brief Clears all nodes and links from the graph.
+   *
+   * Resets the graph to an empty state. All node and stream
+   * pointers previously obtained from this graph become invalid.
+   */
+  void clear() noexcept {
+    links.clear();
+    nodes.clear();
+  }
+
   void evaluate() const;
 
   Node *add_node(std::unique_ptr<Node> &&node);
