@@ -3,6 +3,7 @@
 in vec2 v_texcoord;
 out vec4 frag_color;
 
+uniform vec2 u_resolution;
 uniform sampler2D u_texture_base;
 uniform sampler2D u_texture_blend;
 uniform int u_blend_mode;  // 0=Normal, 1=Add, 2=Multiply, 3=Screen
