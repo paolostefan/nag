@@ -203,16 +203,7 @@ add_executable(editor src/editor/main.cc
 target_link_libraries(editor PRIVATE nag_editor_lib)
 
 # Proofs of concept
-add_executable(dummy_sdl_win src/poc/dummy_sdl_win.cc)
-target_link_libraries(dummy_sdl_win PRIVATE SDL2::SDL2 SDL2::SDL2main)
-
-add_executable(graph_insight src/poc/graph_insight.cc src/poc/graph_insight.h)
-target_link_libraries(graph_insight PRIVATE nag_editor_lib)
-
-add_executable(graph_visual_insight
-    src/poc/graph_visual_insight.cc
-    src/poc/graph_visual_insight.h)
-target_link_libraries(graph_visual_insight PRIVATE nag_editor_lib)
+add_subdirectory(src/poc)
 
 # Copy shaders to build directory
 file(GLOB SHADER_FILES "${CMAKE_SOURCE_DIR}/src/shaders/*")
