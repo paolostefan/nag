@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 
 #include "engine/node.h"
@@ -72,6 +73,42 @@ struct VisualNode : Node {
       output_texture.height = height;
     }
   }
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j;
+    j["enabled"] = enabled;
+
+    // Serialize render target dimensions
+    if (render_target && render_target->is_valid()) {
+      j["width"] = render_target->get_width();
+      j["height"] = render_target->get_height();
+    }
+
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    try {
+      if (j.contains("enabled")) {
+        enabled = j["enabled"];
+      }
+
+      // Render target will be re-initialized by derived classes
+      // We just store the dimensions for later
+      const int width = j.value("width", 512);
+      const int height = j.value("height", 512);
+
+      if (!initialize(width, height)) {
+        return OperationResult::error("Failed to initialize render target");
+      }
+
+      return OperationResult::ok();
+    } catch (const std::exception &e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize VisualNode params: ") + e.what()
+      );
+    }
+  }
 }; // struct VisualNode
 
 // ===========================================================================
@@ -101,6 +138,35 @@ struct ClearColorNode : VisualNode {
     glClearColor(color.x, color.y, color.z, color.w);
     glClear(GL_COLOR_BUFFER_BIT);
     RenderTarget::unbind();
+  }
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j = VisualNode::serialize_params();
+    j["color"] = {color.x, color.y, color.z, color.w};
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    try {
+      // Deserialize base class first
+      auto result = VisualNode::deserialize_params(j);
+      if (!result) {
+        return result;
+      }
+
+      if (j.contains("color") && j["color"].is_array() && j["color"].size() >= 4) {
+        color.x = j["color"][0];
+        color.y = j["color"][1];
+        color.z = j["color"][2];
+        color.w = j["color"][3];
+      }
+
+      return OperationResult::ok();
+    } catch (const std::exception &e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize ClearColorNode params: ") + e.what()
+      );
+    }
   }
 
 private:
@@ -194,7 +260,7 @@ struct GradientNode : VisualNode {
     shader->use();
 
     shader->set_uniform("u_resolution", render_target->get_fwidth(), render_target->get_fheight());
-    shader->set_uniform("u_gradient_type", static_cast<int>(gradient_type));
+    shader->set_uniform("u_gradient_type", gradient_type);
     shader->set_uniform("u_color_start", color_start.x, color_start.y, color_start.z, color_start.w);
     shader->set_uniform("u_color_end", color_end.x, color_end.y, color_end.z, color_end.w);
     shader->set_uniform("u_direction", direction.x, direction.y);
@@ -202,8 +268,63 @@ struct GradientNode : VisualNode {
 
     ShaderQuadHelper::instance().render();
 
-    shader->unuse();
+    ShaderProgram::unuse();
+
     RenderTarget::unbind();
+  }
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j = VisualNode::serialize_params();
+    j["gradient_type"] = static_cast<int>(gradient_type);
+    j["color_start"] = {color_start.x, color_start.y, color_start.z, color_start.w};
+    j["color_end"] = {color_end.x, color_end.y, color_end.z, color_end.w};
+    j["direction"] = {direction.x, direction.y};
+    j["center"] = {center.x, center.y};
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    try {
+      // Deserialize base class first
+      auto result = VisualNode::deserialize_params(j);
+      if (!result) {
+        return result;
+      }
+
+      if (j.contains("gradient_type")) {
+        gradient_type = static_cast<Type>(j["gradient_type"].get<int>());
+      }
+
+      if (j.contains("color_start") && j["color_start"].is_array() && j["color_start"].size() >= 4) {
+        color_start.x = j["color_start"][0];
+        color_start.y = j["color_start"][1];
+        color_start.z = j["color_start"][2];
+        color_start.w = j["color_start"][3];
+      }
+
+      if (j.contains("color_end") && j["color_end"].is_array() && j["color_end"].size() >= 4) {
+        color_end.x = j["color_end"][0];
+        color_end.y = j["color_end"][1];
+        color_end.z = j["color_end"][2];
+        color_end.w = j["color_end"][3];
+      }
+
+      if (j.contains("direction") && j["direction"].is_array() && j["direction"].size() >= 2) {
+        direction.x = j["direction"][0];
+        direction.y = j["direction"][1];
+      }
+
+      if (j.contains("center") && j["center"].is_array() && j["center"].size() >= 2) {
+        center.x = j["center"][0];
+        center.y = j["center"][1];
+      }
+
+      return OperationResult::ok();
+    } catch (const std::exception &e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize GradientNode params: ") + e.what()
+      );
+    }
   }
 
 private:
@@ -279,9 +400,7 @@ struct CircleNode : VisualNode {
 
     shader->use();
 
-    shader->set_uniform("u_resolution",
-                        static_cast<float>(render_target->get_width()),
-                        static_cast<float>(render_target->get_height()));
+    shader->set_uniform("u_resolution", render_target->get_fwidth(), render_target->get_fheight());
     shader->set_uniform("u_position", position.x, position.y);
     shader->set_uniform("u_radius", radius);
     shader->set_uniform("u_color", color.x, color.y, color.z, color.w);
@@ -289,11 +408,56 @@ struct CircleNode : VisualNode {
 
     ShaderQuadHelper::instance().render();
 
-    shader->unuse();
+    ShaderProgram::unuse();
 
     glDisable(GL_BLEND);
 
     RenderTarget::unbind();
+  }
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j = VisualNode::serialize_params();
+    j["position"] = {position.x, position.y};
+    j["radius"] = radius;
+    j["color"] = {color.x, color.y, color.z, color.w};
+    j["edge_smoothness"] = edge_smoothness;
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    try {
+      // Deserialize base class first
+      auto result = VisualNode::deserialize_params(j);
+      if (!result) {
+        return result;
+      }
+
+      if (j.contains("position") && j["position"].is_array() && j["position"].size() >= 2) {
+        position.x = j["position"][0];
+        position.y = j["position"][1];
+      }
+
+      if (j.contains("radius")) {
+        radius = j["radius"];
+      }
+
+      if (j.contains("color") && j["color"].is_array() && j["color"].size() >= 4) {
+        color.x = j["color"][0];
+        color.y = j["color"][1];
+        color.z = j["color"][2];
+        color.w = j["color"][3];
+      }
+
+      if (j.contains("edge_smoothness")) {
+        edge_smoothness = j["edge_smoothness"];
+      }
+
+      return OperationResult::ok();
+    } catch (const std::exception &e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize CircleNode params: ") + e.what()
+      );
+    }
   }
 
 private:
@@ -384,7 +548,55 @@ struct Rectangle2DNode : VisualNode {
 
     ShaderQuadHelper::instance().render();
 
-    shader->unuse();
+    ShaderProgram::unuse();
+  }
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j = VisualNode::serialize_params();
+    j["position"] = {position.x, position.y};
+    j["size"] = {size.x, size.y};
+    j["rotation"] = rotation;
+    j["color"] = {color.r(), color.g(), color.b(), color.a()};
+    j["corner_radius"] = corner_radius;
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    try {
+      // Deserialize base class first
+      auto result = VisualNode::deserialize_params(j);
+      if (!result) {
+        return result;
+      }
+
+      if (j.contains("position") && j["position"].is_array() && j["position"].size() >= 2) {
+        position.x = j["position"][0];
+        position.y = j["position"][1];
+      }
+
+      if (j.contains("size") && j["size"].is_array() && j["size"].size() >= 2) {
+        size.x = j["size"][0];
+        size.y = j["size"][1];
+      }
+
+      if (j.contains("rotation")) {
+        rotation = j["rotation"];
+      }
+
+      if (j.contains("color") && j["color"].is_array() && j["color"].size() >= 4) {
+        color = Color(j["color"][0], j["color"][1], j["color"][2], j["color"][3]);
+      }
+
+      if (j.contains("corner_radius")) {
+        corner_radius = j["corner_radius"];
+      }
+
+      return OperationResult::ok();
+    } catch (const std::exception &e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize Rectangle2DNode params: ") + e.what()
+      );
+    }
   }
 
 private:
@@ -497,9 +709,7 @@ struct CompositeNode : VisualNode {
 
     shader->use();
 
-    shader->set_uniform("u_resolution",
-                        static_cast<float>(render_target->get_width()),
-                        static_cast<float>(render_target->get_height()));
+    shader->set_uniform("u_resolution", render_target->get_fwidth(), render_target->get_fheight());
     shader->set_uniform("u_blend_mode", blend_mode);
     shader->set_uniform("u_opacity", opacity);
 
@@ -514,7 +724,7 @@ struct CompositeNode : VisualNode {
 
     ShaderQuadHelper::instance().render();
 
-    shader->unuse();
+    ShaderProgram::unuse();
     RenderTarget::unbind();
 
     // Unbind textures
@@ -522,6 +732,37 @@ struct CompositeNode : VisualNode {
     glBindTexture(GL_TEXTURE_2D, 0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
+  }
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j = VisualNode::serialize_params();
+    j["blend_mode"] = static_cast<int>(blend_mode);
+    j["opacity"] = opacity;
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    try {
+      // Deserialize base class first
+      auto result = VisualNode::deserialize_params(j);
+      if (!result) {
+        return result;
+      }
+
+      if (j.contains("blend_mode")) {
+        blend_mode = static_cast<BlendMode>(j["blend_mode"].get<int>());
+      }
+
+      if (j.contains("opacity")) {
+        opacity = j["opacity"];
+      }
+
+      return OperationResult::ok();
+    } catch (const std::exception &e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize CompositeNode params: ") + e.what()
+      );
+    }
   }
 
   /**

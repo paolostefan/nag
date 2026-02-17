@@ -1,0 +1,64 @@
+#ifndef NAG_ENGINE_SERIALIZATION_JSON_GRAPH_SERIALIZER_H
+#define NAG_ENGINE_SERIALIZATION_JSON_GRAPH_SERIALIZER_H
+
+#include <unordered_map>
+
+#include "engine/serialization/graph_serializer.h"
+
+/**
+ * @brief JSON implementation of graph serialization.
+ *
+ * File format:
+ * {
+ *   "version": "1.0",
+ *   "metadata": { ... },
+ *   "nodes": [ ... ],
+ *   "links": [ ... ]
+ * }
+ */
+class JsonGraphSerializer : public IGraphSerializer {
+public:
+  static constexpr auto kFormatVersion = "1.0";
+
+  [[nodiscard]] OperationResult save(const NodeGraph &graph,
+                                     const std::string &path) const override;
+
+  [[nodiscard]] OperationResult load(NodeGraph &graph,
+                                     const std::string &path) const override;
+
+private:
+  /**
+   * @brief Serialize a single node to JSON.
+   *
+   * @param node Node to serialize
+   * @return JSON object
+   */
+  [[nodiscard]] static nlohmann::json serialize_node(const Node *node);
+
+  /**
+   * @brief Deserialize a single node from JSON.
+   *
+   * @param j JSON object
+   * @param id_remap Map to track old_id -> new_id
+   * @return Unique pointer to created node, or nullptr on error
+   */
+  [[nodiscard]] static std::unique_ptr<Node> deserialize_node(
+    const nlohmann::json &j,
+    std::unordered_map<uint64_t, uint64_t> &id_remap);
+
+  /**
+   * @brief Find pin by node ID and pin index.
+   *
+   * @param graph Graph to search
+   * @param node_id Node ID
+   * @param pin_index Pin index within node
+   * @param is_output True for output pin, false for input pin
+   * @return Pointer to pin, or nullptr if not found
+   */
+  [[nodiscard]] static Pin *find_pin(NodeGraph &graph,
+                                     uint64_t node_id,
+                                     size_t pin_index,
+                                     bool is_output);
+};
+
+#endif  // NAG_ENGINE_SERIALIZATION_JSON_GRAPH_SERIALIZER_H

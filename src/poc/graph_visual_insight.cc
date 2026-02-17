@@ -5,19 +5,23 @@
 #include "IconsFontAwesome6.h"
 #include "implot.h"
 
-#include "engine/math_nodes.h"
+#include "engine/node_registry.h"
 #include "engine/temporal_nodes.h"
 #include "editor/scrolling_buffer.h"
+#include "engine/math_nodes.h"
 #include "engine/shader_quad_helper.h"
 #include "engine/visual_nodes.h"
 
 
 GraphVisualInsight::GraphVisualInsight() : UIWindow(
+
   "Graph insight POC", 1024, 768) {
+
   // Init stuff
   ShaderQuadHelper::instance().initialize();
+  register_all_builtin_nodes();
 
-  // Create nodes
+  // Create nodes (hardcoded)
 
   // Time node
   auto time_node_unique = TimeNode::create();

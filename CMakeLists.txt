@@ -143,6 +143,16 @@ add_library(nag_engine_lib
     src/include/engine/render_target.h
     src/engine/shader_quad_helper.cc
     src/include/engine/shader_quad_helper.h
+    src/include/engine/operation_result.h
+    src/engine/node_registry.cc
+    src/include/engine/node_registry.h
+    src/include/engine/serialization/graph_serializer.h
+    src/engine/serialization/json_graph_serializer.cc
+    src/include/engine/serialization/json_graph_serializer.h
+    src/engine/temporal_nodes_registry.cc
+    src/engine/visual_nodes_registry.cc
+    src/engine/math_nodes_registry.cc
+    src/engine/generator_nodes_registry.cc
 )
 target_include_directories(nag_engine_lib PUBLIC
     src/include

@@ -154,6 +154,10 @@ struct SubtractNode : Node {
     out->update(in_a->value - in_b->value);
     mark_inputs_consumed();
   }
+
+  static std::unique_ptr<SubtractNode> create() {
+    return std::make_unique<SubtractNode>();
+  }
 };
 
 /**
@@ -181,6 +185,10 @@ struct ModuloNode : Node {
     out->update(std::fmod(in_a->value, in_b->value));
     mark_inputs_consumed();
   }
+
+  static std::unique_ptr<ModuloNode> create() {
+    return std::make_unique<ModuloNode>();
+  }
 };
 
 /**
@@ -207,6 +215,10 @@ struct PowerNode : Node {
 
     out->update(std::pow(base->value, exponent->value));
     mark_inputs_consumed();
+  }
+
+  static std::unique_ptr<PowerNode> create() {
+    return std::make_unique<PowerNode>();
   }
 };
 
@@ -319,6 +331,10 @@ struct AbsNode : Node {
     out->update(std::abs(in->value));
     mark_inputs_consumed();
   }
+
+  static std::unique_ptr<AbsNode> create() {
+    return std::make_unique<AbsNode>();
+  }
 };
 
 /**
@@ -344,6 +360,10 @@ struct FloorNode : Node {
 
     out->update(std::floor(in->value));
     mark_inputs_consumed();
+  }
+
+  static std::unique_ptr<FloorNode> create() {
+    return std::make_unique<FloorNode>();
   }
 };
 
@@ -371,6 +391,10 @@ struct CeilNode : Node {
     out->update(std::ceil(in->value));
     mark_inputs_consumed();
   }
+
+  static std::unique_ptr<CeilNode> create() {
+    return std::make_unique<CeilNode>();
+  }
 };
 
 /**
@@ -396,6 +420,10 @@ struct RoundNode : Node {
 
     out->update(std::round(in->value));
     mark_inputs_consumed();
+  }
+
+  static std::unique_ptr<RoundNode> create() {
+    return std::make_unique<RoundNode>();
   }
 };
 
@@ -426,6 +454,10 @@ struct SqrtNode : Node {
     out->update(std::sqrt(value));
     mark_inputs_consumed();
   }
+
+  static std::unique_ptr<SqrtNode> create() {
+    return std::make_unique<SqrtNode>();
+  }
 };
 
 /**
@@ -451,6 +483,10 @@ struct NegateNode : Node {
 
     out->update(-in->value);
     mark_inputs_consumed();
+  }
+
+  static std::unique_ptr<NegateNode> create() {
+    return std::make_unique<NegateNode>();
   }
 };
 
@@ -596,6 +632,29 @@ struct RemapNode : Node {
     mark_inputs_consumed();
   }
 
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j;
+    j["in_min"] = in_min;
+    j["in_max"] = in_max;
+    j["out_min"] = out_min;
+    j["out_max"] = out_max;
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json& j) override {
+    try {
+      if (j.contains("in_min")) in_min = j["in_min"];
+      if (j.contains("in_max")) in_max = j["in_max"];
+      if (j.contains("out_min")) out_min = j["out_min"];
+      if (j.contains("out_max")) out_max = j["out_max"];
+      return OperationResult::ok();
+    } catch (const std::exception& e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize RemapNode params: ") + e.what()
+      );
+    }
+  }
+
   static std::unique_ptr<RemapNode> create(const float in_min = 0.0f,
                                            const float in_max = 1.0f,
                                            const float out_min = 0.0f,
@@ -638,6 +697,25 @@ struct ClampNode : Node {
     const float clamped = std::clamp(in->value, min_value, max_value);
     out->update(clamped);
     mark_inputs_consumed();
+  }
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j;
+    j["min_value"] = min_value;
+    j["max_value"] = max_value;
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json& j) override {
+    try {
+      if (j.contains("min_value")) min_value = j["min_value"];
+      if (j.contains("max_value")) max_value = j["max_value"];
+      return OperationResult::ok();
+    } catch (const std::exception& e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize Clamp params: ") + e.what()
+      );
+    }
   }
 
   static std::unique_ptr<ClampNode> create(const float min_value = 0.0f,
@@ -723,6 +801,25 @@ struct SmoothStepNode : Node {
 
     out->update(smooth);
     mark_inputs_consumed();
+  }
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j;
+    j["edge0"] = edge0;
+    j["edge1"] = edge1;
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json& j) override {
+    try {
+      if (j.contains("edge0")) edge0 = j["edge0"];
+      if (j.contains("edge1")) edge1 = j["edge1"];
+      return OperationResult::ok();
+    } catch (const std::exception& e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize SmoothStep params: ") + e.what()
+      );
+    }
   }
 
   static std::unique_ptr<SmoothStepNode> create(const float edge0 = 0.0f,

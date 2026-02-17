@@ -63,7 +63,6 @@ struct TimeNode : Node {
   }
 };
 
-
 /**
  * Node that outputs a noise value based on a sinusoidal approximation.
  */
@@ -77,20 +76,6 @@ struct NoiseNode : Node {
   NoiseNode() {
     type = Noise;
     name = "Noise";
-  }
-
-  static std::unique_ptr<NoiseNode> create(const float frequency = 1.0f,
-                                           const float amplitude = 1.0f,
-                                           const int octaves = 1,
-                                           const float persistence = 0.5f) {
-    auto node = std::make_unique<NoiseNode>();
-    node->frequency = frequency;
-    node->amplitude = amplitude;
-    node->octaves = octaves;
-    node->persistence = persistence;
-    node->add_input("x");
-    node->add_output("noise");
-    return node;
   }
 
   void evaluate() override {
@@ -119,6 +104,43 @@ struct NoiseNode : Node {
     mark_inputs_consumed();
   }
 
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j;
+    j["frequency"] = frequency;
+    j["amplitude"] = amplitude;
+    j["octaves"] = octaves;
+    j["persistence"] = persistence;
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    try {
+      if (j.contains("frequency")) frequency = j["frequency"];
+      if (j.contains("amplitude")) amplitude = j["amplitude"];
+      if (j.contains("octaves")) octaves = j["octaves"];
+      if (j.contains("persistence")) persistence = j["persistence"];
+      return OperationResult::ok();
+    } catch (const std::exception &e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize Noise params: ") + e.what()
+      );
+    }
+  }
+
+  static std::unique_ptr<NoiseNode> create(const float frequency = 1.0f,
+                                           const float amplitude = 1.0f,
+                                           const int octaves = 1,
+                                           const float persistence = 0.5f) {
+    auto node = std::make_unique<NoiseNode>();
+    node->frequency = frequency;
+    node->amplitude = amplitude;
+    node->octaves = octaves;
+    node->persistence = persistence;
+    node->add_input("x");
+    node->add_output("noise");
+    return node;
+  }
+
 private:
   // Simplified noise function (sinusoidal approximation)
   // TODO: replace with proper Perlin/Simplex noise in the future
@@ -144,8 +166,13 @@ struct RandomNode : Node {
   RandomNode() {
     type = Random;
     name = "Random";
-    rng.seed(seed);
-    dist = std::uniform_real_distribution(min_value, max_value);
+  };
+
+  RandomNode(const float min_value_,
+             const float max_value_,
+             const int seed_) : RandomNode() {
+    set_seed(seed_);
+    set_range(min_value_, max_value_);
   }
 
   void set_seed(const int new_seed) {
@@ -182,6 +209,35 @@ struct RandomNode : Node {
     }
 
     mark_inputs_consumed();
+  }
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j;
+    j["min_value"] = min_value;
+    j["max_value"] = max_value;
+    j["seed"] = seed;
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    try {
+      if (j.contains("min_value")) min_value = j["min_value"];
+      if (j.contains("max_value")) max_value = j["max_value"];
+      if (j.contains("seed")) seed = j["seed"];
+      return OperationResult::ok();
+    } catch (const std::exception &e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize RandomNode params: ") + e.what()
+      );
+    }
+  }
+
+  static std::unique_ptr<RandomNode> create(
+    const float min_value_,
+    const float max_value_,
+    const int seed_
+  ) {
+    return std::make_unique<RandomNode>(min_value_, max_value_, seed_);
   }
 };
 
@@ -228,6 +284,12 @@ struct StepSequencerNode : Node {
 
     out->update(steps[current_step]);
     mark_inputs_consumed();
+  }
+
+  static std::unique_ptr<StepSequencerNode> create(const std::vector<float> &steps = {}) {
+    auto node = std::make_unique<StepSequencerNode>();
+    node->set_steps(steps);
+    return node;
   }
 };
 

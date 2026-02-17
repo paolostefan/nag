@@ -5,8 +5,9 @@
 #include <vector>
 
 #include "imgui.h"
-#include "render_target.h"
+#include "nlohmann/json.hpp"
 
+#include "engine/operation_result.h"
 #include "engine/stream.h"
 
 enum PinDirection:uint8_t {
@@ -89,7 +90,7 @@ struct Pin {
       return nullptr;
     }
 
-    return &static_cast<Stream<T>*>(stream.get())->value;
+    return &static_cast<Stream<T> *>(stream.get())->value;
   }
 
   template<typename T>
@@ -98,11 +99,11 @@ struct Pin {
       return nullptr;
     }
 
-    return &static_cast<Stream<T>*>(stream.get())->value;
+    return &static_cast<Stream<T> *>(stream.get())->value;
   }
 
   // Check compatibility for UI
-  [[nodiscard]] const char * get_type_name() const {
+  [[nodiscard]] const char *get_type_name() const {
     return data_type->name();
   }
 };
@@ -146,6 +147,31 @@ struct Node {
     }
   }
 
+  /**
+ * @brief Serialize node-specific parameters to JSON.
+ *
+ * Override this in derived classes to save custom parameters.
+ * Base implementation returns empty object.
+ *
+ * @return JSON object with node parameters
+ */
+  [[nodiscard]] virtual nlohmann::json serialize_params() const {
+    return nlohmann::json::object();
+  }
+
+  /**
+   * @brief Deserialize node-specific parameters from JSON.
+   *
+   * Override this in derived classes to load custom parameters.
+   * Base implementation does nothing and returns success.
+   *
+   * @param j JSON object with node parameters
+   * @return Result indicating success or error
+   */
+  [[nodiscard]] virtual OperationResult deserialize_params(const nlohmann::json &j) {
+    return OperationResult::ok();
+  }
+
   // Add typed input
   template<typename T>
   void add_typed_input(const std::string &pin_name = "in") {
@@ -167,7 +193,7 @@ struct Node {
     pin.name = pin_name;
     pin.direction = Output;
     pin.data_type = &typeid(T);
-    pin.stream = std::make_shared<Stream<T>>();
+    pin.stream = std::make_shared<Stream<T> >();
     outputs.push_back(pin);
   }
 

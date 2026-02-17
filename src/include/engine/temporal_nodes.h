@@ -84,6 +84,36 @@ struct LFONode : Node {
     mark_inputs_consumed();
   }
 
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j;
+    j["frequency"] = frequency;
+    j["amplitude"] = amplitude;
+    j["wave_shape"] = wave_shape;
+    j["phase"] = phase;
+    j["offset"] = offset;
+    j["pulse_width"] = pulse_width;
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    try {
+      if (j.contains("frequency")) frequency = j["frequency"];
+      if (j.contains("amplitude")) amplitude = j["amplitude"];
+      if (j.contains("wave_shape")) {
+        wave_shape = static_cast<WaveShape>(j["wave_shape"].get<int>());
+      }
+      if (j.contains("phase")) phase = j["phase"];
+      if (j.contains("offset")) offset = j["offset"];
+      if (j.contains("pulse_width")) pulse_width = j["pulse_width"];
+
+      return OperationResult::ok();
+    } catch (const std::exception &e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize LFONode params: ") + e.what()
+      );
+    }
+  }
+
   /**
    * Create an LFO node with specified parameters.
    * @param frequency Oscillation frequency in Hz
@@ -178,12 +208,38 @@ struct EnvelopeNode : Node {
     mark_inputs_consumed();
   }
 
+  // In EnvelopeNode struct, dopo update_envelope():
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j;
+    j["attack_time"] = attack_time;
+    j["decay_time"] = decay_time;
+    j["sustain_level"] = sustain_level;
+    j["release_time"] = release_time;
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    try {
+      if (j.contains("attack_time")) attack_time = j["attack_time"];
+      if (j.contains("decay_time")) decay_time = j["decay_time"];
+      if (j.contains("sustain_level")) sustain_level = j["sustain_level"];
+      if (j.contains("release_time")) release_time = j["release_time"];
+
+      return OperationResult::ok();
+    } catch (const std::exception &e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize EnvelopeNode params: ") + e.what()
+      );
+    }
+  }
+
 private:
   /**
    * Start attack phase.
    */
   void start_attack(const float time) {
-    current_state = State::Attack;
+    current_state = Attack;
     state_start_time = time;
     state_start_value = envelope_value;
   }
@@ -192,7 +248,7 @@ private:
    * Start release phase.
    */
   void start_release(const float time) {
-    current_state = State::Release;
+    current_state = Release;
     state_start_time = time;
     state_start_value = envelope_value;
   }
@@ -360,6 +416,32 @@ struct DelayNode : Node {
     mark_inputs_consumed();
   }
 
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j;
+    j["delay_time"] = delay_time;
+    j["sample_rate"] = sample_rate;
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    try {
+      if (j.contains("delay_time")) {
+        delay_time = j["delay_time"];
+        update_buffer_size();
+      }
+      if (j.contains("sample_rate")) {
+        sample_rate = j["sample_rate"];
+        update_buffer_size();
+      }
+
+      return OperationResult::ok();
+    } catch (const std::exception &e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize DelayNode params: ") + e.what()
+      );
+    }
+  }
+
   /**
    * Create a delay node with specified delay time.
    * @param delay_time Delay duration in seconds
@@ -434,6 +516,23 @@ struct SmootherNode : Node {
 
     out->update(current_value);
     mark_inputs_consumed();
+  }
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j;
+    j["smooth_time"] = smooth_time;
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    try {
+      if (j.contains("smooth_time")) smooth_time = j["smooth_time"];
+      return OperationResult::ok();
+    } catch (const std::exception &e) {
+      return OperationResult::error(
+        std::string("Failed to deserialize SmootherNode params: ") + e.what()
+      );
+    }
   }
 
   /**
