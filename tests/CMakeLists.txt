@@ -25,6 +25,7 @@ enable_testing()
 add_executable(
     engine_tests
     nodes_test.cc
+    serialization_test.cc
 )
 
 target_link_libraries(
@@ -40,7 +41,6 @@ add_executable(
     editor_tests
     timeline_json_test.cc
     timeline_test.cc
-    serialization_test.cc
 )
 
 target_link_libraries(
