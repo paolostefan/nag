@@ -36,12 +36,12 @@ struct MultiplyNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<MultiplyNode> create() {
+  [[nodiscard]] static std::unique_ptr<MultiplyNode> create() {
     auto node = std::make_unique<MultiplyNode>();
     node->add_input("a");
     node->add_input("b");
     node->add_output("product");
-    return node;
+    return std::move(node);
   }
 };
 
@@ -49,10 +49,10 @@ struct MultiplyNode : Node {
  * Divides two input streams and writes the result to the output stream.
  * Avoids division by zero by clamping the divisor to a small epsilon value.
  */
-struct DivideNode : Node {
+struct DivideNode : MultiInputNode {
   static constexpr float kEpsilon{1e-6f}; // Avoid division by zero
 
-  DivideNode() {
+  explicit DivideNode() : MultiInputNode(2) {
     type = Divide;
     name = "Divide";
   }
@@ -80,12 +80,10 @@ struct DivideNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<DivideNode> create() {
+  [[nodiscard]] static std::unique_ptr<DivideNode> create() {
     auto node = std::make_unique<DivideNode>();
-    node->add_input("dividend");
-    node->add_input("divisor");
     node->add_output("quotient");
-    return node;
+    return std::move(node);
   }
 };
 
@@ -122,18 +120,18 @@ struct AddFloatNode : MultiInputNode {
     }
   }
 
-  static std::unique_ptr<AddFloatNode> create(const size_t num_inputs = 2) {
+  [[nodiscard]] static std::unique_ptr<AddFloatNode> create(const size_t num_inputs = 2) {
     auto node = std::make_unique<AddFloatNode>(num_inputs);
     node->add_output("sum");
-    return node;
+    return std::move(node);
   }
 };
 
 /**
  * Subtracts the second input stream from the first and writes the result to the output stream.
  */
-struct SubtractNode : Node {
-  SubtractNode() {
+struct SubtractNode : MultiInputNode {
+  explicit SubtractNode() : MultiInputNode(2) {
     type = Subtract;
     name = "Subtract";
   }
@@ -155,16 +153,18 @@ struct SubtractNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<SubtractNode> create() {
-    return std::make_unique<SubtractNode>();
+  [[nodiscard]] static std::unique_ptr<SubtractNode> create() {
+    auto node = std::make_unique<SubtractNode>();
+    node->add_output("a-b");
+    return std::move(node);
   }
 };
 
 /**
  * Computes the remainder of dividing the first input stream by the second and writes the result to the output stream.
  */
-struct ModuloNode : Node {
-  ModuloNode() {
+struct ModuloNode : MultiInputNode {
+  explicit ModuloNode() : MultiInputNode(2) {
     type = Modulo;
     name = "Modulo";
   }
@@ -186,16 +186,18 @@ struct ModuloNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<ModuloNode> create() {
-    return std::make_unique<ModuloNode>();
+  [[nodiscard]] static std::unique_ptr<ModuloNode> create() {
+    auto node = std::make_unique<ModuloNode>();
+    node->add_output("a%b");
+    return std::move(node);
   }
 };
 
 /**
  * Raises the first input stream to the power of the second and writes the result to the output stream.
  */
-struct PowerNode : Node {
-  PowerNode() {
+struct PowerNode : MultiInputNode {
+  explicit PowerNode() : MultiInputNode(2) {
     type = Power;
     name = "Power";
   }
@@ -217,8 +219,10 @@ struct PowerNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<PowerNode> create() {
-    return std::make_unique<PowerNode>();
+  [[nodiscard]] static std::unique_ptr<PowerNode> create() {
+    auto node = std::make_unique<PowerNode>();
+    node->add_output("a^b");
+    return std::move(node);
   }
 };
 
@@ -251,15 +255,14 @@ struct MinNode : MultiInputNode {
       }
     }
 
-
     out->update(min);
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<MinNode> create(const uint8_t num_inputs = 2) {
+  [[nodiscard]] static std::unique_ptr<MinNode> create(const uint8_t num_inputs = 2) {
     auto node = std::make_unique<MinNode>(num_inputs);
     node->add_output("min");
-    return node;
+    return std::move(node);
   }
 };
 
@@ -296,10 +299,10 @@ struct MaxNode : MultiInputNode {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<MaxNode> create(const uint8_t num_inputs = 2) {
+  [[nodiscard]] static std::unique_ptr<MaxNode> create(const uint8_t num_inputs = 2) {
     auto node = std::make_unique<MaxNode>(num_inputs);
     node->add_output("max");
-    return node;
+    return std::move(node);
   }
 };
 
@@ -332,8 +335,11 @@ struct AbsNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<AbsNode> create() {
-    return std::make_unique<AbsNode>();
+  [[nodiscard]] static std::unique_ptr<AbsNode> create() {
+    auto node = std::make_unique<AbsNode>();
+    node->add_input("a");
+    node->add_output("abs(a)");
+    return std::move(node);
   }
 };
 
@@ -362,8 +368,11 @@ struct FloorNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<FloorNode> create() {
-    return std::make_unique<FloorNode>();
+  [[nodiscard]] static std::unique_ptr<FloorNode> create() {
+    auto node = std::make_unique<FloorNode>();
+    node->add_input("a");
+    node->add_output("floor(a)");
+    return std::move(node);
   }
 };
 
@@ -392,8 +401,11 @@ struct CeilNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<CeilNode> create() {
-    return std::make_unique<CeilNode>();
+  [[nodiscard]] static std::unique_ptr<CeilNode> create() {
+    auto node = std::make_unique<CeilNode>();
+    node->add_input("a");
+    node->add_output("ceil(a)");
+    return std::move(node);
   }
 };
 
@@ -422,8 +434,11 @@ struct RoundNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<RoundNode> create() {
-    return std::make_unique<RoundNode>();
+  [[nodiscard]] static std::unique_ptr<RoundNode> create() {
+    auto node = std::make_unique<RoundNode>();
+    node->add_input("a");
+    node->add_output("round(a)");
+    return std::move(node);
   }
 };
 
@@ -455,8 +470,11 @@ struct SqrtNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<SqrtNode> create() {
-    return std::make_unique<SqrtNode>();
+  [[nodiscard]] static std::unique_ptr<SqrtNode> create() {
+    auto node = std::make_unique<SqrtNode>();
+    node->add_input("a");
+    node->add_output("sqrt(a)");
+    return std::move(node);
   }
 };
 
@@ -485,8 +503,11 @@ struct NegateNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<NegateNode> create() {
-    return std::make_unique<NegateNode>();
+  [[nodiscard]] static std::unique_ptr<NegateNode> create() {
+    auto node = std::make_unique<NegateNode>();
+    node->add_input("a");
+    node->add_output("-a");
+    return std::move(node);
   }
 };
 
@@ -511,11 +532,11 @@ struct SinNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<SinNode> create() {
+  [[nodiscard]] static std::unique_ptr<SinNode> create() {
     auto node = std::make_unique<SinNode>();
-    node->add_input("in");
-    node->add_output("out");
-    return node;
+    node->add_input("a");
+    node->add_output("sin(a)");
+    return std::move(node);
   }
 };
 
@@ -545,11 +566,11 @@ struct CosNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<CosNode> create() {
+  [[nodiscard]] static std::unique_ptr<CosNode> create() {
     auto node = std::make_unique<CosNode>();
-    node->add_input("in");
-    node->add_output("out");
-    return node;
+    node->add_input("a");
+    node->add_output("cos(a)");
+    return std::move(node);
   }
 };
 
@@ -578,11 +599,11 @@ struct TanNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<TanNode> create() {
+  [[nodiscard]] static std::unique_ptr<TanNode> create() {
     auto node = std::make_unique<TanNode>();
-    node->add_input("in");
-    node->add_output("out");
-    return node;
+    node->add_input("a");
+    node->add_output("tan(a)");
+    return std::move(node);
   }
 };
 
@@ -641,24 +662,24 @@ struct RemapNode : Node {
     return j;
   }
 
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json& j) override {
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
     try {
       if (j.contains("in_min")) in_min = j["in_min"];
       if (j.contains("in_max")) in_max = j["in_max"];
       if (j.contains("out_min")) out_min = j["out_min"];
       if (j.contains("out_max")) out_max = j["out_max"];
       return OperationResult::ok();
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
       return OperationResult::error(
         std::string("Failed to deserialize RemapNode params: ") + e.what()
       );
     }
   }
 
-  static std::unique_ptr<RemapNode> create(const float in_min = 0.0f,
-                                           const float in_max = 1.0f,
-                                           const float out_min = 0.0f,
-                                           const float out_max = 1.0f) {
+  [[nodiscard]] static std::unique_ptr<RemapNode> create(const float in_min = 0.0f,
+                                                         const float in_max = 1.0f,
+                                                         const float out_min = 0.0f,
+                                                         const float out_max = 1.0f) {
     auto node = std::make_unique<RemapNode>();
     node->in_min = in_min;
     node->in_max = in_max;
@@ -666,7 +687,7 @@ struct RemapNode : Node {
     node->out_max = out_max;
     node->add_input("in");
     node->add_output("out");
-    return node;
+    return std::move(node);
   }
 };
 
@@ -706,26 +727,26 @@ struct ClampNode : Node {
     return j;
   }
 
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json& j) override {
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
     try {
       if (j.contains("min_value")) min_value = j["min_value"];
       if (j.contains("max_value")) max_value = j["max_value"];
       return OperationResult::ok();
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
       return OperationResult::error(
         std::string("Failed to deserialize Clamp params: ") + e.what()
       );
     }
   }
 
-  static std::unique_ptr<ClampNode> create(const float min_value = 0.0f,
-                                           const float max_value = 1.0f) {
+  [[nodiscard]] static std::unique_ptr<ClampNode> create(const float min_value = 0.0f,
+                                                         const float max_value = 1.0f) {
     auto node = std::make_unique<ClampNode>();
     node->min_value = min_value;
     node->max_value = max_value;
     node->add_input("in");
     node->add_output("out");
-    return node;
+    return std::move(node);
   }
 };
 
@@ -759,13 +780,13 @@ struct LerpNode : Node {
     mark_inputs_consumed();
   }
 
-  static std::unique_ptr<LerpNode> create() {
+  [[nodiscard]] static std::unique_ptr<LerpNode> create() {
     auto node = std::make_unique<LerpNode>();
     node->add_input("a");
     node->add_input("b");
     node->add_input("t");
     node->add_output("out");
-    return node;
+    return std::move(node);
   }
 };
 
@@ -810,26 +831,26 @@ struct SmoothStepNode : Node {
     return j;
   }
 
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json& j) override {
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
     try {
       if (j.contains("edge0")) edge0 = j["edge0"];
       if (j.contains("edge1")) edge1 = j["edge1"];
       return OperationResult::ok();
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
       return OperationResult::error(
         std::string("Failed to deserialize SmoothStep params: ") + e.what()
       );
     }
   }
 
-  static std::unique_ptr<SmoothStepNode> create(const float edge0 = 0.0f,
-                                                const float edge1 = 1.0f) {
+  [[nodiscard]] static std::unique_ptr<SmoothStepNode> create(const float edge0 = 0.0f,
+                                                              const float edge1 = 1.0f) {
     auto node = std::make_unique<SmoothStepNode>();
     node->edge0 = edge0;
     node->edge1 = edge1;
     node->add_input("in");
     node->add_output("out");
-    return node;
+    return std::move(node);
   }
 };
 

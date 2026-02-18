@@ -382,6 +382,10 @@ void GraphVisualInsight::render_node_editor() {
     ImGui::TextUnformatted(node->name.c_str());
     ImNodes::EndNodeTitleBar();
 
+    if (node->inputs.size() + node->outputs.size() == 0) {
+      ImGui::TextUnformatted("No inputs and outputs?!");
+    }
+
     for (const auto &pin: node->inputs) {
       ImNodes::PushColorStyle(ImNodesCol_Pin, get_pin_color(pin));
       ImNodes::BeginInputAttribute(static_cast<int>(pin.id));
@@ -390,7 +394,7 @@ void GraphVisualInsight::render_node_editor() {
       ImNodes::PopColorStyle();
     }
 
-    if (auto *visual_node = dynamic_cast<VisualNode *>(node.get())) {
+    if (const auto *visual_node = dynamic_cast<VisualNode *>(node.get())) {
       render_visual_node_body(visual_node);
     }
 
@@ -418,10 +422,22 @@ void GraphVisualInsight::render_node_editor() {
 
   ImNodes::EndNodeEditor();
 
+  // ── Detect Right Click on Canvas ───────────────────────────────────────────
+  // Must come after EndNodeEditor() and before OpenPopup()
+
+  static int hovered_node_id{0}, hovered_link_id{0};
+
+  const bool should_open_context_menu =
+      ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) &&
+      ImGui::IsMouseClicked(ImGuiMouseButton_Right) &&
+      !ImNodes::IsNodeHovered(&hovered_node_id) &&
+      !ImNodes::IsLinkHovered(&hovered_link_id);
+  if (should_open_context_menu) {
+    ImGui::OpenPopup("add_node_popup");
+  }
+
   // ── Context Menu ───────────────────────────────────────────────────────────
-  // Must come after EndNodeEditor() and before End()
-  const ImVec2 canvas_mouse_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
-  render_context_menu(canvas_mouse_pos);
+  render_context_menu();
 
   // ── Link Creation ──────────────────────────────────────────────────────────
   int start_pin_id, end_pin_id;
@@ -433,7 +449,7 @@ void GraphVisualInsight::render_node_editor() {
   int link_id;
   if (ImNodes::IsLinkDestroyed(&link_id)) {
     for (const auto &link: graph.links) {
-      if (link.id == static_cast<uint64_t>(link_id)) {
+      if (link.id == link_id) {
         for (const auto &node: graph.nodes) {
           for (auto &pin: node->inputs) {
             if (pin.id == link.end_pin_id) {
@@ -448,7 +464,7 @@ void GraphVisualInsight::render_node_editor() {
     }
 
     std::erase_if(graph.links, [link_id](const Link &link) {
-      return link.id == static_cast<uint64_t>(link_id);
+      return link.id == link_id;
     });
   }
 
@@ -459,19 +475,14 @@ void GraphVisualInsight::render_node_editor() {
 // render_context_menu
 // ============================================================================
 
-void GraphVisualInsight::render_context_menu(const ImVec2 &canvas_mouse_pos) {
-  // Open popup only if RMB is clicked on canvas (not on a node/link)
-  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) &&
-      ImGui::IsMouseClicked(ImGuiMouseButton_Right) &&
-      !ImNodes::IsNodeHovered(nullptr) &&
-      !ImNodes::IsLinkHovered(nullptr)) {
-    ImGui::OpenPopup("##node_context_menu");
-  }
+void GraphVisualInsight::render_context_menu() {
+  if (!ImGui::BeginPopup("add_node_popup")) return;
 
-  if (!ImGui::BeginPopup("##node_context_menu")) return;
+  // Screen space
+  const ImVec2 popup_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
 
-  // Position on canvas where to put the popup
-  const ImVec2 spawn_pos = canvas_mouse_pos;
+  // Position on imnodes canvas where to put the popup
+  const ImVec2 spawn_pos = popup_pos; // ImNodes::ScreenSpaceToGridSpace(popup_pos);;
 
   ImGui::TextDisabled(ICON_FA_PLUS "  Add Node");
   ImGui::Separator();
@@ -495,7 +506,7 @@ void GraphVisualInsight::render_context_menu(const ImVec2 &canvas_mouse_pos) {
 
   // Show categories in the predefined order (and additional ones, if any, afterward)
   auto render_category = [&](const std::string &category) {
-    auto it = categories.find(category);
+    const auto it = categories.find(category);
     if (it == categories.end()) return;
 
     const std::string label =

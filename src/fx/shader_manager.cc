@@ -29,9 +29,8 @@ void ShaderProgram::cleanup() {
 
 bool ShaderProgram::load_from_files(const std::string &vert_path, const std::string &frag_path) {
   char cwd[1024];
-  if (getcwd(cwd, sizeof(cwd)) != nullptr) {
-    spdlog::info("Current working directory: {}", cwd);
-  } else {
+
+  if (getcwd(cwd, sizeof(cwd)) == nullptr) {
     spdlog::error("Failed to get current working directory");
     return false;
   }
@@ -106,7 +105,7 @@ GLuint ShaderProgram::compile_shader(const GLenum type, const std::string &sourc
   return shader;
 }
 
-bool ShaderProgram::link_program() const  {
+bool ShaderProgram::link_program() const {
   glLinkProgram(program);
 
   GLint success;

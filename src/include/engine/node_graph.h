@@ -9,7 +9,7 @@
 #include "engine/stream.h"
 
 struct Link {
-  uint64_t id{};
+  int id{};
   uint64_t start_pin_id{};
   uint64_t end_pin_id{};
 };

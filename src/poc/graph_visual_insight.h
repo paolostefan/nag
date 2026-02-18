@@ -27,7 +27,7 @@ private:
 
   void render_node_editor();
 
-  void render_context_menu(const ImVec2 &canvas_mouse_pos);
+  void render_context_menu();
 
   static void render_visual_node_body(const VisualNode *visual_node);
 
