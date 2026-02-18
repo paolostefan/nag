@@ -14,6 +14,7 @@ class SerializationTest : public testing::Test {
 protected:
   void SetUp() override {
     test_file_path_ = "test_graph.json";
+    register_all_builtin_nodes();
   }
 
   void TearDown() override {

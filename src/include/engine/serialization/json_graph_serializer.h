@@ -39,12 +39,9 @@ private:
    * @brief Deserialize a single node from JSON.
    *
    * @param j JSON object
-   * @param id_remap Map to track old_id -> new_id
    * @return Unique pointer to created node, or nullptr on error
    */
-  [[nodiscard]] static std::unique_ptr<Node> deserialize_node(
-    const nlohmann::json &j,
-    std::unordered_map<uint64_t, uint64_t> &id_remap);
+  [[nodiscard]] static std::unique_ptr<Node> deserialize_node(const nlohmann::json &j);
 
   /**
    * @brief Find pin by node ID and pin index.

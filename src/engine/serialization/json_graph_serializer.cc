@@ -150,7 +150,7 @@ OperationResult JsonGraphSerializer::load(
     }
 
     for (const auto &node_json: j["nodes"]) {
-      auto node = deserialize_node(node_json, id_remap);
+      auto node = deserialize_node(node_json);
       if (!node) {
         return OperationResult::error(
           "Failed to deserialize node with id " +
@@ -158,7 +158,9 @@ OperationResult JsonGraphSerializer::load(
         );
       }
 
-      graph.add_node(std::move(node));
+      const auto node_ptr = graph.add_node(std::move(node));
+      // Track ID remapping (old -> new)
+      id_remap[node_json.value("id", 0)] = node_ptr->id;
     }
 
     // Deserialize links
@@ -220,14 +222,11 @@ json JsonGraphSerializer::serialize_node(const Node *node) {
   return j;
 }
 
-std::unique_ptr<Node> JsonGraphSerializer::deserialize_node(
-  const json &j,
-  std::unordered_map<uint64_t, uint64_t> &id_remap
-) {
+std::unique_ptr<Node> JsonGraphSerializer::deserialize_node(const json &j) {
   // Extract basic fields
   uint64_t old_id = j.value("id", 0);
-  NodeType type = static_cast<NodeType>(j.value("type", 0));
-  std::string name = j.value("name", "<unnamed>");
+  const auto type = static_cast<NodeType>(j.value("type", 0));
+  const std::string name = j.value("name", "<unnamed>");
 
   ImVec2 position{0.0f, 0.0f};
   if (j.contains("position") && j["position"].is_array() && j["position"].size() >= 2) {
@@ -242,17 +241,13 @@ std::unique_ptr<Node> JsonGraphSerializer::deserialize_node(
     return nullptr;
   }
 
-  // Track ID remapping (old -> new)
-  id_remap[old_id] = node->id;
-
   // Set basic properties
   node->name = name;
   node->position = position;
 
   // Deserialize parameters using virtual method
   if (j.contains("params")) {
-    auto result = node->deserialize_params(j["params"]);
-    if (!result) {
+    if (const auto result = node->deserialize_params(j["params"]); !result) {
       spdlog::warn("Failed to deserialize params for node {}: {}",
                    old_id, result.error_message);
     }
