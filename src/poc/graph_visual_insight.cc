@@ -1,6 +1,7 @@
 #include "graph_visual_insight.h"
 
 #include <algorithm>
+#include <unordered_set>
 
 #include "IconsFontAwesome6.h"
 #include "ImGuiFileDialog.h"
@@ -183,6 +184,138 @@ void GraphVisualInsight::spawn_node(NodeType type, const ImVec2 &position) {
 
   node->position = position;
   graph.add_node(std::move(node));
+}
+
+// ============================================================================
+// delete_selected_nodes
+// ============================================================================
+
+void GraphVisualInsight::delete_selected_nodes() {
+  // Get selected node IDs from ImNodes
+  const int num_selected = ImNodes::NumSelectedNodes();
+  if (num_selected == 0) return;
+
+  std::vector<int> selected_nodes(num_selected);
+  ImNodes::GetSelectedNodes(selected_nodes.data());
+
+  // Convert to set for faster lookup
+  std::unordered_set<uint32_t> nodes_to_delete;
+  for (const int id: selected_nodes) {
+    nodes_to_delete.insert(id);
+  }
+
+  // ── Step 1: Invalidate plot stream pointers if deleted ─────────────────
+  for (const auto &node: graph.nodes) {
+    if (!nodes_to_delete.contains(node->id)) continue;
+
+    // Check if this node is connected to our plot streams
+    for (const auto &output: node->outputs) {
+      if (output.stream.get() == noise_stream_out ||
+          output.stream.get() == sin_a_stream_out ||
+          output.stream.get() == sin_b_stream_out ||
+          output.stream.get() == out_stream) {
+        // Null out the pointer to prevent dangling reference
+        if (output.stream.get() == noise_stream_out) noise_stream_out = nullptr;
+        if (output.stream.get() == sin_a_stream_out) sin_a_stream_out = nullptr;
+        if (output.stream.get() == sin_b_stream_out) sin_b_stream_out = nullptr;
+        if (output.stream.get() == out_stream) out_stream = nullptr;
+      }
+    }
+
+    // Special case: TimeNode
+    if (node.get() == time_node) {
+      time_node = nullptr;
+    }
+  }
+
+  // ── Step 2: Remove links connected to deleted nodes ────────────────────
+  std::erase_if(graph.links, [&](const Link &link) {
+    // Check if link references any deleted node
+    for (const auto &node: graph.nodes) {
+      if (!nodes_to_delete.contains(node->id)) continue;
+
+      // Check if this node has the link's pins
+      for (const auto &pin: node->inputs) {
+        if (pin.id == link.end_pin_id) return true;
+      }
+      for (const auto &pin: node->outputs) {
+        if (pin.id == link.start_pin_id) return true;
+      }
+    }
+    return false;
+  });
+
+  // ── Step 3: Remove the nodes themselves ────────────────────────────────
+  std::erase_if(graph.nodes, [&](const std::unique_ptr<Node> &node) {
+    return nodes_to_delete.contains(node->id);
+  });
+
+  // ── Step 4: Cleanup orphaned input streams ─────────────────────────────
+  // After node deletion, some input pins might still reference deleted
+  // output streams. Walk all remaining nodes and null out dead streams.
+  for (const auto &node: graph.nodes) {
+    for (auto &input_pin: node->inputs) {
+      if (!input_pin.stream) continue;
+
+      // Check if this stream still exists in any output pin
+      bool stream_exists = false;
+      for (const auto &other_node: graph.nodes) {
+        for (const auto &output_pin: other_node->outputs) {
+          if (output_pin.stream == input_pin.stream) {
+            stream_exists = true;
+            break;
+          }
+        }
+        if (stream_exists) break;
+      }
+
+      if (!stream_exists) {
+        input_pin.stream = nullptr;
+      }
+    }
+  }
+
+  spdlog::info("Deleted {} node(s)", num_selected);
+}
+
+// ============================================================================
+// delete_selected_links
+// ============================================================================
+
+void GraphVisualInsight::delete_selected_links() {
+  const int num_selected = ImNodes::NumSelectedLinks();
+  if (num_selected == 0) return;
+
+  std::vector<int> selected_links(num_selected);
+  ImNodes::GetSelectedLinks(selected_links.data());
+
+  std::unordered_set<int> links_to_delete;
+  for (const int id: selected_links) {
+    links_to_delete.insert(id);
+  }
+
+  // Remove links and detach streams from input pins
+  for (const auto &link: graph.links) {
+    if (!links_to_delete.contains(link.id)) continue;
+
+    // Find the input pin and detach its stream
+    for (const auto &node: graph.nodes) {
+      for (auto &pin: node->inputs) {
+        if (pin.id == link.end_pin_id) {
+          pin.stream = nullptr;
+          goto next_link;
+        }
+      }
+    }
+  next_link:;
+  }
+
+  // Erase the links
+  std::erase_if(graph.links, [&](const Link &link) {
+    return links_to_delete.contains(link.id);
+  });
+
+  spdlog::info("Deleted {} link(s)", num_selected);
 }
 
 // ============================================================================
@@ -427,13 +560,24 @@ void GraphVisualInsight::render_node_editor() {
 
   static int hovered_node_id{0}, hovered_link_id{0};
 
-  const bool should_open_context_menu =
+  const bool should_open_add_menu =
       ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) &&
       ImGui::IsMouseClicked(ImGuiMouseButton_Right) &&
       !ImNodes::IsNodeHovered(&hovered_node_id) &&
       !ImNodes::IsLinkHovered(&hovered_link_id);
-  if (should_open_context_menu) {
+  if (should_open_add_menu) {
     ImGui::OpenPopup("add_node_popup");
+  }
+
+  // ── Node/Link Context Menu (right click on selected) ───────────────────────
+  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) &&
+      ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    const int num_selected_nodes = ImNodes::NumSelectedNodes();
+    const int num_selected_links = ImNodes::NumSelectedLinks();
+
+    if (num_selected_nodes > 0 || num_selected_links > 0) {
+      ImGui::OpenPopup("delete_selection_popup");
+    }
   }
 
   // ── Context Menu ───────────────────────────────────────────────────────────
@@ -468,6 +612,36 @@ void GraphVisualInsight::render_node_editor() {
     });
   }
 
+  // ==========================================================================
+  // ---- Keyboard Shortcuts --------------------------------------------------
+  // ==========================================================================
+
+  // Delete selected nodes/links with Delete or Backspace key
+  if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) {
+    if (ImGui::IsKeyPressed(ImGuiKey_Delete) ||
+        ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
+      // Try deleting nodes first (higher priority)
+
+      const auto node_no = ImNodes::NumSelectedNodes();
+      const auto link_no = ImNodes::NumSelectedLinks();
+
+      if (node_no > 0) {
+        delete_selected_nodes();
+      }
+      // Otherwise delete selected links
+      else if (link_no > 0) {
+        delete_selected_links();
+      }
+
+      if (node_no + link_no > 0) {
+        status_message = ICON_FA_TRASH "  Deleted " + std::to_string(node_no) +
+                         (node_no == 1 ? " node" : " nodes") + " and " + std::to_string(link_no) +
+                         (link_no == 1 ? " link" : " links");
+        status_message_time = static_cast<float>(ImGui::GetTime());
+      }
+    }
+  }
+
   ImGui::End();
 }
 
@@ -476,75 +650,106 @@ void GraphVisualInsight::render_node_editor() {
 // ============================================================================
 
 void GraphVisualInsight::render_context_menu() {
-  if (!ImGui::BeginPopup("add_node_popup")) return;
+  if (ImGui::BeginPopup("add_node_popup")) {
+    // Screen space
+    const ImVec2 popup_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
 
-  // Screen space
-  const ImVec2 popup_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
+    // Position on imnodes canvas where to put the popup
+    const ImVec2 spawn_pos = popup_pos; // ImNodes::ScreenSpaceToGridSpace(popup_pos);;
 
-  // Position on imnodes canvas where to put the popup
-  const ImVec2 spawn_pos = popup_pos; // ImNodes::ScreenSpaceToGridSpace(popup_pos);;
+    ImGui::TextDisabled(ICON_FA_PLUS "  Add Node");
+    ImGui::Separator();
 
-  ImGui::TextDisabled(ICON_FA_PLUS "  Add Node");
-  ImGui::Separator();
+    // Get registry categories
+    const auto categories = NodeRegistry::instance().get_nodes_by_category();
 
-  // Get registry categories
-  const auto categories = NodeRegistry::instance().get_nodes_by_category();
+    // View order
+    static constexpr std::array<const char *, 4> kCategoryOrder{
+      "Visual", "Math", "Temporal", "Generators"
+    };
 
-  // View order
-  static constexpr std::array<const char *, 4> kCategoryOrder{
-    "Visual", "Math", "Temporal", "Generators"
-  };
+    // Category icons
+    auto category_icon = [](const std::string &cat) -> const char * {
+      if (cat == "Visual") return ICON_FA_PAINTBRUSH "  ";
+      if (cat == "Math") return ICON_FA_CALCULATOR "  ";
+      if (cat == "Temporal") return ICON_FA_CLOCK "  ";
+      if (cat == "Generators") return ICON_FA_BOLT "  ";
+      return ICON_FA_CIRCLE_NODES "  ";
+    };
 
-  // Category icons
-  auto category_icon = [](const std::string &cat) -> const char * {
-    if (cat == "Visual") return ICON_FA_PAINTBRUSH "  ";
-    if (cat == "Math") return ICON_FA_CALCULATOR "  ";
-    if (cat == "Temporal") return ICON_FA_CLOCK "  ";
-    if (cat == "Generators") return ICON_FA_BOLT "  ";
-    return ICON_FA_CIRCLE_NODES "  ";
-  };
+    // Show categories in the predefined order (and additional ones, if any, afterward)
+    auto render_category = [&](const std::string &category) {
+      const auto it = categories.find(category);
+      if (it == categories.end()) return;
 
-  // Show categories in the predefined order (and additional ones, if any, afterward)
-  auto render_category = [&](const std::string &category) {
-    const auto it = categories.find(category);
-    if (it == categories.end()) return;
+      const std::string label =
+          std::string(category_icon(category)) + category;
 
-    const std::string label =
-        std::string(category_icon(category)) + category;
+      if (!ImGui::BeginMenu(label.c_str())) return;
 
-    if (!ImGui::BeginMenu(label.c_str())) return;
+      for (const NodeType type: it->second) {
+        const auto *info = NodeRegistry::instance().get_type_info(type);
+        if (!info) continue;
 
-    for (const NodeType type: it->second) {
-      const auto *info = NodeRegistry::instance().get_type_info(type);
-      if (!info) continue;
+        // Menu item Tooltip
+        if (ImGui::MenuItem(info->display_name.c_str())) {
+          spawn_node(type, spawn_pos);
+        }
 
-      // Menu item Tooltip
-      if (ImGui::MenuItem(info->display_name.c_str())) {
-        spawn_node(type, spawn_pos);
+        if (ImGui::IsItemHovered() && !info->description.empty()) {
+          ImGui::SetTooltip("%s", info->description.c_str());
+        }
       }
 
-      if (ImGui::IsItemHovered() && !info->description.empty()) {
-        ImGui::SetTooltip("%s", info->description.c_str());
+      ImGui::EndMenu();
+    };
+
+    for (const auto *cat: kCategoryOrder) {
+      render_category(cat);
+    }
+
+    // Categories not in kCategoryOrder
+    for (const auto &cat: categories | std::views::keys) {
+      const bool already_shown = std::ranges::any_of(
+        kCategoryOrder,
+        [&cat](const char *c) { return cat == c; }
+      );
+      if (!already_shown) render_category(cat);
+    }
+
+    ImGui::EndPopup();
+  } // add node popup
+
+  if (ImGui::BeginPopup("delete_selection_popup")) {
+    const int num_nodes = ImNodes::NumSelectedNodes();
+    const int num_links = ImNodes::NumSelectedLinks();
+
+    if (num_nodes > 0) {
+      const std::string label = num_nodes == 1
+                                  ? ICON_FA_TRASH "  Delete Node"
+                                  : ICON_FA_TRASH "  Delete " + std::to_string(num_nodes) + " Nodes";
+
+      if (ImGui::MenuItem(label.c_str(), "Del")) {
+        delete_selected_nodes();
+        status_message = "Deleted " + std::to_string(num_nodes) +(num_nodes == 1 ? " node" : " nodes");
+        status_message_time = static_cast<float>(ImGui::GetTime());
       }
     }
 
-    ImGui::EndMenu();
-  };
+    if (num_links > 0) {
+      const std::string label = num_links == 1
+                                  ? ICON_FA_LINK_SLASH "  Delete Link"
+                                  : ICON_FA_LINK_SLASH "  Delete " + std::to_string(num_links) + " Links";
 
-  for (const auto *cat: kCategoryOrder) {
-    render_category(cat);
-  }
+      if (ImGui::MenuItem(label.c_str(), "Del")) {
+        delete_selected_links();
+        status_message = "Deleted " + std::to_string(num_links) +(num_links == 1 ? " link" : " links");
+        status_message_time = static_cast<float>(ImGui::GetTime());
+      }
+    }
 
-  // Categories not in kCategoryOrder
-  for (const auto &cat: categories | std::views::keys) {
-    const bool already_shown = std::ranges::any_of(
-      kCategoryOrder,
-      [&cat](const char *c) { return cat == c; }
-    );
-    if (!already_shown) render_category(cat);
-  }
-
-  ImGui::EndPopup();
+    ImGui::EndPopup();
+  } // delete selection popup
 }
 
 // ============================================================================

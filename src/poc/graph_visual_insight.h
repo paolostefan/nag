@@ -64,6 +64,20 @@ private:
    */
   void spawn_node(NodeType type, const ImVec2 &position);
 
+  /**
+   * @brief Deletes selected nodes and their associated links.
+   *
+   * Safely removes nodes from the graph and cleans up any links
+   * that reference the deleted nodes. Invalidates stream pointers
+   * if any deleted node was being plotted.
+   */
+  void delete_selected_nodes();
+
+  /**
+   * @brief Deletes selected links.
+   */
+  void delete_selected_links();
+
   // ── Graph State ───────────────────────────────────────────────────────────
   NodeGraph graph;
   TimeNode *time_node{};

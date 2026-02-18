@@ -71,17 +71,17 @@ enum NodeType:uint8_t {
 };
 
 struct Pin {
-  uint64_t id{};
-  std::string name{"<unnamed>"};
+  uint8_t id{};
+  PinDirection direction{Input};
+  // Used only by input pins
+  uint64_t last_seen_version{0};
 
   // Declared pin type
   const std::type_info *data_type{&typeid(void)};
 
-  PinDirection direction{Input};
-  std::shared_ptr<StreamBase> stream{nullptr};
+  std::string name{"<unnamed>"};
 
-  // Used only by input pins
-  uint64_t last_seen_version{0};
+  std::shared_ptr<StreamBase> stream{nullptr};
 
   // Type-safe value access
   template<typename T>
@@ -109,8 +109,9 @@ struct Pin {
 };
 
 struct Node {
-  uint64_t id{};
+  uint32_t id{};
   NodeType type{Default};
+
   std::string name{"<unnamed>"};
 
   ImVec2 position{};
