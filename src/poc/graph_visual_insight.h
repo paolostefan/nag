@@ -2,6 +2,7 @@
 #define NAG_GRAPH_INSIGHT_H
 
 #include "imnodes.h"
+#include "editor/command_history.h"
 
 #include "editor/ui_window.h"
 #include "engine/generator_nodes.h"
@@ -80,6 +81,9 @@ private:
 
   // ── Graph State ───────────────────────────────────────────────────────────
   NodeGraph graph;
+
+  CommandHistory command_history;
+
   TimeNode *time_node{};
 
   Stream<float> *noise_stream_out{};

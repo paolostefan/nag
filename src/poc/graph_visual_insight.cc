@@ -6,6 +6,7 @@
 #include "IconsFontAwesome6.h"
 #include "ImGuiFileDialog.h"
 #include "implot.h"
+#include "editor/graph_commands.h"
 #include "spdlog/spdlog.h"
 
 #include "engine/math_nodes.h"
@@ -167,14 +168,14 @@ void GraphVisualInsight::load_graph(const std::string &path) {
   spdlog::info("Graph loaded from {}", path);
 }
 
-void GraphVisualInsight::spawn_node(NodeType type, const ImVec2 &position) {
+void GraphVisualInsight::spawn_node(const NodeType type, const ImVec2 &position) {
   auto node = NodeRegistry::instance().create_node(type);
   if (!node) {
     spdlog::error("Failed to create node of type {}", static_cast<int>(type));
     return;
   }
 
-  // Init visual nodes with default sie
+  // Init visual nodes with default size
   if (auto *visual = dynamic_cast<VisualNode *>(node.get())) {
     if (!visual->initialize(400, 300)) {
       spdlog::warn("Visual node '{}' failed to initialize render target",
@@ -183,7 +184,9 @@ void GraphVisualInsight::spawn_node(NodeType type, const ImVec2 &position) {
   }
 
   node->position = position;
-  graph.add_node(std::move(node));
+
+  auto add_command = std::make_unique<AddNodeCommand>(std::move(node));
+  command_history.execute(graph, std::move(add_command));
 }
 
 // ============================================================================
@@ -200,11 +203,12 @@ void GraphVisualInsight::delete_selected_nodes() {
 
   // Convert to set for faster lookup
   std::unordered_set<uint32_t> nodes_to_delete;
+
   for (const int id: selected_nodes) {
     nodes_to_delete.insert(id);
   }
 
-  // ── Step 1: Invalidate plot stream pointers if deleted ─────────────────
+  // ---- Step 1: Invalidate plot stream pointers if deleted ---------------
   for (const auto &node: graph.nodes) {
     if (!nodes_to_delete.contains(node->id)) continue;
 
@@ -228,29 +232,12 @@ void GraphVisualInsight::delete_selected_nodes() {
     }
   }
 
-  // ── Step 2: Remove links connected to deleted nodes ────────────────────
-  std::erase_if(graph.links, [&](const Link &link) {
-    // Check if link references any deleted node
-    for (const auto &node: graph.nodes) {
-      if (!nodes_to_delete.contains(node->id)) continue;
+  // ---- Step 2: Remove the nodes themselves ------------------------------
 
-      // Check if this node has the link's pins
-      for (const auto &pin: node->inputs) {
-        if (pin.id == link.end_pin_id) return true;
-      }
-      for (const auto &pin: node->outputs) {
-        if (pin.id == link.start_pin_id) return true;
-      }
-    }
-    return false;
-  });
+  auto del_command = std::make_unique<DeleteNodesCommand>(nodes_to_delete);
+  command_history.execute(graph, std::move(del_command));
 
-  // ── Step 3: Remove the nodes themselves ────────────────────────────────
-  std::erase_if(graph.nodes, [&](const std::unique_ptr<Node> &node) {
-    return nodes_to_delete.contains(node->id);
-  });
-
-  // ── Step 4: Cleanup orphaned input streams ─────────────────────────────
+  // ---- Step3: Cleanup orphaned input streams ----------------------------
   // After node deletion, some input pins might still reference deleted
   // output streams. Walk all remaining nodes and null out dead streams.
   for (const auto &node: graph.nodes) {
@@ -289,31 +276,13 @@ void GraphVisualInsight::delete_selected_links() {
   std::vector<int> selected_links(num_selected);
   ImNodes::GetSelectedLinks(selected_links.data());
 
-  std::unordered_set<int> links_to_delete;
+  std::unordered_set<uint32_t> links_to_delete;
   for (const int id: selected_links) {
     links_to_delete.insert(id);
   }
 
-  // Remove links and detach streams from input pins
-  for (const auto &link: graph.links) {
-    if (!links_to_delete.contains(link.id)) continue;
-
-    // Find the input pin and detach its stream
-    for (const auto &node: graph.nodes) {
-      for (auto &pin: node->inputs) {
-        if (pin.id == link.end_pin_id) {
-          pin.stream = nullptr;
-          goto next_link;
-        }
-      }
-    }
-  next_link:;
-  }
-
-  // Erase the links
-  std::erase_if(graph.links, [&](const Link &link) {
-    return links_to_delete.contains(link.id);
-  });
+  auto del_command = std::make_unique<DeleteLinksCommand>(links_to_delete);
+  command_history.execute(graph, std::move(del_command));
 
   spdlog::info("Deleted {} link(s)", num_selected);
 }
@@ -326,8 +295,9 @@ void GraphVisualInsight::render_ui() {
   ImGui::Begin("Graph Insight", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_MenuBar);
 
   render_menu_bar();
-  render_plot();
   render_node_editor();
+
+  render_plot();
 
   ImGui::End();
 }
@@ -370,7 +340,18 @@ void GraphVisualInsight::render_menu_bar() {
     ImGui::EndMenu();
   }
 
-  // ── Status Message (fade out dopo kStatusMessageDuration) ─────────────────
+  if (ImGui::BeginMenu("Edit")) {
+    if (ImGui::MenuItem("Undo",
+                        "Ctrl+Z",
+                        false,
+                        command_history.can_undo())) {
+      command_history.undo(graph);
+    }
+
+    ImGui::EndMenu();
+  }
+
+  // ── Status Message (fade out after kStatusMessageDuration) ─────────────────
   const float elapsed = static_cast<float>(ImGui::GetTime()) - status_message_time;
   if (!status_message.empty() && elapsed < kStatusMessageDuration) {
     // Alpha: 100% for 2s, then 1s fade out
@@ -546,10 +527,9 @@ void GraphVisualInsight::render_node_editor() {
 
   // ── Links ──────────────────────────────────────────────────────────────────
   for (const auto &[id, start_pin_id, end_pin_id]: graph.links) {
-    ImNodes::Link(
-      static_cast<int>(id),
-      static_cast<int>(start_pin_id),
-      static_cast<int>(end_pin_id)
+    ImNodes::Link(static_cast<int>(id),
+                  static_cast<int>(start_pin_id),
+                  static_cast<int>(end_pin_id)
     );
   }
 
@@ -585,8 +565,12 @@ void GraphVisualInsight::render_node_editor() {
 
   // ── Link Creation ──────────────────────────────────────────────────────────
   int start_pin_id, end_pin_id;
-  if (ImNodes::IsLinkCreated(&start_pin_id, &end_pin_id)) {
-    graph.add_link(start_pin_id, end_pin_id);
+  if (ImNodes::IsLinkCreated(
+    &start_pin_id,
+    &end_pin_id)) {
+    const auto add_link_command = std::make_unique<AddLinkCommand>(
+      start_pin_id, end_pin_id);
+    add_link_command->execute(graph);
   }
 
   // ── Link Deletion ──────────────────────────────────────────────────────────
@@ -652,10 +636,7 @@ void GraphVisualInsight::render_node_editor() {
 void GraphVisualInsight::render_context_menu() {
   if (ImGui::BeginPopup("add_node_popup")) {
     // Screen space
-    const ImVec2 popup_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
-
-    // Position on imnodes canvas where to put the popup
-    const ImVec2 spawn_pos = popup_pos; // ImNodes::ScreenSpaceToGridSpace(popup_pos);;
+    const ImVec2 spawn_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
 
     ImGui::TextDisabled(ICON_FA_PLUS "  Add Node");
     ImGui::Separator();
@@ -731,7 +712,7 @@ void GraphVisualInsight::render_context_menu() {
 
       if (ImGui::MenuItem(label.c_str(), "Del")) {
         delete_selected_nodes();
-        status_message = "Deleted " + std::to_string(num_nodes) +(num_nodes == 1 ? " node" : " nodes");
+        status_message = "Deleted " + std::to_string(num_nodes) + (num_nodes == 1 ? " node" : " nodes");
         status_message_time = static_cast<float>(ImGui::GetTime());
       }
     }
@@ -743,7 +724,7 @@ void GraphVisualInsight::render_context_menu() {
 
       if (ImGui::MenuItem(label.c_str(), "Del")) {
         delete_selected_links();
-        status_message = "Deleted " + std::to_string(num_links) +(num_links == 1 ? " link" : " links");
+        status_message = "Deleted " + std::to_string(num_links) + (num_links == 1 ? " link" : " links");
         status_message_time = static_cast<float>(ImGui::GetTime());
       }
     }
