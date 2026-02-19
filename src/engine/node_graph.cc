@@ -12,7 +12,7 @@ Node *NodeGraph::add_node(std::unique_ptr<Node> &&node) {
 
     // Create a stream for each output pin
     if (!pin.stream) {
-      pin.stream = std::make_shared<Stream<float>>();
+      pin.stream = std::make_shared<Stream<float> >();
     }
   }
 
@@ -20,21 +20,22 @@ Node *NodeGraph::add_node(std::unique_ptr<Node> &&node) {
   return nodes.back().get();
 }
 
-void NodeGraph::add_link(const Pin &start_pin, const Pin &end_pin) {
-
+bool NodeGraph::add_link(const Pin &start_pin, const Pin &end_pin) {
   // Validate pin directions
   if (start_pin.direction != Output || end_pin.direction != Input) {
-    throw std::runtime_error("Invalid pin direction(s) for link");
+    spdlog::error("Invalid pin direction(s) for link");
+    return false;
   }
 
   // Validate pin streams
   if (!start_pin.stream) {
-    throw std::runtime_error("Invalid start pin stream for link");
+    spdlog::error("Invalid start pin stream for link");
+    return false;
   }
 
   // Find the actual pins in the graph
-  Pin *actual_end_pin = nullptr;
   const Pin *actual_start_pin = nullptr;
+  Pin *actual_end_pin = nullptr;
 
   for (const auto &node: nodes) {
     for (auto &pin: node->inputs) {
@@ -51,7 +52,8 @@ void NodeGraph::add_link(const Pin &start_pin, const Pin &end_pin) {
   }
 
   if (!actual_start_pin || !actual_end_pin) {
-    throw std::runtime_error("Cannot find actual pins in the graph");
+    spdlog::error("Cannot find actual pins in the graph");
+    return false;
   }
 
   // Connect pins
@@ -62,9 +64,11 @@ void NodeGraph::add_link(const Pin &start_pin, const Pin &end_pin) {
   link.start_pin_id = actual_start_pin->id;
   link.end_pin_id = actual_end_pin->id;
   links.push_back(link);
+
+  return true;
 }
 
-void NodeGraph::add_link(const uint64_t start_pin_id, const uint64_t end_pin_id ) {
+bool NodeGraph::add_link(const uint32_t start_pin_id, const uint32_t end_pin_id) {
   // Find input and output pin
   const Pin *start_pin = nullptr;
   const Pin *end_pin = nullptr;
@@ -84,10 +88,11 @@ void NodeGraph::add_link(const uint64_t start_pin_id, const uint64_t end_pin_id 
   }
 
   if (start_pin && end_pin) {
-    add_link(*start_pin, *end_pin);
-  } else {
-    throw std::runtime_error("Invalid link");
+    return add_link(*start_pin, *end_pin);
   }
+
+  spdlog::error("Invalid link");
+  return false;
 }
 
 void NodeGraph::evaluate() const {

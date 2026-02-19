@@ -71,8 +71,11 @@ enum NodeType:uint8_t {
 };
 
 struct Pin {
-  uint8_t id{};
+  // Global pin id graph-wise
+  uint32_t id{};
+
   PinDirection direction{Input};
+
   // Used only by input pins
   uint64_t last_seen_version{0};
 
