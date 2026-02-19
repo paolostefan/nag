@@ -182,6 +182,11 @@ add_library(nag_editor_lib
     src/_3rd_party/imnodes/imnodes.cpp
     src/editor/ui_window.cc
     src/include/editor/ui_window.h
+    src/include/editor/command.h
+    src/include/editor/command_history.h
+    src/editor/command_history.cc
+    src/include/editor/graph_commands.h
+    src/editor/graph_commands.cc
 )
 
 target_include_directories(nag_editor_lib PUBLIC
