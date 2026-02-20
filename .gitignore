@@ -1,4 +1,8 @@
 build/
 cmake-build-*/
 tmp/
+
+### IDE stuff
+
 .idea/
+.windsurf/
