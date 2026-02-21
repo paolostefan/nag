@@ -61,6 +61,8 @@ struct NodeGraph {
   }
 
   bool add_link(uint32_t start_pin_id, uint32_t end_pin_id);
+
+  [[nodiscard]] bool has_path(uint32_t from_node_id, uint32_t to_node_id) const;
 };
 
 

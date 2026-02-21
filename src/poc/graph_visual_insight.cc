@@ -348,6 +348,13 @@ void GraphVisualInsight::render_menu_bar() {
       command_history.undo(graph);
     }
 
+    if (ImGui::MenuItem("Redo",
+                        "Ctrl+Shift+Z",
+                        false,
+                        command_history.can_redo())) {
+      command_history.redo(graph);
+    }
+
     ImGui::EndMenu();
   }
 
@@ -552,10 +559,8 @@ void GraphVisualInsight::render_node_editor() {
   // ── Node/Link Context Menu (right click on selected) ───────────────────────
   if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) &&
       ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-    const int num_selected_nodes = ImNodes::NumSelectedNodes();
-    const int num_selected_links = ImNodes::NumSelectedLinks();
-
-    if (num_selected_nodes > 0 || num_selected_links > 0) {
+    if (ImNodes::NumSelectedNodes() > 0 ||
+        ImNodes::NumSelectedLinks() > 0) {
       ImGui::OpenPopup("delete_selection_popup");
     }
   }
@@ -568,9 +573,10 @@ void GraphVisualInsight::render_node_editor() {
   if (ImNodes::IsLinkCreated(
     &start_pin_id,
     &end_pin_id)) {
-    const auto add_link_command = std::make_unique<AddLinkCommand>(
+    std::unique_ptr<ICommand> add_link_command = std::make_unique<AddLinkCommand>(
       start_pin_id, end_pin_id);
-    add_link_command->execute(graph);
+
+    command_history.execute(graph, std::move(add_link_command));
   }
 
   // ── Link Deletion ──────────────────────────────────────────────────────────

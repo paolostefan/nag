@@ -1,5 +1,9 @@
 #include "engine/node_graph.h"
 
+#include <queue>
+#include <stack>
+#include <unordered_set>
+
 Node *NodeGraph::add_node(std::unique_ptr<Node> &&node) {
   node->id = node_id_generator.generate_id();
 
@@ -37,22 +41,34 @@ bool NodeGraph::add_link(const Pin &start_pin, const Pin &end_pin) {
   const Pin *actual_start_pin = nullptr;
   Pin *actual_end_pin = nullptr;
 
+  uint32_t src_node_id{};
+  uint32_t dst_node_id{};
+
   for (const auto &node: nodes) {
     for (auto &pin: node->inputs) {
       if (pin.id == end_pin.id) {
         actual_end_pin = &pin;
+        dst_node_id = node->id;
       }
     }
 
     for (auto &pin: node->outputs) {
       if (pin.id == start_pin.id) {
         actual_start_pin = &pin;
+        src_node_id = node->id;
       }
     }
   }
 
   if (!actual_start_pin || !actual_end_pin) {
     spdlog::error("Cannot find actual pins in the graph");
+    return false;
+  }
+
+  // Cycle detection
+  if (has_path(dst_node_id, src_node_id)) {
+    // If dst -> src already exists, linking src -> dest would create a loop
+    spdlog::warn("NodeGraph::add_link : loop detected ({} - {})", dst_node_id, src_node_id);
     return false;
   }
 
@@ -96,15 +112,114 @@ bool NodeGraph::add_link(const uint32_t start_pin_id, const uint32_t end_pin_id)
 }
 
 void NodeGraph::evaluate() const {
-  bool progress;
-  do {
-    progress = false;
+  // ── Topological sort (Kahn's algorithm) ───────────────────────────────────
+  // Guarantees each node is evaluated exactly once, after all its predecessors.
+  // Always terminates in O(N+E), regardless of stream versioning bugs.
+
+  // 1. Build node_id → node* map
+  std::unordered_map<uint32_t, Node *> node_map;
+  node_map.reserve(nodes.size());
+  for (const auto &node: nodes) {
+    node_map[node->id] = node.get();
+  }
+
+  // 2. Build adjacency list and in-degree map from links
+  //    adj[src_id] = list of dst_ids
+  std::unordered_map<uint32_t, std::vector<uint32_t> > adj;
+  std::unordered_map<uint32_t, int> in_degree;
+
+  for (const auto &node: nodes) {
+    in_degree.emplace(node->id, 0);
+  }
+
+  for (const auto &link: links) {
+    // Resolve src and dst node IDs from pin IDs
+    uint32_t src_node_id = 0;
+    uint32_t dst_node_id = 0;
 
     for (const auto &node: nodes) {
-      if (node->needs_evaluation()) {
-        node->evaluate();
-        progress = true;
+      for (const auto &pin: node->outputs) {
+        if (pin.id == link.start_pin_id) src_node_id = node->id;
+      }
+      for (const auto &pin: node->inputs) {
+        if (pin.id == link.end_pin_id) dst_node_id = node->id;
       }
     }
-  } while (progress);
+
+    if (src_node_id != 0 && dst_node_id != 0 && src_node_id != dst_node_id) {
+      adj[src_node_id].push_back(dst_node_id);
+      in_degree[dst_node_id]++;
+    }
+  }
+
+  // 3. Seed the queue with all source nodes (in-degree == 0)
+  std::queue<uint32_t> queue;
+  for (const auto &[id_, deg]: in_degree) {
+    if (deg == 0) queue.push(id_);
+  }
+
+  // 4. Process nodes in topological order
+  int evaluated_count = 0;
+  while (!queue.empty()) {
+    const uint32_t current_id = queue.front();
+    queue.pop();
+
+    Node *node = node_map[current_id];
+    node->evaluate();
+    ++evaluated_count;
+
+    // Decrement in-degree of successors; enqueue any that become ready
+    if (const auto it = adj.find(current_id); it != adj.end()) {
+      for (const uint32_t successor_id: it->second) {
+        if (--in_degree[successor_id] == 0) {
+          queue.push(successor_id);
+        }
+      }
+    }
+  }
+
+  // 5. Sanity check: if not all nodes were evaluated, a cycle exists
+  if (evaluated_count != static_cast<int>(nodes.size())) {
+    spdlog::error(
+      "NodeGraph::evaluate: topological sort incomplete. "
+      "Evaluated {}/{} nodes. A cycle may be present in the graph.",
+      evaluated_count, nodes.size()
+    );
+  }
+}
+
+[[nodiscard]] bool NodeGraph::has_path(const uint32_t from_node_id, const uint32_t to_node_id) const {
+  // Iterative DFS: search path from -> to following nodes in reverse order.
+  std::unordered_set<uint32_t> visited;
+  std::stack<uint32_t> stack;
+  stack.push(from_node_id);
+
+  while (!stack.empty()) {
+    const uint32_t current = stack.top();
+    stack.pop();
+
+    if (current == to_node_id) return true;
+    if (visited.contains(current)) continue;
+    visited.insert(current);
+
+    // Find all nodes reachable from current
+    for (const auto &link: links) {
+      // Find the node that owns start_pin_id
+      for (const auto &node: nodes) {
+        if (node->id != current) continue;
+        for (const auto &pin: node->outputs) {
+          if (pin.id != link.start_pin_id) continue;
+          // Find destination node
+          for (const auto &dst_node: nodes) {
+            for (const auto &dst_pin: dst_node->inputs) {
+              if (dst_pin.id == link.end_pin_id) {
+                stack.push(dst_node->id);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return false;
 }
