@@ -1,6 +1,8 @@
 #ifndef NAG_GRAPH_INSIGHT_H
 #define NAG_GRAPH_INSIGHT_H
 
+#include <atomic>
+
 #include "imnodes.h"
 #include "editor/command_history.h"
 
@@ -94,8 +96,8 @@ private:
   // ── ImNodes State ─────────────────────────────────────────────────────────
   ImNodesEditorContext *editor_context{nullptr};
 
-  /** True only on the first render after a graph change (load/reset). */
-  bool first_render{true};
+  /** True after a graph change (load/reset/undo). */
+  std::atomic<bool> node_pos_refresh{true};
 
   // ── UI State ──────────────────────────────────────────────────────────────
 

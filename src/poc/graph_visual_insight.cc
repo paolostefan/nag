@@ -124,7 +124,7 @@ void GraphVisualInsight::reset_graph() {
   out_stream = nullptr;
 
   graph.clear();
-  first_render = true;
+  node_pos_refresh = true;
 }
 
 void GraphVisualInsight::save_graph(const std::string &path) {
@@ -346,6 +346,7 @@ void GraphVisualInsight::render_menu_bar() {
                         false,
                         command_history.can_undo())) {
       command_history.undo(graph);
+      node_pos_refresh.store(true);
     }
 
     if (ImGui::MenuItem("Redo",
@@ -353,6 +354,7 @@ void GraphVisualInsight::render_menu_bar() {
                         false,
                         command_history.can_redo())) {
       command_history.redo(graph);
+      node_pos_refresh.store(true);
     }
 
     ImGui::EndMenu();
@@ -488,10 +490,12 @@ void GraphVisualInsight::render_node_editor() {
   ImGui::Begin("Node Editor");
   ImNodes::BeginNodeEditor();
 
+  const bool refresh_positions = node_pos_refresh.exchange(false);
+
   // ── Nodes ──────────────────────────────────────────────────────────────────
   for (const auto &node: graph.nodes) {
     // ReSharper disable once CppDFAConstantConditions
-    if (first_render) {
+    if (refresh_positions) {
       ImNodes::SetNodeScreenSpacePos(node->id, node->position);
     }
 
@@ -528,7 +532,7 @@ void GraphVisualInsight::render_node_editor() {
     ImNodes::EndNode();
   }
 
-  first_render = false;
+  node_pos_refresh = false;
 
   // ── Links ──────────────────────────────────────────────────────────────────
   for (const auto &[id, start_pin_id, end_pin_id]: graph.links) {
@@ -537,6 +541,11 @@ void GraphVisualInsight::render_node_editor() {
   }
 
   ImNodes::EndNodeEditor();
+
+  // Sync ImNodes positions back into node data every frame
+  for (const auto &node: graph.nodes) {
+    node->position = ImNodes::GetNodeScreenSpacePos(node->id);
+  }
 
   // ── Detect Right Click on Canvas ───────────────────────────────────────────
   // Must come after EndNodeEditor() and before OpenPopup()
