@@ -72,7 +72,7 @@ enum NodeType:uint8_t {
 
 struct Pin {
   // Global pin id graph-wise
-  uint32_t id{};
+  int id{};
 
   PinDirection direction{Input};
 
@@ -112,7 +112,7 @@ struct Pin {
 };
 
 struct Node {
-  uint32_t id{};
+  int id{};
   NodeType type{Default};
 
   std::string name{"<unnamed>"};

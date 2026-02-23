@@ -202,7 +202,7 @@ void GraphVisualInsight::delete_selected_nodes() {
   ImNodes::GetSelectedNodes(selected_nodes.data());
 
   // Convert to set for faster lookup
-  std::unordered_set<uint32_t> nodes_to_delete;
+  std::unordered_set<int> nodes_to_delete;
 
   for (const int id: selected_nodes) {
     nodes_to_delete.insert(id);
@@ -276,7 +276,7 @@ void GraphVisualInsight::delete_selected_links() {
   std::vector<int> selected_links(num_selected);
   ImNodes::GetSelectedLinks(selected_links.data());
 
-  std::unordered_set<uint32_t> links_to_delete;
+  std::unordered_set<int> links_to_delete;
   for (const int id: selected_links) {
     links_to_delete.insert(id);
   }
@@ -467,7 +467,7 @@ void GraphVisualInsight::render_plot() {
       spec.Offset = buf.Offset;
       ImPlot::PlotLine(label,
                        &buf.Data[0].x, &buf.Data[0].y,
-                       static_cast<int>(buf.Data.size()), spec);
+                       buf.Data.size(), spec);
     };
 
     plot_line("Noise", buf_noise);
@@ -492,12 +492,10 @@ void GraphVisualInsight::render_node_editor() {
   for (const auto &node: graph.nodes) {
     // ReSharper disable once CppDFAConstantConditions
     if (first_render) {
-      ImNodes::SetNodeScreenSpacePos(
-        static_cast<int>(node->id), node->position
-      );
+      ImNodes::SetNodeScreenSpacePos(node->id, node->position);
     }
 
-    ImNodes::BeginNode(static_cast<int>(node->id));
+    ImNodes::BeginNode(node->id);
 
     ImNodes::BeginNodeTitleBar();
     ImGui::TextUnformatted(node->name.c_str());
@@ -509,7 +507,7 @@ void GraphVisualInsight::render_node_editor() {
 
     for (const auto &pin: node->inputs) {
       ImNodes::PushColorStyle(ImNodesCol_Pin, get_pin_color(pin));
-      ImNodes::BeginInputAttribute(static_cast<int>(pin.id));
+      ImNodes::BeginInputAttribute(pin.id);
       ImGui::TextUnformatted(pin.name.c_str());
       ImNodes::EndInputAttribute();
       ImNodes::PopColorStyle();
@@ -521,7 +519,7 @@ void GraphVisualInsight::render_node_editor() {
 
     for (const auto &pin: node->outputs) {
       ImNodes::PushColorStyle(ImNodesCol_Pin, get_pin_color(pin));
-      ImNodes::BeginOutputAttribute(static_cast<int>(pin.id));
+      ImNodes::BeginOutputAttribute(pin.id);
       ImGui::TextUnformatted(pin.name.c_str());
       ImNodes::EndOutputAttribute();
       ImNodes::PopColorStyle();
@@ -534,9 +532,7 @@ void GraphVisualInsight::render_node_editor() {
 
   // ── Links ──────────────────────────────────────────────────────────────────
   for (const auto &[id, start_pin_id, end_pin_id]: graph.links) {
-    ImNodes::Link(static_cast<int>(id),
-                  static_cast<int>(start_pin_id),
-                  static_cast<int>(end_pin_id)
+    ImNodes::Link(id, start_pin_id, end_pin_id
     );
   }
 
@@ -573,7 +569,7 @@ void GraphVisualInsight::render_node_editor() {
   if (ImNodes::IsLinkCreated(
     &start_pin_id,
     &end_pin_id)) {
-    std::unique_ptr<ICommand> add_link_command = std::make_unique<AddLinkCommand>(
+    auto add_link_command = std::make_unique<AddLinkCommand>(
       start_pin_id, end_pin_id);
 
     command_history.execute(graph, std::move(add_link_command));
@@ -610,11 +606,10 @@ void GraphVisualInsight::render_node_editor() {
   if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) {
     if (ImGui::IsKeyPressed(ImGuiKey_Delete) ||
         ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
-      // Try deleting nodes first (higher priority)
-
       const auto node_no = ImNodes::NumSelectedNodes();
       const auto link_no = ImNodes::NumSelectedLinks();
 
+      // Try deleting nodes first (higher priority)
       if (node_no > 0) {
         delete_selected_nodes();
       }

@@ -41,8 +41,7 @@ bool NodeGraph::add_link(const Pin &start_pin, const Pin &end_pin) {
   const Pin *actual_start_pin = nullptr;
   Pin *actual_end_pin = nullptr;
 
-  uint32_t src_node_id{};
-  uint32_t dst_node_id{};
+  int src_node_id{}, dst_node_id{};
 
   for (const auto &node: nodes) {
     for (auto &pin: node->inputs) {
@@ -84,7 +83,7 @@ bool NodeGraph::add_link(const Pin &start_pin, const Pin &end_pin) {
   return true;
 }
 
-bool NodeGraph::add_link(const uint32_t start_pin_id, const uint32_t end_pin_id) {
+bool NodeGraph::add_link(const int start_pin_id, const int end_pin_id) {
   // Find input and output pin
   const Pin *start_pin = nullptr;
   const Pin *end_pin = nullptr;
@@ -117,7 +116,7 @@ void NodeGraph::evaluate() const {
   // Always terminates in O(N+E), regardless of stream versioning bugs.
 
   // 1. Build node_id → node* map
-  std::unordered_map<uint32_t, Node *> node_map;
+  std::unordered_map<int, Node *> node_map;
   node_map.reserve(nodes.size());
   for (const auto &node: nodes) {
     node_map[node->id] = node.get();
@@ -125,8 +124,8 @@ void NodeGraph::evaluate() const {
 
   // 2. Build adjacency list and in-degree map from links
   //    adj[src_id] = list of dst_ids
-  std::unordered_map<uint32_t, std::vector<uint32_t> > adj;
-  std::unordered_map<uint32_t, int> in_degree;
+  std::unordered_map<int, std::vector<int> > adj;
+  std::unordered_map<int, int> in_degree;
 
   for (const auto &node: nodes) {
     in_degree.emplace(node->id, 0);
@@ -134,8 +133,8 @@ void NodeGraph::evaluate() const {
 
   for (const auto &link: links) {
     // Resolve src and dst node IDs from pin IDs
-    uint32_t src_node_id = 0;
-    uint32_t dst_node_id = 0;
+    int src_node_id = 0;
+    int dst_node_id = 0;
 
     for (const auto &node: nodes) {
       for (const auto &pin: node->outputs) {
@@ -153,7 +152,7 @@ void NodeGraph::evaluate() const {
   }
 
   // 3. Seed the queue with all source nodes (in-degree == 0)
-  std::queue<uint32_t> queue;
+  std::queue<int> queue;
   for (const auto &[id_, deg]: in_degree) {
     if (deg == 0) queue.push(id_);
   }
@@ -161,7 +160,7 @@ void NodeGraph::evaluate() const {
   // 4. Process nodes in topological order
   int evaluated_count = 0;
   while (!queue.empty()) {
-    const uint32_t current_id = queue.front();
+    const int current_id = queue.front();
     queue.pop();
 
     Node *node = node_map[current_id];
@@ -170,7 +169,7 @@ void NodeGraph::evaluate() const {
 
     // Decrement in-degree of successors; enqueue any that become ready
     if (const auto it = adj.find(current_id); it != adj.end()) {
-      for (const uint32_t successor_id: it->second) {
+      for (const int successor_id: it->second) {
         if (--in_degree[successor_id] == 0) {
           queue.push(successor_id);
         }
@@ -188,14 +187,14 @@ void NodeGraph::evaluate() const {
   }
 }
 
-[[nodiscard]] bool NodeGraph::has_path(const uint32_t from_node_id, const uint32_t to_node_id) const {
+[[nodiscard]] bool NodeGraph::has_path(const int from_node_id, const int to_node_id) const {
   // Iterative DFS: search path from -> to following nodes in reverse order.
-  std::unordered_set<uint32_t> visited;
-  std::stack<uint32_t> stack;
+  std::unordered_set<int> visited;
+  std::stack<int> stack;
   stack.push(from_node_id);
 
   while (!stack.empty()) {
-    const uint32_t current = stack.top();
+    const int current = stack.top();
     stack.pop();
 
     if (current == to_node_id) return true;

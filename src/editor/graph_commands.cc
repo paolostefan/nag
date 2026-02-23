@@ -93,7 +93,7 @@ std::string AddNodeCommand::description() const {
 // DeleteNodesCommand
 // ============================================================================
 
-DeleteNodesCommand::DeleteNodesCommand(std::unordered_set<uint32_t> node_ids)
+DeleteNodesCommand::DeleteNodesCommand(std::unordered_set<int> node_ids)
   : node_ids_(std::move(node_ids)) {
 }
 
@@ -154,7 +154,7 @@ bool DeleteNodesCommand::execute(NodeGraph &graph) {
 
 bool DeleteNodesCommand::undo(NodeGraph &graph) {
   // Recreate nodes
-  std::unordered_map<uint32_t, uint32_t> id_remap;
+  std::unordered_map<int, int> id_remap;
 
   for (const auto &node_json: deleted_nodes_) {
     auto node = NodeRegistry::instance().create_node(
@@ -163,7 +163,7 @@ bool DeleteNodesCommand::undo(NodeGraph &graph) {
 
     if (!node) continue;
 
-    uint32_t old_id = node_json["id"];
+    int old_id = node_json["id"];
     id_remap[old_id] = node->id;
 
     node->name = node_json["name"];
@@ -186,7 +186,7 @@ bool DeleteNodesCommand::undo(NodeGraph &graph) {
     const Pin *end_pin = nullptr;
 
     for (const auto &node: graph.nodes) {
-      const uint32_t remapped_id = node->id;
+      const int remapped_id = node->id;
 
       // Check if this is one of the restored nodes
       for (const auto &new_id: id_remap | std::views::values) {
@@ -219,7 +219,7 @@ std::string DeleteNodesCommand::description() const {
 // AddLinkCommand
 // ============================================================================
 
-AddLinkCommand::AddLinkCommand(const uint32_t start_pin_id, const uint32_t end_pin_id)
+AddLinkCommand::AddLinkCommand(const int start_pin_id, const int end_pin_id)
   : start_pin_id_(start_pin_id), end_pin_id_(end_pin_id) {
 }
 
@@ -287,7 +287,7 @@ std::string AddLinkCommand::description() const {
 // DeleteLinksCommand
 // ============================================================================
 
-DeleteLinksCommand::DeleteLinksCommand(std::unordered_set<uint32_t> link_ids)
+DeleteLinksCommand::DeleteLinksCommand(std::unordered_set<int> link_ids)
   : link_ids_(std::move(link_ids)) {
 }
 

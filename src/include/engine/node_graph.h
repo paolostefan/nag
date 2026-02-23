@@ -10,17 +10,17 @@
 #include "engine/node.h"
 
 struct Link {
-  uint32_t id{};
-  uint32_t start_pin_id{};
-  uint32_t end_pin_id{};
+  int id{};
+  int start_pin_id{};
+  int end_pin_id{};
 };
 
 struct NodeGraph {
-  uint32_t id{};
+  int id{};
 
-  IdGenerator node_id_generator;
-  IdGenerator pin_id_generator;
-  IdGenerator link_id_generator;
+  IdGenerator<> node_id_generator;
+  IdGenerator<> pin_id_generator;
+  IdGenerator<> link_id_generator;
 
   std::string name{"<unnamed>"};
   std::vector<std::unique_ptr<Node> > nodes;
@@ -60,9 +60,9 @@ struct NodeGraph {
     return add_link(*start_pin, *end_pin);
   }
 
-  bool add_link(uint32_t start_pin_id, uint32_t end_pin_id);
+  bool add_link(int start_pin_id, int end_pin_id);
 
-  [[nodiscard]] bool has_path(uint32_t from_node_id, uint32_t to_node_id) const;
+  [[nodiscard]] bool has_path(int from_node_id, int to_node_id) const;
 };
 
 
