@@ -9,7 +9,7 @@ NodeRegistry &NodeRegistry::instance() {
   return instance;
 }
 
-std::unique_ptr<Node> NodeRegistry::create_node(NodeType type) const {
+std::unique_ptr<Node> NodeRegistry::create_node(const NodeType type) const {
   const auto it = registry_.find(type);
   if (it == registry_.end()) {
     spdlog::error("Node type {} not registered", static_cast<int>(type));
@@ -19,7 +19,7 @@ std::unique_ptr<Node> NodeRegistry::create_node(NodeType type) const {
   return it->second.create_func();
 }
 
-const NodeTypeInfo *NodeRegistry::get_type_info(NodeType type) const {
+const NodeTypeInfo *NodeRegistry::get_type_info(const NodeType type) const {
   const auto it = registry_.find(type);
   return it != registry_.end() ? &it->second : nullptr;
 }

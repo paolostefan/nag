@@ -1,8 +1,6 @@
 #ifndef NAG_ENGINE_SERIALIZATION_JSON_GRAPH_SERIALIZER_H
 #define NAG_ENGINE_SERIALIZATION_JSON_GRAPH_SERIALIZER_H
 
-#include <unordered_map>
-
 #include "engine/serialization/graph_serializer.h"
 
 /**
@@ -53,7 +51,7 @@ private:
    * @return Pointer to pin, or nullptr if not found
    */
   [[nodiscard]] static Pin *find_pin(NodeGraph &graph,
-                                     uint64_t node_id,
+                                     int node_id,
                                      size_t pin_index,
                                      bool is_output);
 };

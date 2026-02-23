@@ -13,8 +13,8 @@
 /**
  *  Multiplies two input streams and writes the result to the output stream.
  */
-struct MultiplyNode : Node {
-  MultiplyNode() {
+struct MultiplyNode : MultiInputNode {
+  explicit MultiplyNode() : MultiInputNode(2) {
     type = Multiply;
     name = "Multiply";
   }
@@ -38,8 +38,6 @@ struct MultiplyNode : Node {
 
   [[nodiscard]] static std::unique_ptr<MultiplyNode> create() {
     auto node = std::make_unique<MultiplyNode>();
-    node->add_input("a");
-    node->add_input("b");
     node->add_output("product");
     return std::move(node);
   }

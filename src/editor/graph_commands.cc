@@ -114,24 +114,34 @@ bool DeleteNodesCommand::execute(NodeGraph &graph) {
       node_json["params"] = node->serialize_params();
       deleted_nodes_.push_back(node_json);
 
-      // Capture connected links
+      // Capture connected links with pin indices for reliable undo
       for (const auto &link: graph.links) {
-        bool link_uses_node = false;
+        int src_node_id = 0, dst_node_id = 0;
+        int src_pin_index = -1, dst_pin_index = -1;
 
-        for (const auto &pin: node->inputs) {
-          if (pin.id == link.end_pin_id) {
-            link_uses_node = true;
-            break;
+        for (const auto &node_: graph.nodes) {
+          for (int i = 0; i < static_cast<int>(node_->outputs.size()); ++i) {
+            if (node_->outputs[i].id == link.start_pin_id) {
+              src_node_id = node_->id;
+              src_pin_index = i;
+            }
+          }
+          for (int i = 0; i < static_cast<int>(node_->inputs.size()); ++i) {
+            if (node_->inputs[i].id == link.end_pin_id) {
+              dst_node_id = node_->id;
+              dst_pin_index = i;
+            }
           }
         }
-        for (const auto &pin: node->outputs) {
-          if (pin.id == link.start_pin_id) {
-            link_uses_node = true;
-            break;
-          }
-        }
 
-        if (link_uses_node) {
+        // Only capture links where at least one endpoint is a node being deleted
+        const bool src_deleted = node_ids_.contains(src_node_id);
+        const bool dst_deleted = node_ids_.contains(dst_node_id);
+        if ((src_deleted || dst_deleted) && src_node_id != 0 && dst_node_id != 0) {
+          deleted_links_by_index_.push_back({
+            src_node_id, src_pin_index,
+            dst_node_id, dst_pin_index
+          });
           deleted_links_.push_back(link);
         }
       }
@@ -163,8 +173,7 @@ bool DeleteNodesCommand::undo(NodeGraph &graph) {
 
     if (!node) continue;
 
-    int old_id = node_json["id"];
-    id_remap[old_id] = node->id;
+    const int old_id = node_json["id"];
 
     node->name = node_json["name"];
     node->position = ImVec2(
@@ -176,38 +185,43 @@ bool DeleteNodesCommand::undo(NodeGraph &graph) {
       node->deserialize_params(node_json["params"]);
     }
 
-    graph.add_node(std::move(node));
+    Node *added = graph.add_node(std::move(node));
+    id_remap[old_id] = added->id;
   }
 
-  // Recreate links with remapped IDs
-  for (const auto &link: deleted_links_) {
-    // Find pins with remapped IDs
+  // Recreate links using pin indices and remapped node IDs
+  for (const auto &sl: deleted_links_by_index_) {
+    // Resolve new node IDs (nodes not deleted keep their original ID)
+    const int new_src_id = id_remap.count(sl.src_node_id)
+                                  ? id_remap.at(sl.src_node_id)
+                                  : sl.src_node_id;
+    const int new_dst_id = id_remap.count(sl.dst_node_id)
+                                  ? id_remap.at(sl.dst_node_id)
+                                  : sl.dst_node_id;
+
     const Pin *start_pin = nullptr;
     const Pin *end_pin = nullptr;
 
     for (const auto &node: graph.nodes) {
-      const int remapped_id = node->id;
-
-      // Check if this is one of the restored nodes
-      for (const auto &new_id: id_remap | std::views::values) {
-        if (new_id == remapped_id) {
-          // This node was restored - check its pins
-          for (auto &pin: node->outputs) {
-            // TODO: This is fragile - need to match by index, not ID
-            if (!start_pin) start_pin = &pin;
-          }
-          for (auto &pin: node->inputs) {
-            if (!end_pin) end_pin = &pin;
-          }
-        }
+      if (node->id == new_src_id &&
+          sl.src_pin_index < static_cast<int>(node->outputs.size())) {
+        start_pin = &node->outputs[sl.src_pin_index];
+      }
+      if (node->id == new_dst_id &&
+          sl.dst_pin_index < static_cast<int>(node->inputs.size())) {
+        end_pin = &node->inputs[sl.dst_pin_index];
       }
     }
 
     if (start_pin && end_pin) {
-      graph.add_link(start_pin, end_pin);
+      graph.add_link(*start_pin, *end_pin);
+    } else {
+      spdlog::warn("DeleteNodesCommand::undo: could not restore link "
+                   "(node {} pin {} → node {} pin {})",
+                   new_src_id, sl.src_pin_index,
+                   new_dst_id, sl.dst_pin_index);
     }
   }
-
   return true;
 }
 

@@ -17,8 +17,8 @@ namespace {
    * @brief Get current timestamp as ISO 8601 string.
    */
   std::string get_iso_timestamp() {
-    auto now = std::chrono::system_clock::now();
-    auto time_t = std::chrono::system_clock::to_time_t(now);
+    const auto now = std::chrono::system_clock::now();
+    const auto time_t = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
     ss << std::put_time(std::gmtime(&time_t), "%Y-%m-%dT%H:%M:%SZ");
     return ss.str();
@@ -142,7 +142,7 @@ OperationResult JsonGraphSerializer::load(
     graph.links.clear();
 
     // ID remapping: old_id -> new_id
-    std::unordered_map<uint64_t, uint64_t> id_remap;
+    std::unordered_map<int, int> id_remap;
 
     // Deserialize nodes
     if (!j.contains("nodes") || !j["nodes"].is_array()) {
@@ -170,8 +170,8 @@ OperationResult JsonGraphSerializer::load(
 
     for (const auto &link_json: j["links"]) {
       // Get remapped node IDs
-      uint64_t old_start_node_id = link_json.value("start_node_id", 0);
-      uint64_t old_end_node_id = link_json.value("end_node_id", 0);
+      int old_start_node_id = link_json.value("start_node_id", 0);
+      int old_end_node_id = link_json.value("end_node_id", 0);
 
       auto start_it = id_remap.find(old_start_node_id);
       auto end_it = id_remap.find(old_end_node_id);
@@ -181,8 +181,8 @@ OperationResult JsonGraphSerializer::load(
         continue;
       }
 
-      uint64_t new_start_node_id = start_it->second;
-      uint64_t new_end_node_id = end_it->second;
+      int new_start_node_id = start_it->second;
+      int new_end_node_id = end_it->second;
 
       // Find pins
       size_t start_pin_index = link_json.value("start_pin_index", 0);
@@ -192,6 +192,7 @@ OperationResult JsonGraphSerializer::load(
       Pin *end_pin = find_pin(graph, new_end_node_id, end_pin_index, false);
 
       if (!start_pin || !end_pin) {
+        // TODO: if the destination node is a multipinputnode, create input pins until the index is valid or give error if the pin index is above maximum
         spdlog::warn("Link references invalid pin indices, skipping");
         continue;
       }
@@ -213,7 +214,7 @@ OperationResult JsonGraphSerializer::load(
 json JsonGraphSerializer::serialize_node(const Node *node) {
   json j;
   j["id"] = node->id;
-  j["type"] = static_cast<int>(node->type);
+  j["type"] = node->type;
   j["name"] = node->name;
   j["position"] = {node->position.x, node->position.y};
 
@@ -224,7 +225,7 @@ json JsonGraphSerializer::serialize_node(const Node *node) {
 
 std::unique_ptr<Node> JsonGraphSerializer::deserialize_node(const json &j) {
   // Extract basic fields
-  uint64_t old_id = j.value("id", 0);
+  int old_id = j.value("id", 0);
   const auto type = static_cast<NodeType>(j.value("type", 0));
   const std::string name = j.value("name", "<unnamed>");
 
@@ -257,7 +258,7 @@ std::unique_ptr<Node> JsonGraphSerializer::deserialize_node(const json &j) {
 }
 
 Pin *JsonGraphSerializer::find_pin(NodeGraph &graph,
-                                   const uint64_t node_id,
+                                   const int node_id,
                                    const size_t pin_index,
                                    const bool is_output
 ) {

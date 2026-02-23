@@ -11,6 +11,13 @@
 #include "engine/node.h"
 #include "engine/node_graph.h"
 
+struct SerializedLink {
+  int src_node_id; // old node ID (before deletion)
+  int src_pin_index; // index in node->outputs
+  int dst_node_id; // old node ID (before deletion)
+  int dst_pin_index; // index in node->inputs
+};
+
 // ============================================================================
 // AddNodeCommand
 // ============================================================================
@@ -70,6 +77,8 @@ private:
   // Captured state for undo
   std::vector<nlohmann::json> deleted_nodes_;
   std::vector<Link> deleted_links_;
+
+  std::vector<SerializedLink> deleted_links_by_index_;
 };
 
 // ============================================================================
