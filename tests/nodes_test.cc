@@ -272,8 +272,6 @@ TEST_F(NodesTest, AddNode) {
 
 TEST_F(NodesTest, SubtractNode) {
   auto node = std::make_unique<SubtractNode>();
-  node->add_input("a");
-  node->add_input("b");
   node->add_output("difference");
 
   EXPECT_EQ(node->type, Subtract);
@@ -298,8 +296,6 @@ TEST_F(NodesTest, SubtractNode) {
 
 TEST_F(NodesTest, ModuloNode) {
   auto node = std::make_unique<ModuloNode>();
-  node->add_input("a");
-  node->add_input("b");
   node->add_output("remainder");
 
   EXPECT_EQ(node->type, Modulo);
@@ -324,8 +320,6 @@ TEST_F(NodesTest, ModuloNode) {
 
 TEST_F(NodesTest, PowerNode) {
   auto node = std::make_unique<PowerNode>();
-  node->add_input("base");
-  node->add_input("exponent");
   node->add_output("result");
 
   EXPECT_EQ(node->type, Power);
