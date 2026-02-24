@@ -70,7 +70,7 @@ void GraphVisualInsight::build_default_graph() {
   graph.add_link(time_node->outputs[0], lfo_b->inputs[0]);
 
   // Adding node connected to A, B and Noise
-  auto adding_node = AddFloatNode::create(3);
+  auto adding_node = AddNode::create(3);
   adding_node->position = {290, 30};
   const auto adding = graph.add_node(std::move(adding_node));
   graph.add_link(noise_ptr->outputs[0], adding->inputs[0]);

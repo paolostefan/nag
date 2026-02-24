@@ -12,14 +12,14 @@ GraphInsight::GraphInsight() : UIWindow("Graph insight POC", 800, 600) {
 
   auto sin_a_ptr = SinNode::create();
   auto sin_b_ptr = CosNode::create();
-  auto adding_node_ptr = AddFloatNode::create();
+  auto adding_node_ptr = AddNode::create();
 
   sin_a_ptr->name = "Sin A";
   sin_b_ptr->name = "Sin B";
 
   sin_a = dynamic_cast<SinNode *>(graph.add_node(std::move(sin_a_ptr)));
   sin_b = dynamic_cast<CosNode *>(graph.add_node(std::move(sin_b_ptr)));
-  adding_node = dynamic_cast<AddFloatNode *>(graph.add_node(std::move(adding_node_ptr)));
+  adding_node = dynamic_cast<AddNode *>(graph.add_node(std::move(adding_node_ptr)));
 
 
   graph.add_link(time_node->outputs[0], sin_a->inputs[0]);

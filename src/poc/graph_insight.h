@@ -22,7 +22,7 @@ protected:
 
   SinNode *sin_a{};
   CosNode *sin_b{};
-  AddFloatNode *adding_node{};
+  AddNode *adding_node{};
 };
 
 

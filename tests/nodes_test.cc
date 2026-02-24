@@ -242,8 +242,8 @@ TEST_F(NodesTest, StepSequencerNode) {
 // MATH NODE TESTS - Binary Operators
 // ===========================================================================
 
-TEST_F(NodesTest, AddFloatNode) {
-  auto node = AddFloatNode::create(3);
+TEST_F(NodesTest, AddNode) {
+  auto node = AddNode::create(3);
   EXPECT_EQ(node->type, Add);
   EXPECT_EQ(node->name, "Add");
   EXPECT_EQ(node->inputs.size(), 3);

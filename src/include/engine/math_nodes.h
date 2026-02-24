@@ -88,8 +88,8 @@ struct DivideNode : MultiInputNode {
 /**
  * Adds two input streams and writes the result to the output stream.
  */
-struct AddFloatNode : MultiInputNode {
-  explicit AddFloatNode(const size_t num_inputs = 2) : MultiInputNode(num_inputs) {
+struct AddNode : MultiInputNode {
+  explicit AddNode(const size_t num_inputs = 2) : MultiInputNode(num_inputs) {
     type = Add;
     name = "Add";
   }
@@ -118,8 +118,8 @@ struct AddFloatNode : MultiInputNode {
     }
   }
 
-  [[nodiscard]] static std::unique_ptr<AddFloatNode> create(const size_t num_inputs = 2) {
-    auto node = std::make_unique<AddFloatNode>(num_inputs);
+  [[nodiscard]] static std::unique_ptr<AddNode> create(const size_t num_inputs = 2) {
+    auto node = std::make_unique<AddNode>(num_inputs);
     node->add_output("sum");
     return std::move(node);
   }

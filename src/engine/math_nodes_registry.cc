@@ -30,11 +30,11 @@ namespace node_registration {
       "Selects the smaller input"
     );
     // AddNode
-    NodeRegistry::instance().register_node<AddFloatNode>(
+    NodeRegistry::instance().register_node<AddNode>(
       Add,
-      "AddFloat",
+      "Add",
       "Math",
-      "Adds two float inputs"
+      "Adds two or more inputs"
     );
     NodeRegistry::instance().register_node<SubtractNode>(
       Subtract,
