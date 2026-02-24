@@ -5,6 +5,7 @@
 #include "engine/node_graph.h"
 #include "engine/temporal_nodes.h"
 #include "engine/generator_nodes.h"
+#include "engine/math_nodes.h"
 #include "engine/visual_nodes.h"
 #include "engine/serialization/json_graph_serializer.h"
 
@@ -510,4 +511,22 @@ TEST_F(SerializationTest, SaveAndLoadVisualPipeline) {
   const auto *loaded_composite = loaded_graph.nodes[2].get();
   EXPECT_NE(loaded_composite->inputs[0].stream, nullptr);
   EXPECT_NE(loaded_composite->inputs[1].stream, nullptr);
+}
+
+// Test that a MultiInputNode with >2 inputs gets (de)serialized properly
+TEST_F(SerializationTest, MultiInputNode) {
+  const auto add3node = AddNode::create(3);
+
+  ASSERT_NE(add3node, nullptr);
+
+  const auto node_json = JsonGraphSerializer::serialize_node(add3node.get());
+
+  ASSERT_TRUE(node_json.is_object());
+
+  const auto deserialized = JsonGraphSerializer::deserialize_node(node_json);
+
+  ASSERT_NE(deserialized, nullptr);
+
+  ASSERT_EQ(deserialized->type, Add);
+  ASSERT_EQ(deserialized->inputs.size(), 3);
 }

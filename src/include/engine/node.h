@@ -152,13 +152,13 @@ struct Node {
   }
 
   /**
- * @brief Serialize node-specific parameters to JSON.
- *
- * Override this in derived classes to save custom parameters.
- * Base implementation returns empty object.
- *
- * @return JSON object with node parameters
- */
+  * @brief Serialize node-specific parameters to JSON.
+  *
+  * Override this in derived classes to save custom parameters.
+  * Base implementation returns empty object.
+  *
+  * @return JSON object with node parameters
+  */
   [[nodiscard]] virtual nlohmann::json serialize_params() const {
     return nlohmann::json::object();
   }
@@ -207,7 +207,7 @@ struct Node {
 }; // Node
 
 /**
- * Node that supports up to 26 inputs (a-z)
+ * Node that supports up to 26 input pins (named a...z)
  */
 struct MultiInputNode : Node {
   static constexpr auto *const kAlphabet{"abcdefghijklmnopqrstuvwxyz"};
@@ -231,6 +231,23 @@ struct MultiInputNode : Node {
 
     // Add an input pin with name = nth letter of kAlphabet
     Node::add_input(std::string(kAlphabet).substr(inputs.size(), 1));
+  }
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j;
+    j["inputs_size"] = inputs.size();
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    if (j.contains("inputs_size")) {
+      const size_t inputs_size = j["inputs_size"];
+      inputs.clear();
+      for (size_t i=0; i<inputs_size; i++) {
+        add_input();
+      }
+    }
+    return OperationResult::ok();
   }
 };
 

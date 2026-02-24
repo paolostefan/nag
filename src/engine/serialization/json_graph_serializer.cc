@@ -192,7 +192,6 @@ OperationResult JsonGraphSerializer::load(
       Pin *end_pin = find_pin(graph, new_end_node_id, end_pin_index, false);
 
       if (!start_pin || !end_pin) {
-        // TODO: if the destination node is a multipinputnode, create input pins until the index is valid or give error if the pin index is above maximum
         spdlog::warn("Link references invalid pin indices, skipping");
         continue;
       }

@@ -24,7 +24,6 @@ public:
   [[nodiscard]] OperationResult load(NodeGraph &graph,
                                      const std::string &path) const override;
 
-private:
   /**
    * @brief Serialize a single node to JSON.
    *
@@ -40,6 +39,8 @@ private:
    * @return Unique pointer to created node, or nullptr on error
    */
   [[nodiscard]] static std::unique_ptr<Node> deserialize_node(const nlohmann::json &j);
+
+private:
 
   /**
    * @brief Find pin by node ID and pin index.
