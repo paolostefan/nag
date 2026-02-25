@@ -7,28 +7,28 @@ namespace node_registration {
     auto& registry = NodeRegistry::instance();
 
     registry.register_node<LFONode>(
-      LFO,
+      NodeType::LFO,
       "LFO",
       "Temporal",
       "Low frequency oscillator with multiple waveforms"
     );
 
     registry.register_node<EnvelopeNode>(
-      Envelope,
+      NodeType::Envelope,
       "Envelope",
       "Temporal",
       "ADSR envelope generator"
     );
 
     registry.register_node<DelayNode>(
-      Delay,
+      NodeType::Delay,
       "Delay",
       "Temporal",
       "Time-based signal delay with circular buffer"
     );
 
     registry.register_node<SmootherNode>(
-      Smoother,
+      NodeType::Smoother,
       "Smoother",
       "Temporal",
       "Exponential smoothing filter (one-pole lowpass)"

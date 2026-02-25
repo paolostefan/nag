@@ -156,7 +156,7 @@ void GraphVisualInsight::load_graph(const std::string &path) {
 
   // search time node in the existing graph
   for (const auto &node: graph.nodes) {
-    if (node->type == Time) {
+    if (node->type == NodeType::Time) {
       time_node = dynamic_cast<TimeNode *>(node.get());
       break;
     }

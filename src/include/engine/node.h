@@ -15,7 +15,7 @@ enum PinDirection:uint8_t {
   Output
 };
 
-enum NodeType:uint8_t {
+enum class NodeType:uint8_t {
   Default,
 
   // Generators
@@ -68,6 +68,9 @@ enum NodeType:uint8_t {
   Circle,
   Rectangle2D,
   Composite,
+
+  // Sink
+  Output,
 };
 
 struct Pin {
@@ -113,7 +116,7 @@ struct Pin {
 
 struct Node {
   int id{};
-  NodeType type{Default};
+  NodeType type{NodeType::Default};
 
   std::string name{"<unnamed>"};
 

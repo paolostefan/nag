@@ -14,7 +14,7 @@ struct ConstantFloatNode : Node {
 
   explicit ConstantFloatNode(const float _value = 0.0f)
     : value(_value) {
-    type = Constant;
+    type = NodeType::Constant;
     name = "Constant";
   }
 
@@ -37,7 +37,7 @@ struct TimeNode : Node {
   float time{0.0f};
 
   explicit TimeNode() {
-    type = Time;
+    type = NodeType::Time;
     name = "Time";
   }
 
@@ -74,7 +74,7 @@ struct NoiseNode : Node {
 
 
   NoiseNode() {
-    type = Noise;
+    type = NodeType::Noise;
     name = "Noise";
   }
 
@@ -164,7 +164,7 @@ struct RandomNode : Node {
   std::uniform_real_distribution<float> dist;
 
   RandomNode() {
-    type = Random;
+    type = NodeType::Random;
     name = "Random";
   };
 
@@ -250,7 +250,7 @@ struct StepSequencerNode : Node {
   uint64_t last_trigger_version{0};
 
   StepSequencerNode() {
-    type = StepSequencer;
+    type = NodeType::StepSequencer;
     name = "StepSequencer";
   }
 

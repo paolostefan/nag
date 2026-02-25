@@ -7,35 +7,35 @@ namespace node_registration {
     auto& registry = NodeRegistry::instance();
 
     registry.register_node<ClearColorNode>(
-      ClearColor,
+      NodeType::ClearColor,
       "Clear Color",
       "Visual",
       "Fills render target with solid color"
     );
 
     registry.register_node<GradientNode>(
-      Gradient,
+      NodeType::Gradient,
       "Gradient",
       "Visual",
       "Renders linear or radial gradient"
     );
 
     registry.register_node<CircleNode>(
-      Circle,
+      NodeType::Circle,
       "Circle",
       "Visual",
       "Renders a circle with smooth edges using SDF"
     );
 
     registry.register_node<Rectangle2DNode>(
-      Rectangle2D,
+      NodeType::Rectangle2D,
       "Rectangle",
       "Visual",
       "Renders a 2D rectangle with optional rounded corners"
     );
 
     registry.register_node<CompositeNode>(
-      Composite,
+      NodeType::Composite,
       "Composite",
       "Visual",
       "Composites multiple textures with blend modes"

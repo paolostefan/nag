@@ -123,7 +123,7 @@ struct ClearColorNode : VisualNode {
   Vec4 color{0.0f, 0.0f, 0.0f, 1.0f};
 
   ClearColorNode() {
-    type = ClearColor;
+    type = NodeType::ClearColor;
     name = "ClearColor";
   }
 
@@ -229,7 +229,7 @@ struct GradientNode : VisualNode {
   std::shared_ptr<ShaderProgram> shader;
 
   GradientNode() {
-    type = Gradient;
+    type = NodeType::Gradient;
     name = "Gradient";
   }
 
@@ -275,7 +275,7 @@ struct GradientNode : VisualNode {
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
-    j["gradient_type"] = static_cast<int>(gradient_type);
+    j["gradient_type"] = gradient_type;
     j["color_start"] = {color_start.x, color_start.y, color_start.z, color_start.w};
     j["color_end"] = {color_end.x, color_end.y, color_end.z, color_end.w};
     j["direction"] = {direction.x, direction.y};
@@ -337,7 +337,7 @@ public:
    * Create a gradient node.
    */
   static std::unique_ptr<GradientNode> create(
-    const Type gradient_type = Type::Linear,
+    const Type gradient_type = Linear,
     const Vec4 &color_start = Vec4::red(),
     const Vec4 &color_end = Vec4::blue()) {
     auto node = std::make_unique<GradientNode>();
@@ -366,7 +366,7 @@ struct CircleNode : VisualNode {
   std::shared_ptr<ShaderProgram> shader;
 
   CircleNode() {
-    type = Circle;
+    type = NodeType::Circle;
     name = "Circle";
   }
 
@@ -516,7 +516,7 @@ struct Rectangle2DNode : VisualNode {
   std::shared_ptr<ShaderProgram> shader;
 
   Rectangle2DNode() {
-    type = Rectangle2D;
+    type = NodeType::Rectangle2D;
     name = "Rectangle";
   }
 
@@ -664,7 +664,7 @@ struct CompositeNode : VisualNode {
   std::shared_ptr<ShaderProgram> shader;
 
   CompositeNode() {
-    type = Composite;
+    type = NodeType::Composite;
     name = "Composite";
   }
 

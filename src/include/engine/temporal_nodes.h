@@ -34,7 +34,7 @@ struct LFONode : Node {
   float pulse_width{0.5f}; // For square wave (0-1)
 
   LFONode() {
-    type = LFO;
+    type = NodeType::LFO;
     name = "LFO";
   }
 
@@ -169,7 +169,7 @@ struct EnvelopeNode : Node {
   bool was_triggered{false};
 
   EnvelopeNode() {
-    type = Envelope;
+    type = NodeType::Envelope;
     name = "Envelope";
   }
 
@@ -357,7 +357,7 @@ struct DelayNode : Node {
   bool initialized{false};
 
   DelayNode() {
-    type = Delay;
+    type = NodeType::Delay;
     name = "Delay";
     update_buffer_size();
   }
@@ -474,7 +474,7 @@ struct SmootherNode : Node {
   bool initialized{false};
 
   SmootherNode() {
-    type = Smoother;
+    type = NodeType::Smoother;
     name = "Smoother";
   }
 

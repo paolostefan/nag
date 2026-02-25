@@ -15,7 +15,7 @@
  */
 struct MultiplyNode : MultiInputNode {
   explicit MultiplyNode() : MultiInputNode(2) {
-    type = Multiply;
+    type = NodeType::Multiply;
     name = "Multiply";
   }
 
@@ -51,7 +51,7 @@ struct DivideNode : MultiInputNode {
   static constexpr float kEpsilon{1e-6f}; // Avoid division by zero
 
   explicit DivideNode() : MultiInputNode(2) {
-    type = Divide;
+    type = NodeType::Divide;
     name = "Divide";
   }
 
@@ -90,7 +90,7 @@ struct DivideNode : MultiInputNode {
  */
 struct AddNode : MultiInputNode {
   explicit AddNode(const size_t num_inputs = 2) : MultiInputNode(num_inputs) {
-    type = Add;
+    type = NodeType::Add;
     name = "Add";
   }
 
@@ -130,7 +130,7 @@ struct AddNode : MultiInputNode {
  */
 struct SubtractNode : MultiInputNode {
   explicit SubtractNode() : MultiInputNode(2) {
-    type = Subtract;
+    type = NodeType::Subtract;
     name = "Subtract";
   }
 
@@ -163,7 +163,7 @@ struct SubtractNode : MultiInputNode {
  */
 struct ModuloNode : MultiInputNode {
   explicit ModuloNode() : MultiInputNode(2) {
-    type = Modulo;
+    type = NodeType::Modulo;
     name = "Modulo";
   }
 
@@ -196,7 +196,7 @@ struct ModuloNode : MultiInputNode {
  */
 struct PowerNode : MultiInputNode {
   explicit PowerNode() : MultiInputNode(2) {
-    type = Power;
+    type = NodeType::Power;
     name = "Power";
   }
 
@@ -229,7 +229,7 @@ struct PowerNode : MultiInputNode {
  */
 struct MinNode : MultiInputNode {
   explicit MinNode(const uint8_t num_inputs = 2) : MultiInputNode(num_inputs) {
-    type = Min;
+    type = NodeType::Min;
     name = "Min";
   }
 
@@ -269,7 +269,7 @@ struct MinNode : MultiInputNode {
  */
 struct MaxNode : MultiInputNode {
   explicit MaxNode(const uint8_t num_inputs = 2) : MultiInputNode(num_inputs) {
-    type = Max;
+    type = NodeType::Max;
     name = "Max";
   }
 
@@ -313,7 +313,7 @@ struct MaxNode : MultiInputNode {
  */
 struct AbsNode : Node {
   AbsNode() {
-    type = Abs;
+    type = NodeType::Abs;
     name = "Abs";
   }
 
@@ -346,7 +346,7 @@ struct AbsNode : Node {
  */
 struct FloorNode : Node {
   FloorNode() {
-    type = Floor;
+    type = NodeType::Floor;
     name = "Floor";
   }
 
@@ -379,7 +379,7 @@ struct FloorNode : Node {
  */
 struct CeilNode : Node {
   CeilNode() {
-    type = Ceil;
+    type = NodeType::Ceil;
     name = "Ceil";
   }
 
@@ -412,7 +412,7 @@ struct CeilNode : Node {
  */
 struct RoundNode : Node {
   RoundNode() {
-    type = Round;
+    type = NodeType::Round;
     name = "Round";
   }
 
@@ -446,7 +446,7 @@ struct RoundNode : Node {
  */
 struct SqrtNode : Node {
   SqrtNode() {
-    type = Sqrt;
+    type = NodeType::Sqrt;
     name = "Sqrt";
   }
 
@@ -481,7 +481,7 @@ struct SqrtNode : Node {
  */
 struct NegateNode : Node {
   NegateNode() {
-    type = Negate;
+    type = NodeType::Negate;
     name = "Negate";
   }
 
@@ -514,7 +514,7 @@ struct NegateNode : Node {
  */
 struct SinNode : Node {
   explicit SinNode() {
-    type = Sin;
+    type = NodeType::Sin;
     name = "Sin";
   }
 
@@ -544,7 +544,7 @@ struct SinNode : Node {
  */
 struct CosNode : Node {
   CosNode() {
-    type = Cos;
+    type = NodeType::Cos;
     name = "Cos";
   }
 
@@ -577,7 +577,7 @@ struct CosNode : Node {
  */
 struct TanNode : Node {
   TanNode() {
-    type = Tan;
+    type = NodeType::Tan;
     name = "Tan";
   }
 
@@ -619,7 +619,7 @@ struct RemapNode : Node {
   float out_max{1.0f};
 
   RemapNode() {
-    type = Remap;
+    type = NodeType::Remap;
     name = "Remap";
   }
 
@@ -697,7 +697,7 @@ struct ClampNode : Node {
   float max_value{1.0f};
 
   ClampNode() {
-    type = Clamp;
+    type = NodeType::Clamp;
     name = "Clamp";
   }
 
@@ -753,7 +753,7 @@ struct ClampNode : Node {
  */
 struct LerpNode : Node {
   LerpNode() {
-    type = Lerp;
+    type = NodeType::Lerp;
     name = "Lerp";
   }
 
@@ -796,7 +796,7 @@ struct SmoothStepNode : Node {
   float edge1{1.0f};
 
   SmoothStepNode() {
-    type = SmoothStep;
+    type = NodeType::SmoothStep;
     name = "SmoothStep";
   }
 

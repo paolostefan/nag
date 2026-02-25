@@ -10,7 +10,7 @@
 
 // Forward declarations
 struct Node;
-enum NodeType : uint8_t;
+enum class NodeType : uint8_t;
 
 namespace node_registration {
   void register_temporal_nodes();
