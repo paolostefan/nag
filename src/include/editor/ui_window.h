@@ -7,7 +7,6 @@
 #include "SDL.h"
 
 class UIWindow {
-
 public:
   virtual ~UIWindow() = default;
 
@@ -19,7 +18,9 @@ public:
 
 protected:
   virtual void main_event_loop();
+
   virtual bool initialize();
+
   virtual void shutdown();
 
   virtual void render_ui() = 0;
@@ -32,7 +33,6 @@ protected:
   std::string title{};
   int start_width{0};
   int start_height{0};
-
 };
 
 

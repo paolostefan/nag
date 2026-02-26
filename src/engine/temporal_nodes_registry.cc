@@ -2,9 +2,8 @@
 #include "engine/node_registry.h"
 
 namespace node_registration {
-
   void register_temporal_nodes() {
-    auto& registry = NodeRegistry::instance();
+    auto &registry = NodeRegistry::instance();
 
     registry.register_node<LFONode>(
       NodeType::LFO,
@@ -34,5 +33,4 @@ namespace node_registration {
       "Exponential smoothing filter (one-pole lowpass)"
     );
   }
-
-}  // namespace node_registration
+} // namespace node_registration
