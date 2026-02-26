@@ -2,9 +2,8 @@
 #include "engine/node_registry.h"
 
 namespace node_registration {
-
   void register_visual_nodes() {
-    auto& registry = NodeRegistry::instance();
+    auto &registry = NodeRegistry::instance();
 
     registry.register_node<ClearColorNode>(
       NodeType::ClearColor,
@@ -40,6 +39,11 @@ namespace node_registration {
       "Visual",
       "Composites multiple textures with blend modes"
     );
-  }
 
-}  // namespace node_registration
+    registry.register_node<OutputNode>(
+      NodeType::Output,
+      "Output",
+      "Visual",
+      "Sink: displays the final texture");
+  }
+} // namespace node_registration

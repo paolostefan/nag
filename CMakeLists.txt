@@ -184,6 +184,8 @@ add_library(nag_editor_lib
     src/include/editor/ui_window.h
     src/include/editor/command.h
     src/include/editor/command_history.h
+    src/editor/preview_window.cc
+    src/include/editor/preview_window.h
     src/editor/command_history.cc
     src/include/editor/graph_commands.h
     src/editor/graph_commands.cc
@@ -204,7 +206,8 @@ target_link_libraries(nag_editor_lib PUBLIC
 
 # Editor
 add_executable(editor src/editor/main.cc
-    src/include/editor/scrolling_buffer.h)
+    src/include/editor/scrolling_buffer.h
+)
 target_link_libraries(editor PRIVATE nag_editor_lib)
 
 # Proofs of concept

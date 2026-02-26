@@ -7,6 +7,7 @@
 #include "editor/command_history.h"
 
 #include "editor/ui_window.h"
+#include "editor/preview_window.h"
 #include "engine/generator_nodes.h"
 #include "engine/node_graph.h"
 #include "engine/visual_nodes.h"
@@ -20,6 +21,8 @@ public:
   GraphVisualInsight();
 
 protected:
+  void main_event_loop() override;
+
   void render_ui() override;
 
 private:
@@ -87,6 +90,10 @@ private:
   CommandHistory command_history;
 
   TimeNode *time_node{};
+
+  OutputNode *output_node{};
+
+  PreviewWindow preview_window;
 
   Stream<float> *noise_stream_out{};
   Stream<float> *sin_a_stream_out{};

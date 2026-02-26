@@ -6,14 +6,16 @@
 #include "IconsFontAwesome6.h"
 #include "ImGuiFileDialog.h"
 #include "implot.h"
+#include "backends/imgui_impl_opengl3.h"
+#include "backends/imgui_impl_sdl2.h"
 #include "editor/graph_commands.h"
 #include "spdlog/spdlog.h"
 
+#include "editor/scrolling_buffer.h"
 #include "engine/math_nodes.h"
 #include "engine/node_registry.h"
-#include "engine/temporal_nodes.h"
-#include "editor/scrolling_buffer.h"
 #include "engine/shader_quad_helper.h"
+#include "engine/temporal_nodes.h"
 #include "engine/visual_nodes.h"
 
 
@@ -39,6 +41,64 @@ GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC", 1024, 7
   style.Flags |= ImNodesStyleFlags_GridLinesPrimary | ImNodesStyleFlags_GridSnapping;
 }
 
+
+void GraphVisualInsight::main_event_loop() {
+  bool running = true;
+  SDL_Event event;
+
+  while (running) {
+    while (SDL_PollEvent(&event)) {
+      ImGui_ImplSDL2_ProcessEvent(&event);
+
+      if (event.type == SDL_QUIT) {
+        running = false;
+      }
+
+      if (event.type == SDL_WINDOWEVENT &&
+          event.window.event == SDL_WINDOWEVENT_CLOSE) {
+        // Close main window → quit.
+        if (event.window.windowID == SDL_GetWindowID(window)) {
+          running = false;
+        }
+        // ★ Close preview window → just close the preview, keep running.
+        if (preview_window.IsOpen() &&
+            event.window.windowID == preview_window.GetWindowID()) {
+          preview_window.Close();
+        }
+      }
+    }
+
+    if (!running) break;
+
+    // ── ImGui frame (main window) ──────────────────────────────────────────
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame();
+    ImGui::NewFrame();
+
+    const ImGuiID dockspace_id = ImGui::DockSpaceOverViewport(
+      0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+    ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_FirstUseEver);
+
+    render_ui();
+
+    ImGui::Render();
+    glViewport(0, 0,
+               static_cast<int>(io->DisplaySize.x),
+               static_cast<int>(io->DisplaySize.y));
+    glClearColor(.1f, .1f, .1f, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    SDL_GL_SwapWindow(window);
+
+    // Blit to preview window - only if open, not paused, and output node is valid
+    if (preview_window.IsOpen() &&
+        !preview_window.IsPaused() &&
+        output_node != nullptr) {
+      const Texture *tex = output_node->get_texture();
+      preview_window.Render(tex, gl_context, window);
+    }
+  }
+}
 
 // hardcoded default graph
 void GraphVisualInsight::build_default_graph() {
@@ -104,6 +164,12 @@ void GraphVisualInsight::build_default_graph() {
   graph.add_link(color->outputs[0], composite->inputs[0]);
   graph.add_link(grad->outputs[0], composite->inputs[1]);
 
+  // Visual: OutputNode (sink) — receives the composited texture
+  auto output_nodeunique = OutputNode::create();
+  output_nodeunique->position = {820, 220};
+  output_node = dynamic_cast<OutputNode *>(graph.add_node(std::move(output_nodeunique)));
+  graph.add_link(composite->outputs[0], output_node->inputs[0]);
+
   // Set stream pointers
   noise_stream_out = dynamic_cast<Stream<float> *>(noise_ptr->outputs[0].stream.get());
   sin_a_stream_out = dynamic_cast<Stream<float> *>(sin_a->outputs[0].stream.get());
@@ -118,6 +184,8 @@ void GraphVisualInsight::build_default_graph() {
 void GraphVisualInsight::reset_graph() {
   // invalidate pointers to clear references
   time_node = nullptr;
+  output_node = nullptr;
+
   noise_stream_out = nullptr;
   sin_a_stream_out = nullptr;
   sin_b_stream_out = nullptr;
@@ -158,7 +226,9 @@ void GraphVisualInsight::load_graph(const std::string &path) {
   for (const auto &node: graph.nodes) {
     if (node->type == NodeType::Time) {
       time_node = dynamic_cast<TimeNode *>(node.get());
-      break;
+    }
+    if (node->type == NodeType::Output) {
+      output_node = dynamic_cast<OutputNode *>(node.get());
     }
   }
 
@@ -229,6 +299,11 @@ void GraphVisualInsight::delete_selected_nodes() {
     // Special case: TimeNode
     if (node.get() == time_node) {
       time_node = nullptr;
+    }
+
+    // Special case: OutputNode
+    if (node.get() == output_node) {
+      output_node = nullptr;
     }
   }
 
@@ -340,6 +415,7 @@ void GraphVisualInsight::render_menu_bar() {
     ImGui::EndMenu();
   }
 
+  // ── File Menu ──────────────────────────────────────────────────────────────
   if (ImGui::BeginMenu("Edit")) {
     if (ImGui::MenuItem("Undo",
                         "Ctrl+Z",
@@ -359,6 +435,32 @@ void GraphVisualInsight::render_menu_bar() {
 
     ImGui::EndMenu();
   }
+
+  // ── View menu ─────────────────
+
+  if (ImGui::BeginMenu(ICON_FA_TV "  View")) {
+    // Toggle preview window.
+    if (ImGui::MenuItem(ICON_FA_DISPLAY "  Preview Window",
+                        nullptr,
+                        preview_window.IsOpen())) {
+      if (preview_window.IsOpen()) {
+        preview_window.Close();
+      } else {
+        preview_window.Open(window, gl_context);
+      }
+    }
+
+    // Pause toggle — enabled only if the preview is open.
+    if (ImGui::MenuItem(ICON_FA_PAUSE "  Pause Preview",
+                        "Space",
+                        preview_window.IsPaused(),
+                        preview_window.IsOpen())) {
+      preview_window.TogglePause();
+    }
+
+    ImGui::EndMenu();
+  }
+
 
   // ── Status Message (fade out after kStatusMessageDuration) ─────────────────
   const float elapsed = static_cast<float>(ImGui::GetTime()) - status_message_time;
@@ -634,7 +736,16 @@ void GraphVisualInsight::render_node_editor() {
         status_message_time = static_cast<float>(ImGui::GetTime());
       }
     }
+
+    // TODO ctrl-z
+
+
+    // Preview pause toggle
+    if (ImGui::IsKeyPressed(ImGuiKey_Space) && preview_window.IsOpen()) {
+      preview_window.TogglePause();
+    }
   }
+
 
   ImGui::End();
 }
