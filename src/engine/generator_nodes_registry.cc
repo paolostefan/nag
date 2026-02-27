@@ -28,7 +28,7 @@ namespace node_registration {
 
     registry.register_node<StepSequencerNode>(
       NodeType::StepSequencer,
-      "Noise",
+      "Step",
       "Generator",
       "Outputs a a sequence of values based on a trigger input"
     );

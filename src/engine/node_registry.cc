@@ -52,10 +52,11 @@ void register_all_builtin_nodes() {
 
   spdlog::info("Registering built-in nodes...");
 
+  node_registration::register_effect_nodes();
+  node_registration::register_generator_nodes();
+  node_registration::register_math_nodes();
   node_registration::register_temporal_nodes();
   node_registration::register_visual_nodes();
-  node_registration::register_math_nodes();
-  node_registration::register_generator_nodes();
 
   initialized = true;
 

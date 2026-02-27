@@ -766,13 +766,14 @@ void GraphVisualInsight::render_context_menu() {
     const auto categories = NodeRegistry::instance().get_nodes_by_category();
 
     // View order
-    static constexpr std::array<const char *, 4> kCategoryOrder{
-      "Visual", "Math", "Temporal", "Generators"
+    static constexpr const char *const kCategoryOrder[5] = {
+      "Visual", "Effects", "Math", "Temporal", "Generators"
     };
 
     // Category icons
     auto category_icon = [](const std::string &cat) -> const char * {
       if (cat == "Visual") return ICON_FA_PAINTBRUSH "  ";
+      if (cat == "Effects") return ICON_FA_WAND_MAGIC_SPARKLES "  ";
       if (cat == "Math") return ICON_FA_CALCULATOR "  ";
       if (cat == "Temporal") return ICON_FA_CLOCK "  ";
       if (cat == "Generators") return ICON_FA_BOLT "  ";

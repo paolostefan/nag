@@ -13,13 +13,16 @@ struct Node;
 enum class NodeType : uint8_t;
 
 namespace node_registration {
-  void register_temporal_nodes();
 
-  void register_visual_nodes();
+  void register_effect_nodes();
+
+  void register_generator_nodes();
 
   void register_math_nodes();
 
-  void register_generator_nodes();
+  void register_temporal_nodes();
+
+  void register_visual_nodes();
 }
 
 
