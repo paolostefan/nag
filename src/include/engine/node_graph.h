@@ -63,6 +63,8 @@ struct NodeGraph {
   bool add_link(int start_pin_id, int end_pin_id);
 
   [[nodiscard]] bool has_path(int from_node_id, int to_node_id) const;
+
+  [[nodiscard]] Node *find_node(int id) const;
 };
 
 

@@ -5,6 +5,7 @@
 
 #include "imnodes.h"
 #include "editor/command_history.h"
+#include "editor/node_properties_panel.h"
 
 #include "editor/ui_window.h"
 #include "editor/preview_window.h"
@@ -112,6 +113,8 @@ private:
   bool plot_flowing{true};
 
   float plot_history{10.0f};
+
+  NodePropertiesPanel node_properties_panel_;
 
   /**
    * @brief Feedback message shown after save/load operations.

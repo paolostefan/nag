@@ -367,14 +367,9 @@ void GraphVisualInsight::delete_selected_links() {
 // ============================================================================
 
 void GraphVisualInsight::render_ui() {
-  ImGui::Begin("Graph Insight", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_MenuBar);
-
-  render_menu_bar();
   render_node_editor();
 
   render_plot();
-
-  ImGui::End();
 }
 
 // ============================================================================
@@ -510,77 +505,81 @@ void GraphVisualInsight::render_plot() {
   static ScrollingBuffer buf_b(1000);
   static ScrollingBuffer buf_out(1000);
 
-  // Toolbar plot
-  if (!plot_flowing) {
-    if (ImGui::Button(ICON_FA_PLAY "##play")) plot_flowing = true;
-  } else if (ImGui::Button(ICON_FA_PAUSE "##pause")) {
-    plot_flowing = false;
+  if (ImGui::Begin("Time plot")) {
+    // Toolbar plot
+    if (!plot_flowing) {
+      if (ImGui::Button(ICON_FA_PLAY "##play")) plot_flowing = true;
+    } else if (ImGui::Button(ICON_FA_PAUSE "##pause")) {
+      plot_flowing = false;
+    }
+
+    ImGui::SameLine();
+
+    const float display_time = time_node ? time_node->time : 0.0f;
+    ImGui::Text("Time: %.2fs", display_time);
+
+    ImGui::SameLine();
+    if (ImGui::Button("Reset")) {
+      if (time_node) time_node->time = 0.0f;
+      buf_noise.Erase();
+      buf_a.Erase();
+      buf_b.Erase();
+      buf_out.Erase();
+    }
+
+    ImGui::SameLine();
+    ImGui::SliderFloat("History", &plot_history, 1.0f, 30.0f);
+
+    // Tick
+    if (plot_flowing && time_node) {
+      time_node->step(ImGui::GetIO().DeltaTime);
+      graph.evaluate();
+
+      // Add points only of ptrs are still valid (null after load)
+      if (noise_stream_out)
+        buf_noise.AddPoint(time_node->time, noise_stream_out->value);
+      if (sin_a_stream_out)
+        buf_a.AddPoint(time_node->time, sin_a_stream_out->value);
+      if (sin_b_stream_out)
+        buf_b.AddPoint(time_node->time, sin_b_stream_out->value);
+      if (out_stream)
+        buf_out.AddPoint(time_node->time, out_stream->value);
+    }
+
+    // Plot
+    static ImPlotAxisFlags axis_flags = ImPlotAxisFlags_AutoFit;
+    static ImPlotSpec spec;
+    spec.Size = 0;
+    spec.Stride = 2 * sizeof(float);
+
+    if (ImPlot::BeginPlot("##plot", ImVec2(-1, 150))) {
+      ImPlot::SetupAxes(nullptr, nullptr, axis_flags, axis_flags);
+      ImPlot::SetupAxisLimits(
+        ImAxis_X1,
+        std::max(display_time - plot_history, 0.0f),
+        std::max(plot_history, display_time),
+        ImGuiCond_Always
+      );
+      ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
+
+      auto plot_line = [&](const char *label, ScrollingBuffer &buf) {
+        if (buf.Data.empty()) return;
+        spec.Offset = buf.Offset;
+        ImPlot::PlotLine(label,
+                         &buf.Data[0].x, &buf.Data[0].y,
+                         buf.Data.size(), spec);
+      };
+
+      plot_line("Noise", buf_noise);
+      plot_line("Sin A", buf_a);
+      plot_line("Sin B", buf_b);
+      plot_line("Sum", buf_out);
+
+      ImPlot::EndPlot();
+    }
   }
 
-  ImGui::SameLine();
-
-  const float display_time = time_node ? time_node->time : 0.0f;
-  ImGui::Text("Time: %.2fs", display_time);
-
-  ImGui::SameLine();
-  if (ImGui::Button("Reset")) {
-    if (time_node) time_node->time = 0.0f;
-    buf_noise.Erase();
-    buf_a.Erase();
-    buf_b.Erase();
-    buf_out.Erase();
-  }
-
-  ImGui::SameLine();
-  ImGui::SliderFloat("History", &plot_history, 1.0f, 30.0f);
-
-  // Tick
-  if (plot_flowing && time_node) {
-    time_node->step(ImGui::GetIO().DeltaTime);
-    graph.evaluate();
-
-    // Add points only of ptrs are still valid (null after load)
-    if (noise_stream_out)
-      buf_noise.AddPoint(time_node->time, noise_stream_out->value);
-    if (sin_a_stream_out)
-      buf_a.AddPoint(time_node->time, sin_a_stream_out->value);
-    if (sin_b_stream_out)
-      buf_b.AddPoint(time_node->time, sin_b_stream_out->value);
-    if (out_stream)
-      buf_out.AddPoint(time_node->time, out_stream->value);
-  }
-
-  // Plot
-  static ImPlotAxisFlags axis_flags = ImPlotAxisFlags_AutoFit;
-  static ImPlotSpec spec;
-  spec.Size = 0;
-  spec.Stride = 2 * sizeof(float);
-
-  if (ImPlot::BeginPlot("##plot", ImVec2(-1, 150))) {
-    ImPlot::SetupAxes(nullptr, nullptr, axis_flags, axis_flags);
-    ImPlot::SetupAxisLimits(
-      ImAxis_X1,
-      std::max(display_time - plot_history, 0.0f),
-      std::max(plot_history, display_time),
-      ImGuiCond_Always
-    );
-    ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
-
-    auto plot_line = [&](const char *label, ScrollingBuffer &buf) {
-      if (buf.Data.empty()) return;
-      spec.Offset = buf.Offset;
-      ImPlot::PlotLine(label,
-                       &buf.Data[0].x, &buf.Data[0].y,
-                       buf.Data.size(), spec);
-    };
-
-    plot_line("Noise", buf_noise);
-    plot_line("Sin A", buf_a);
-    plot_line("Sin B", buf_b);
-    plot_line("Sum", buf_out);
-
-    ImPlot::EndPlot();
-  }
+  ImGui::End(); // Time plot
 }
 
 // ============================================================================
@@ -588,166 +587,172 @@ void GraphVisualInsight::render_plot() {
 // ============================================================================
 
 void GraphVisualInsight::render_node_editor() {
-  ImNodes::EditorContextSet(editor_context);
-  ImGui::Begin("Node Editor");
-  ImNodes::BeginNodeEditor();
+  if (ImGui::Begin("Node Editor", nullptr, ImGuiWindowFlags_MenuBar)) {
+    render_menu_bar();
 
-  const bool refresh_positions = node_pos_refresh.exchange(false);
+    ImNodes::EditorContextSet(editor_context);
+    ImNodes::BeginNodeEditor();
 
-  // ── Nodes ──────────────────────────────────────────────────────────────────
-  for (const auto &node: graph.nodes) {
-    // ReSharper disable once CppDFAConstantConditions
-    if (refresh_positions) {
-      ImNodes::SetNodeScreenSpacePos(node->id, node->position);
+    const bool refresh_positions = node_pos_refresh.exchange(false);
+
+    // ── Nodes ──────────────────────────────────────────────────────────────────
+    for (const auto &node: graph.nodes) {
+      // ReSharper disable once CppDFAConstantConditions
+      if (refresh_positions) {
+        ImNodes::SetNodeScreenSpacePos(node->id, node->position);
+      }
+
+      ImNodes::BeginNode(node->id);
+
+      ImNodes::BeginNodeTitleBar();
+      ImGui::TextUnformatted(node->name.c_str());
+      ImNodes::EndNodeTitleBar();
+
+      if (node->inputs.size() + node->outputs.size() == 0) {
+        ImGui::TextUnformatted("No inputs and outputs?!");
+      }
+
+      for (const auto &pin: node->inputs) {
+        ImNodes::PushColorStyle(ImNodesCol_Pin, get_pin_color(pin));
+        ImNodes::BeginInputAttribute(pin.id);
+        ImGui::TextUnformatted(pin.name.c_str());
+        ImNodes::EndInputAttribute();
+        ImNodes::PopColorStyle();
+      }
+
+      if (const auto *visual_node = dynamic_cast<VisualNode *>(node.get())) {
+        render_visual_node_body(visual_node);
+      }
+
+      for (const auto &pin: node->outputs) {
+        ImNodes::PushColorStyle(ImNodesCol_Pin, get_pin_color(pin));
+        ImNodes::BeginOutputAttribute(pin.id);
+        ImGui::TextUnformatted(pin.name.c_str());
+        ImNodes::EndOutputAttribute();
+        ImNodes::PopColorStyle();
+      }
+
+      ImNodes::EndNode();
     }
 
-    ImNodes::BeginNode(node->id);
+    node_pos_refresh = false;
 
-    ImNodes::BeginNodeTitleBar();
-    ImGui::TextUnformatted(node->name.c_str());
-    ImNodes::EndNodeTitleBar();
-
-    if (node->inputs.size() + node->outputs.size() == 0) {
-      ImGui::TextUnformatted("No inputs and outputs?!");
+    // ── Links ──────────────────────────────────────────────────────────────────
+    for (const auto &[id, start_pin_id, end_pin_id]: graph.links) {
+      ImNodes::Link(id, start_pin_id, end_pin_id
+      );
     }
 
-    for (const auto &pin: node->inputs) {
-      ImNodes::PushColorStyle(ImNodesCol_Pin, get_pin_color(pin));
-      ImNodes::BeginInputAttribute(pin.id);
-      ImGui::TextUnformatted(pin.name.c_str());
-      ImNodes::EndInputAttribute();
-      ImNodes::PopColorStyle();
+    ImNodes::EndNodeEditor();
+
+    // Sync ImNodes positions back into node data every frame
+    for (const auto &node: graph.nodes) {
+      node->position = ImNodes::GetNodeScreenSpacePos(node->id);
     }
 
-    if (const auto *visual_node = dynamic_cast<VisualNode *>(node.get())) {
-      render_visual_node_body(visual_node);
+    // ── Detect Right Click on Canvas ───────────────────────────────────────────
+    // Must come after EndNodeEditor() and before OpenPopup()
+
+    static int hovered_node_id{0}, hovered_link_id{0};
+
+    const bool should_open_add_menu =
+        ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) &&
+        ImGui::IsMouseClicked(ImGuiMouseButton_Right) &&
+        !ImNodes::IsNodeHovered(&hovered_node_id) &&
+        !ImNodes::IsLinkHovered(&hovered_link_id);
+    if (should_open_add_menu) {
+      ImGui::OpenPopup("add_node_popup");
     }
 
-    for (const auto &pin: node->outputs) {
-      ImNodes::PushColorStyle(ImNodesCol_Pin, get_pin_color(pin));
-      ImNodes::BeginOutputAttribute(pin.id);
-      ImGui::TextUnformatted(pin.name.c_str());
-      ImNodes::EndOutputAttribute();
-      ImNodes::PopColorStyle();
+    // ── Node/Link Context Menu (right click on selected) ───────────────────────
+    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) &&
+        ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+      if (ImNodes::NumSelectedNodes() > 0 ||
+          ImNodes::NumSelectedLinks() > 0) {
+        ImGui::OpenPopup("delete_selection_popup");
+      }
     }
 
-    ImNodes::EndNode();
-  }
+    // ── Context Menu ───────────────────────────────────────────────────────────
+    render_context_menu();
 
-  node_pos_refresh = false;
+    // ── Link Creation ──────────────────────────────────────────────────────────
+    int start_pin_id, end_pin_id;
+    if (ImNodes::IsLinkCreated(
+      &start_pin_id,
+      &end_pin_id)) {
+      auto add_link_command = std::make_unique<AddLinkCommand>(
+        start_pin_id, end_pin_id);
 
-  // ── Links ──────────────────────────────────────────────────────────────────
-  for (const auto &[id, start_pin_id, end_pin_id]: graph.links) {
-    ImNodes::Link(id, start_pin_id, end_pin_id
-    );
-  }
-
-  ImNodes::EndNodeEditor();
-
-  // Sync ImNodes positions back into node data every frame
-  for (const auto &node: graph.nodes) {
-    node->position = ImNodes::GetNodeScreenSpacePos(node->id);
-  }
-
-  // ── Detect Right Click on Canvas ───────────────────────────────────────────
-  // Must come after EndNodeEditor() and before OpenPopup()
-
-  static int hovered_node_id{0}, hovered_link_id{0};
-
-  const bool should_open_add_menu =
-      ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) &&
-      ImGui::IsMouseClicked(ImGuiMouseButton_Right) &&
-      !ImNodes::IsNodeHovered(&hovered_node_id) &&
-      !ImNodes::IsLinkHovered(&hovered_link_id);
-  if (should_open_add_menu) {
-    ImGui::OpenPopup("add_node_popup");
-  }
-
-  // ── Node/Link Context Menu (right click on selected) ───────────────────────
-  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) &&
-      ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-    if (ImNodes::NumSelectedNodes() > 0 ||
-        ImNodes::NumSelectedLinks() > 0) {
-      ImGui::OpenPopup("delete_selection_popup");
+      command_history.execute(graph, std::move(add_link_command));
     }
-  }
 
-  // ── Context Menu ───────────────────────────────────────────────────────────
-  render_context_menu();
-
-  // ── Link Creation ──────────────────────────────────────────────────────────
-  int start_pin_id, end_pin_id;
-  if (ImNodes::IsLinkCreated(
-    &start_pin_id,
-    &end_pin_id)) {
-    auto add_link_command = std::make_unique<AddLinkCommand>(
-      start_pin_id, end_pin_id);
-
-    command_history.execute(graph, std::move(add_link_command));
-  }
-
-  // ── Link Deletion ──────────────────────────────────────────────────────────
-  int link_id;
-  if (ImNodes::IsLinkDestroyed(&link_id)) {
-    for (const auto &link: graph.links) {
-      if (link.id == link_id) {
-        for (const auto &node: graph.nodes) {
-          for (auto &pin: node->inputs) {
-            if (pin.id == link.end_pin_id) {
-              pin.stream = nullptr;
-              goto link_cleanup_done;
+    // ── Link Deletion ──────────────────────────────────────────────────────────
+    int link_id;
+    if (ImNodes::IsLinkDestroyed(&link_id)) {
+      for (const auto &link: graph.links) {
+        if (link.id == link_id) {
+          for (const auto &node: graph.nodes) {
+            for (auto &pin: node->inputs) {
+              if (pin.id == link.end_pin_id) {
+                pin.stream = nullptr;
+                goto link_cleanup_done;
+              }
             }
           }
+        link_cleanup_done:
+          break;
         }
-      link_cleanup_done:
-        break;
       }
+
+      std::erase_if(graph.links, [link_id](const Link &link) {
+        return link.id == link_id;
+      });
     }
 
-    std::erase_if(graph.links, [link_id](const Link &link) {
-      return link.id == link_id;
-    });
-  }
+    // ==========================================================================
+    // ---- Keyboard Shortcuts --------------------------------------------------
+    // ==========================================================================
 
-  // ==========================================================================
-  // ---- Keyboard Shortcuts --------------------------------------------------
-  // ==========================================================================
+    // Delete selected nodes/links with Delete or Backspace key
+    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) {
+      if (ImGui::IsKeyPressed(ImGuiKey_Delete) ||
+          ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
+        const auto node_no = ImNodes::NumSelectedNodes();
+        const auto link_no = ImNodes::NumSelectedLinks();
 
-  // Delete selected nodes/links with Delete or Backspace key
-  if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) {
-    if (ImGui::IsKeyPressed(ImGuiKey_Delete) ||
-        ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
-      const auto node_no = ImNodes::NumSelectedNodes();
-      const auto link_no = ImNodes::NumSelectedLinks();
+        // Try deleting nodes first (higher priority)
+        if (node_no > 0) {
+          delete_selected_nodes();
+        }
+        // Otherwise delete selected links
+        else if (link_no > 0) {
+          delete_selected_links();
+        }
 
-      // Try deleting nodes first (higher priority)
-      if (node_no > 0) {
-        delete_selected_nodes();
+        if (node_no + link_no > 0) {
+          status_message = ICON_FA_TRASH "  Deleted " + std::to_string(node_no) +
+                           (node_no == 1 ? " node" : " nodes") + " and " + std::to_string(link_no) +
+                           (link_no == 1 ? " link" : " links");
+          status_message_time = static_cast<float>(ImGui::GetTime());
+        }
       }
-      // Otherwise delete selected links
-      else if (link_no > 0) {
-        delete_selected_links();
+
+      // TODO ctrl-z
+
+
+      // Preview pause toggle
+      if (ImGui::IsKeyPressed(ImGuiKey_Space) && preview_window.IsOpen()) {
+        preview_window.TogglePause();
       }
-
-      if (node_no + link_no > 0) {
-        status_message = ICON_FA_TRASH "  Deleted " + std::to_string(node_no) +
-                         (node_no == 1 ? " node" : " nodes") + " and " + std::to_string(link_no) +
-                         (link_no == 1 ? " link" : " links");
-        status_message_time = static_cast<float>(ImGui::GetTime());
-      }
-    }
-
-    // TODO ctrl-z
-
-
-    // Preview pause toggle
-    if (ImGui::IsKeyPressed(ImGuiKey_Space) && preview_window.IsOpen()) {
-      preview_window.TogglePause();
     }
   }
+  ImGui::End(); // Node editor
 
-
-  ImGui::End();
+  if (ImGui::Begin("Node properties")) {
+    node_properties_panel_.render(graph, command_history);
+  }
+  ImGui::End(); // Node properties
 }
 
 // ============================================================================
@@ -766,11 +771,13 @@ void GraphVisualInsight::render_context_menu() {
     const auto categories = NodeRegistry::instance().get_nodes_by_category();
 
     // View order
+    // @todo use integer constants
     static constexpr const char *const kCategoryOrder[5] = {
       "Visual", "Effects", "Math", "Temporal", "Generators"
     };
 
     // Category icons
+    // @todo dont use a lambda for this trivial task
     auto category_icon = [](const std::string &cat) -> const char * {
       if (cat == "Visual") return ICON_FA_PAINTBRUSH "  ";
       if (cat == "Effects") return ICON_FA_WAND_MAGIC_SPARKLES "  ";

@@ -3,6 +3,8 @@
 
 #include "engine/shader_node.h"
 
+#include "editor/property_widget.h"
+
 // ============================================================================
 // BlurNode — Gaussian blur, separable two-pass
 // ============================================================================
@@ -29,8 +31,8 @@ struct BlurNode : ShaderNode {
     name = "Blur";
   }
 
-  [[nodiscard]] const char* shader_name()      const override { return "blur_gaussian"; }
-  [[nodiscard]] const char* frag_shader_path() const override { return "shaders/blur.frag"; }
+  [[nodiscard]] const char *shader_name() const override { return "blur_gaussian"; }
+  [[nodiscard]] const char *frag_shader_path() const override { return "shaders/blur.frag"; }
 
   bool initialize(const int width, const int height) override {
     if (!ShaderNode::initialize(width, height)) return false;
@@ -39,22 +41,23 @@ struct BlurNode : ShaderNode {
 
   void render() override {
     if (!render_target || !render_target->is_valid() ||
-        !aux_target_    || !aux_target_->is_valid()  ||
-        !shader         || !shader->is_valid()) return;
+        !aux_target_ || !aux_target_->is_valid() ||
+        !shader || !shader->is_valid())
+      return;
 
     // ── Pass 1: horizontal ────────────────────────────────────────────────
     shader->use();
     shader->set_uniform("u_horizontal", 1);
     ShaderProgram::unuse();
 
-    draw_pass(*aux_target_, *shader);   // reads from input pin Texture*
+    draw_pass(*aux_target_, *shader); // reads from input pin Texture*
 
     // ── Pass 2: vertical ──────────────────────────────────────────────────
     shader->use();
     shader->set_uniform("u_horizontal", 0);
     ShaderProgram::unuse();
 
-    draw_pass(*render_target, *shader,  // reads from aux_target_ result
+    draw_pass(*render_target, *shader, // reads from aux_target_ result
               aux_target_->get_texture());
   }
 
@@ -69,7 +72,7 @@ struct BlurNode : ShaderNode {
     return j;
   }
 
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json& j) override {
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
     auto result = VisualNode::deserialize_params(j);
     if (!result) return result;
     // Re-init aux after base re-initialised the main RenderTarget.
@@ -83,10 +86,38 @@ struct BlurNode : ShaderNode {
   [[nodiscard]] static std::unique_ptr<BlurNode> create(const float radius = 4.0f) {
     auto node = std::make_unique<BlurNode>();
     node->radius = radius;
-    node->add_typed_input<Texture*>("texture");
-    node->add_typed_input<float>("radius");       // animatable via pin
-    node->add_typed_output<Texture*>("texture");
+    node->add_typed_input<Texture *>("texture");
+    node->add_typed_input<float>("radius"); // animatable via pin
+    node->add_typed_output<Texture *>("texture");
     return node;
+  }
+
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    // ------------------------------------------------------------------
+    // Radius — slider con range [0, 64]
+    // ------------------------------------------------------------------
+    PropertyWidget::SliderFloat(
+      "Radius",
+      /*node_id=*/id,
+      /*value=*/radius,
+      /*setter=*/[](Node &n, float v) {
+        dynamic_cast<BlurNode &>(n).radius = v;
+      },
+      graph, history,
+      /*min=*/0.0f, /*max=*/64.0f);
+
+    // ------------------------------------------------------------------
+    // Sigma — drag (nessun limite fisso, ma tipicamente [0.1, 20])
+    // // ------------------------------------------------------------------
+    // PropertyWidget::DragFloat(
+    //   "Sigma",
+    //   /*node_id=*/id,
+    //   /*value=*/sigma,
+    //   /*setter=*/[](Node &n, float v) {
+    //     dynamic_cast<BlurNode &>(n).sigma = v;
+    //   },
+    //   graph, history,
+    //   /*speed=*/0.05f, /*min=*/0.01f, /*max=*/20.0f);
   }
 };
 
@@ -115,8 +146,8 @@ struct ChromaticAberrationNode : ShaderNode {
     name = "ChromaticAberration";
   }
 
-  [[nodiscard]] const char* shader_name()      const override { return "chromatic_aberration"; }
-  [[nodiscard]] const char* frag_shader_path() const override { return "shaders/chromatic_aberration.frag"; }
+  [[nodiscard]] const char *shader_name() const override { return "chromatic_aberration"; }
+  [[nodiscard]] const char *frag_shader_path() const override { return "shaders/chromatic_aberration.frag"; }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
@@ -124,7 +155,7 @@ struct ChromaticAberrationNode : ShaderNode {
     return j;
   }
 
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json& j) override {
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
     auto result = VisualNode::deserialize_params(j);
     if (!result) return result;
     if (j.contains("strength")) strength = j["strength"];
@@ -132,12 +163,12 @@ struct ChromaticAberrationNode : ShaderNode {
   }
 
   [[nodiscard]] static std::unique_ptr<ChromaticAberrationNode> create(
-      const float strength = 3.0f) {
+    const float strength = 3.0f) {
     auto node = std::make_unique<ChromaticAberrationNode>();
     node->strength = strength;
-    node->add_typed_input<Texture*>("texture");
+    node->add_typed_input<Texture *>("texture");
     node->add_typed_input<float>("strength");
-    node->add_typed_output<Texture*>("texture");
+    node->add_typed_output<Texture *>("texture");
     return node;
   }
 };
@@ -166,8 +197,8 @@ struct PixelateNode : ShaderNode {
     name = "Pixelate";
   }
 
-  [[nodiscard]] const char* shader_name()      const override { return "pixelate"; }
-  [[nodiscard]] const char* frag_shader_path() const override { return "shaders/pixelate.frag"; }
+  [[nodiscard]] const char *shader_name() const override { return "pixelate"; }
+  [[nodiscard]] const char *frag_shader_path() const override { return "shaders/pixelate.frag"; }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
@@ -175,7 +206,7 @@ struct PixelateNode : ShaderNode {
     return j;
   }
 
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json& j) override {
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
     auto result = VisualNode::deserialize_params(j);
     if (!result) return result;
     if (j.contains("pixel_size")) pixel_size = j["pixel_size"];
@@ -183,12 +214,12 @@ struct PixelateNode : ShaderNode {
   }
 
   [[nodiscard]] static std::unique_ptr<PixelateNode> create(
-      const float pixel_size = 8.0f) {
+    const float pixel_size = 8.0f) {
     auto node = std::make_unique<PixelateNode>();
     node->pixel_size = pixel_size;
-    node->add_typed_input<Texture*>("texture");
+    node->add_typed_input<Texture *>("texture");
     node->add_typed_input<float>("pixel_size");
-    node->add_typed_output<Texture*>("texture");
+    node->add_typed_output<Texture *>("texture");
     return node;
   }
 };

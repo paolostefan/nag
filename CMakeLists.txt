@@ -179,19 +179,22 @@ target_compile_options(nag_engine_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
 add_library(nag_editor_lib
     ${imgui_filedialog_SOURCE_DIR}/ImGuiFileDialog.cpp
     ${imgui_filedialog_SOURCE_DIR}/ImGuiFileDialog.h
-    src/editor/editor.cc
-    src/editor/toast_manager.cc
     src/_3rd_party/ImGuizmo/ImSequencer.cpp
     src/_3rd_party/imnodes/imnodes.cpp
+    src/editor/command_history.cc
+    src/editor/graph_commands.cc
+    src/editor/preview_window.cc
+    src/editor/toast_manager.cc
     src/editor/ui_window.cc
-    src/include/editor/ui_window.h
     src/include/editor/command.h
     src/include/editor/command_history.h
-    src/editor/preview_window.cc
-    src/include/editor/preview_window.h
-    src/editor/command_history.cc
     src/include/editor/graph_commands.h
-    src/editor/graph_commands.cc
+    src/include/editor/preview_window.h
+    src/include/editor/set_node_param_command.h
+    src/include/editor/ui_window.h
+    src/include/editor/property_widget.h
+    src/include/editor/node_properties_panel.cc
+    src/include/editor/node_properties_panel.h
 )
 
 target_include_directories(nag_editor_lib PUBLIC
@@ -208,7 +211,9 @@ target_link_libraries(nag_editor_lib PUBLIC
 )
 
 # Editor
-add_executable(editor src/editor/main.cc
+add_executable(editor
+    src/editor/editor.cc
+    src/editor/main.cc
     src/include/editor/scrolling_buffer.h
 )
 target_link_libraries(editor PRIVATE nag_editor_lib)

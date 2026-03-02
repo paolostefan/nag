@@ -1,7 +1,6 @@
 #ifndef NAG_ENGINE_NODE_H
 #define NAG_ENGINE_NODE_H
 
-#include <cmath>
 #include <vector>
 
 #include "imgui.h"
@@ -9,6 +8,9 @@
 
 #include "engine/operation_result.h"
 #include "engine/stream.h"
+
+class CommandHistory;
+class NodeGraph;
 
 enum PinDirection:uint8_t {
   Input,
@@ -182,6 +184,23 @@ struct Node {
     return OperationResult::ok();
   }
 
+  /// @brief Render ImGui widgets for this node's parameters.
+  ///
+  /// Called every frame by NodePropertiesPanel when this node is selected.
+  /// The default implementation is a no-op; concrete nodes that expose
+  /// editable parameters should override this.
+  ///
+  /// Implementations should use the PropertyWidget helpers to ensure that
+  /// edits are recorded in CommandHistory with correct undo/redo semantics.
+  ///
+  /// @param graph    The active node graph (forwarded to history.execute).
+  /// @param history  The command history.
+  virtual void draw_properties(NodeGraph &graph, CommandHistory &history) {
+    // Default: no parameters to show.
+    (void) graph;
+    (void) history;
+  }
+
   // Add typed input
   template<typename T>
   void add_typed_input(const std::string &pin_name = "in") {
@@ -249,7 +268,7 @@ struct MultiInputNode : Node {
     if (j.contains("inputs_size")) {
       const size_t inputs_size = j["inputs_size"];
       inputs.clear();
-      for (size_t i=0; i<inputs_size; i++) {
+      for (size_t i = 0; i < inputs_size; i++) {
         add_input();
       }
     }

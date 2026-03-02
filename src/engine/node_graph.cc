@@ -222,3 +222,10 @@ void NodeGraph::evaluate() const {
   }
   return false;
 }
+
+[[nodiscard]] Node *NodeGraph::find_node(const int id) const {
+  for (const auto &node: nodes) {
+    if (node->id == id) return node.get();
+  }
+  return nullptr;
+}
