@@ -55,7 +55,7 @@ namespace PropertyWidget {
   inline void DragFloat(const std::string &label, int node_id, float &value,
                         std::function<void(Node &, float)> setter,
                         NodeGraph &graph, CommandHistory &history,
-                        float speed = 0.01f, float min = 0.0f, float max = 0.0f,
+                        const float speed = 0.01f, const float min = 0.0f, const float max = 0.0f,
                         const char *format = "%.3f") {
     const std::string key = internal::MakeKey(node_id, label);
     auto &before_map = internal::BeforeMap<float>();
@@ -88,6 +88,16 @@ namespace PropertyWidget {
   // ---------------------------------------------------------------------------
 
   /// @brief Renders a SliderFloat widget and emits an undo command on release.
+  ///
+  /// @param label   The label for the slider widget.
+  /// @param node_id The ID of the node this property belongs to.
+  /// @param value   Reference to a float field on the node.
+  /// @param setter  Callable to restore the value during undo/redo.
+  /// @param graph   The node graph (passed to history.execute).
+  /// @param history The command history.
+  /// @param min     Minimum value (default 0.0f).
+  /// @param max     Maximum value (default 1.0f).
+  /// @param format  Printf format string (default "%.3f").
   inline void SliderFloat(const std::string &label, int node_id, float &value,
                           std::function<void(Node &, float)> setter,
                           NodeGraph &graph, CommandHistory &history,
@@ -145,7 +155,7 @@ namespace PropertyWidget {
     }
 
     if (ImGui::IsItemDeactivatedAfterEdit()) {
-      auto it = before_map.find(key);
+      const auto it = before_map.find(key);
       if (it != before_map.end()) {
         const ImVec4 value_before = it->second;
         before_map.erase(it);
@@ -171,12 +181,19 @@ namespace PropertyWidget {
 
   /// @brief Renders a Combo widget for enum-like int values.
   ///
-  /// @param items   Null-terminated array of item labels (e.g. {"Normal",
-  ///                "Add", "Multiply", nullptr}).
-  /// @param value   Reference to the int/enum field on the node.
-  /// @param setter  Callable accepting (Node&, int).
+  /// @param label The label for the combo widget.
+  /// @param node_id The ID of the node this property belongs to.
+  /// @param value Reference to the int/enum field on the node.
+  /// @param items Null-terminated array of item labels (e.g. {"Normal", "Add",
+  ///              "Multiply", nullptr}).
+  /// @param item_count The number of items in @ref items.
+  /// @param setter Callable accepting (Node&, int) to restore the value during
+  ///                undo/redo.
+  /// @param graph The node graph (passed to `history.execute()`).
+  /// @param history The command history.
   inline void Combo(const std::string &label, int node_id, int &value,
-                    const char *const*items, int item_count,
+                    const char *const*items,
+                    int item_count,
                     std::function<void(Node &, int)> setter,
                     NodeGraph &graph, CommandHistory &history) {
     const std::string key = internal::MakeKey(node_id, label);
@@ -190,8 +207,8 @@ namespace PropertyWidget {
     if (ImGui::Combo(label.c_str(), &value, items, item_count)) {
       // Combo changes value immediately on selection — capture before if not
       // already done, then emit command right away (no drag phase).
-      auto it = before_map.find(key);
-      const int value_before = (it != before_map.end()) ? it->second : value;
+      const auto it = before_map.find(key);
+      const int value_before = it != before_map.end() ? it->second : value;
       before_map.erase(key);
 
       if (value_before != value) {

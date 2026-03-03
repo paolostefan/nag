@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "editor/property_widget.h"
 #include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 
@@ -120,7 +121,7 @@ struct VisualNode : Node {
  * Useful as a background or for testing.
  */
 struct ClearColorNode : VisualNode {
-  Vec4 color{0.0f, 0.0f, 0.0f, 1.0f};
+  Color color{0.0f, 0.0f, 0.0f, 1.0f};
 
   ClearColorNode() {
     type = NodeType::ClearColor;
@@ -215,14 +216,14 @@ public:
  * Renders a gradient to texture.
  */
 struct GradientNode : VisualNode {
-  enum Type : uint8_t {
+  enum class Type : uint8_t {
     Linear,
     Radial,
   };
 
   Type gradient_type{Type::Linear};
-  Vec4 color_start{1.0f, 0.0f, 0.0f, 1.0f};
-  Vec4 color_end{0.0f, 0.0f, 1.0f, 1.0f};
+  Color color_start{1.0f, 0.0f, 0.0f, 1.0f};
+  Color color_end{0.0f, 0.0f, 1.0f, 1.0f};
   Vec2 direction{1.0f, 0.0f};
   Vec2 center{0.5f, 0.5f};
 
@@ -260,7 +261,7 @@ struct GradientNode : VisualNode {
     shader->use();
 
     shader->set_uniform("u_resolution", render_target->get_fwidth(), render_target->get_fheight());
-    shader->set_uniform("u_gradient_type", gradient_type);
+    shader->set_uniform("u_gradient_type", static_cast<int>(gradient_type));
     shader->set_uniform("u_color_start", color_start.x, color_start.y, color_start.z, color_start.w);
     shader->set_uniform("u_color_end", color_end.x, color_end.y, color_end.z, color_end.w);
     shader->set_uniform("u_direction", direction.x, direction.y);
@@ -327,6 +328,44 @@ struct GradientNode : VisualNode {
     }
   }
 
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    static constexpr const char *types[] = {"Linear", "Radial", nullptr};
+    // Gradient type
+    int gradient_type_int = static_cast<int>(gradient_type);
+
+    PropertyWidget::Combo("Gradient type",
+                          /* node_id=*/ id,
+                          /* value=*/ gradient_type_int,
+                          /* items=*/ types,
+                          /* item_count=*/ 2,
+                          /* setter=*/[](Node &n, int v) {
+                            dynamic_cast<GradientNode &>(n).gradient_type = static_cast<Type>(v);
+                          },
+                          graph, history);
+
+    gradient_type = static_cast<Type>(gradient_type_int);
+
+    auto *color_start_vec4 = reinterpret_cast<ImVec4 *>(&color_start);
+    PropertyWidget::ColorEdit4("Start color",
+                               /* node_id=*/ id,
+                               /* value=*/ *color_start_vec4,
+                               /* setter =*/[](Node &n, const ImVec4 &col) {
+                                 dynamic_cast<GradientNode &>(n).color_start = col;
+                               },
+                               graph, history
+    );
+
+    auto *color_end_vec4 = reinterpret_cast<ImVec4 *>(&color_end);
+    PropertyWidget::ColorEdit4("End color",
+                               /* node_id=*/ id,
+                               /* value=*/ *color_end_vec4,
+                               /* setter =*/[](Node &n, const ImVec4 &col) {
+                                 dynamic_cast<GradientNode &>(n).color_end = col;
+                               },
+                               graph, history
+    );
+  }
+
 private:
   void update_from_inputs() {
     // TODO: Add input connections for dynamic control
@@ -337,7 +376,7 @@ public:
    * Create a gradient node.
    */
   static std::unique_ptr<GradientNode> create(
-    const Type gradient_type = Linear,
+    const Type gradient_type = Type::Linear,
     const Vec4 &color_start = Vec4::red(),
     const Vec4 &color_end = Vec4::blue()) {
     auto node = std::make_unique<GradientNode>();
@@ -427,8 +466,7 @@ struct CircleNode : VisualNode {
   [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
     try {
       // Deserialize base class first
-      auto result = VisualNode::deserialize_params(j);
-      if (!result) {
+      if (auto result = VisualNode::deserialize_params(j); !result) {
         return result;
       }
 
@@ -458,6 +496,31 @@ struct CircleNode : VisualNode {
         std::string("Failed to deserialize CircleNode params: ") + e.what()
       );
     }
+  }
+
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    auto *color_ = reinterpret_cast<ImVec4 *>(&color);
+    PropertyWidget::ColorEdit4("Color",
+                               /* node_id=*/ id,
+                               /* value=*/ *color_,
+                               /* setter =*/[](Node &n, const ImVec4 &col) {
+                                 dynamic_cast<CircleNode &>(n).color = col;
+                               },
+                               graph, history
+    );
+
+    // ------------------------------------------------------------------
+    // Edge smoothness — slider with range [0, 1]
+    // ------------------------------------------------------------------
+    PropertyWidget::SliderFloat(
+      "Edge smoothness",
+      /*node_id=*/id,
+      /*value=*/edge_smoothness,
+      /*setter=*/[](Node &n, const float v) {
+        dynamic_cast<CircleNode &>(n).edge_smoothness = v;
+      },
+      graph, history,
+      /*min=*/0.0f, /*max=*/1.0f);
   }
 
 private:
@@ -520,7 +583,11 @@ struct Rectangle2DNode : VisualNode {
     name = "Rectangle";
   }
 
-  bool initialize() {
+  bool initialize(const int width, const int height) override {
+    if (!VisualNode::initialize(width, height)) {
+      return false;
+    }
+
     shader = ShaderManager::instance().load(
       "rectangle",
       "shaders/fullscreen_quad.vert",
@@ -621,14 +688,15 @@ public:
   /**
    * Create a rectangle node.
    */
-  static std::unique_ptr<Rectangle2DNode> create(
-    const Vec2 &position = {0.5f, 0.5f},
-    const Vec2 &size = {0.3f, 0.2f},
-    const Color &color = Color::white()) {
+  static std::unique_ptr<Rectangle2DNode> create(const Vec2 &position = {0.5f, 0.5f},
+                                                 const Vec2 &size = {0.3f, 0.2f},
+                                                 const Color &color = Color::white(),
+                                                 const float corner_radius = 0.f) {
     auto node = std::make_unique<Rectangle2DNode>();
     node->position = position;
     node->size = size;
     node->color = color;
+    node->corner_radius = corner_radius;
 
     node->add_input("pos_x");
     node->add_input("pos_y");
@@ -638,6 +706,31 @@ public:
 
     return node;
   }
+
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    auto *color_ = reinterpret_cast<ImVec4 *>(&color);
+    PropertyWidget::ColorEdit4("Color",
+                               /* node_id=*/ id,
+                               /* value=*/ *color_,
+                               /* setter =*/[](Node &n, const ImVec4 &col) {
+                                 dynamic_cast<Rectangle2DNode &>(n).color = col;
+                               },
+                               graph, history
+    );
+
+    // ------------------------------------------------------------------
+    // Edge smoothness — slider with range [0, 1]
+    // ------------------------------------------------------------------
+    PropertyWidget::SliderFloat(
+      "Corner radius",
+      /*node_id=*/id,
+      /*value=*/corner_radius,
+      /*setter=*/[](Node &n, const float v) {
+        dynamic_cast<Rectangle2DNode &>(n).corner_radius = v;
+      },
+      graph, history,
+      /*min=*/0.0f, /*max=*/1.0f);
+  }
 };
 
 
@@ -646,19 +739,20 @@ public:
 // ===========================================================================
 
 /**
+ *  @class CompositeNode
  * Composites multiple texture inputs with blend modes.
  *
  * Defaults to 2 texture inputs and has always a texture output.
  */
 struct CompositeNode : VisualNode {
-  enum BlendMode : uint8_t {
+  enum class BlendMode : uint8_t {
     Normal, // Alpha blend
     Add, // Additive
     Multiply,
     Screen,
   };
 
-  BlendMode blend_mode{Normal};
+  BlendMode blend_mode{BlendMode::Normal};
   float opacity{1.0f};
 
   std::shared_ptr<ShaderProgram> shader;
@@ -710,7 +804,7 @@ struct CompositeNode : VisualNode {
     shader->use();
 
     shader->set_uniform("u_resolution", render_target->get_fwidth(), render_target->get_fheight());
-    shader->set_uniform("u_blend_mode", blend_mode);
+    shader->set_uniform("u_blend_mode", static_cast<int>(blend_mode));
     shader->set_uniform("u_opacity", opacity);
 
     // Bind textures
@@ -768,7 +862,7 @@ struct CompositeNode : VisualNode {
   /**
    * Create a composite node.
    */
-  static std::unique_ptr<CompositeNode> create(const BlendMode blend_mode = Normal,
+  static std::unique_ptr<CompositeNode> create(const BlendMode blend_mode = BlendMode::Normal,
                                                const float opacity = 1.0f) {
     auto node = std::make_unique<CompositeNode>();
     node->blend_mode = blend_mode;
@@ -778,9 +872,29 @@ struct CompositeNode : VisualNode {
     node->add_typed_output<Texture *>("texture"); // Composited output
     return node;
   }
+
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    static constexpr const char *modes[] = {"Normal", "Add", "Multiply", "Screen", nullptr};
+
+    // Blend mode
+    int blend_mode_int = static_cast<int>(blend_mode);
+
+    PropertyWidget::Combo("Blend mode",
+                          /* node_id=*/ id,
+                          /* value=*/ blend_mode_int,
+                          /* items=*/ modes,
+                          /* item_count=*/ 4,
+                          /* setter=*/[](Node &n, int value) {
+                            dynamic_cast<CompositeNode &>(n).blend_mode = static_cast<BlendMode>(value);
+                          },
+                          graph, history);
+
+    blend_mode = static_cast<BlendMode>(blend_mode_int);
+  }
 };
 
 /**
+ * @class OutputNode
  * @brief Sink node — receives the final Texture* and exposes it for display.
  *
  * Has a single typed input pin of type Texture*.

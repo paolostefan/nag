@@ -129,33 +129,33 @@ file(GLOB ENGINE_SRCS src/engine/*.cc src/fx/*.cc)
 
 add_library(nag_engine_lib
     ${ENGINE_SRCS}
+    src/engine/effects_node_registry.cc
+    src/engine/generator_nodes_registry.cc
+    src/engine/math_nodes_registry.cc
     src/engine/node_graph.cc
-    src/engine/render_target.cc
-    src/engine/shader_quad_helper.cc
     src/engine/node_registry.cc
+    src/engine/render_target.cc
     src/engine/serialization/json_graph_serializer.cc
+    src/engine/shader_quad_helper.cc
     src/engine/temporal_nodes_registry.cc
     src/engine/visual_nodes_registry.cc
-    src/engine/math_nodes_registry.cc
-    src/engine/generator_nodes_registry.cc
-    src/include/engine/stream.h
-    src/include/engine/node.h
-    src/include/engine/node_graph.h
-    src/include/engine/id_generator.h
     src/include/engine/effect_nodes.h
     src/include/engine/generator_nodes.h
-    src/include/engine/math_nodes.h
-    src/include/engine/shader_node.h
-    src/include/engine/temporal_nodes.h
-    src/include/engine/visual_types.h
-    src/include/engine/visual_nodes.h
-    src/include/engine/render_target.h
-    src/include/engine/shader_quad_helper.h
-    src/include/engine/operation_result.h
+    src/include/engine/id_generator.h
+    src/include/engine/node.h
+    src/include/engine/node_graph.h
     src/include/engine/node_registry.h
+    src/include/engine/math_nodes.h
+    src/include/engine/operation_result.h
+    src/include/engine/render_target.h
     src/include/engine/serialization/graph_serializer.h
     src/include/engine/serialization/json_graph_serializer.h
-    src/engine/effects_node_registry.cc
+    src/include/engine/shader_node.h
+    src/include/engine/shader_quad_helper.h
+    src/include/engine/stream.h
+    src/include/engine/temporal_nodes.h
+    src/include/engine/visual_nodes.h
+    src/include/engine/visual_types.h
 )
 target_include_directories(nag_engine_lib PUBLIC
     src/include

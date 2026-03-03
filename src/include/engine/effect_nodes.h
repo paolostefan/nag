@@ -94,7 +94,7 @@ struct BlurNode : ShaderNode {
 
   void draw_properties(NodeGraph &graph, CommandHistory &history) override {
     // ------------------------------------------------------------------
-    // Radius — slider con range [0, 64]
+    // Radius — slider with range [0, 64]
     // ------------------------------------------------------------------
     PropertyWidget::SliderFloat(
       "Radius",
