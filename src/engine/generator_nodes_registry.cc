@@ -1,4 +1,4 @@
-#include "engine/generator_nodes.h"
+#include "../include/engine/nodes/generator_nodes.h"
 #include "engine/node_registry.h"
 
 namespace node_registration {

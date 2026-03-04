@@ -4,7 +4,7 @@
 #include <cmath>
 #include <random>
 
-#include "engine/node.h"
+#include "engine/nodes/node.h"
 
 /**
  * Node that outputs a constant float value.

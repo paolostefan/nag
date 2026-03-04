@@ -1,12 +1,11 @@
 #ifndef NAG_ENGINE_TEMPORAL_NODES_H
 #define NAG_ENGINE_TEMPORAL_NODES_H
 
-#include "engine/node.h"
-
 #include <cmath>
 #include <deque>
 #include <memory>
 
+#include "engine/nodes/node.h"
 
 static constexpr float PI = M_PI;
 

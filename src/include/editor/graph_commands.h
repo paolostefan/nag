@@ -8,7 +8,7 @@
 #include "nlohmann/json.hpp"
 
 #include "editor/command.h"
-#include "engine/node.h"
+#include "engine/nodes/node.h"
 #include "engine/node_graph.h"
 
 struct SerializedLink {

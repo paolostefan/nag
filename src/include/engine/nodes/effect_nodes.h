@@ -1,8 +1,7 @@
 #ifndef NAG_ENGINE_EFFECT_NODES_H
 #define NAG_ENGINE_EFFECT_NODES_H
 
-#include "engine/shader_node.h"
-
+#include "engine/nodes/shader_node.h"
 #include "editor/property_widget.h"
 
 // ============================================================================
@@ -61,11 +60,6 @@ struct BlurNode : ShaderNode {
               aux_target_->get_texture());
   }
 
-  void bind_params() override {
-    // radius is already bound as u_radius via bind_float_inputs().
-    // Nothing extra needed here.
-  }
-
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
     j["radius"] = radius;
@@ -73,9 +67,10 @@ struct BlurNode : ShaderNode {
   }
 
   [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    auto result = VisualNode::deserialize_params(j);
-    if (!result) return result;
-    // Re-init aux after base re-initialised the main RenderTarget.
+    if (auto result = VisualNode::deserialize_params(j); !result) {
+      return result;
+    }
+    // Re-init aux after base re-initialized the main RenderTarget.
     if (render_target) {
       initialize_aux(render_target->get_width(), render_target->get_height());
     }
@@ -107,7 +102,7 @@ struct BlurNode : ShaderNode {
       /*min=*/0.0f, /*max=*/64.0f);
 
     // ------------------------------------------------------------------
-    // Sigma — drag (nessun limite fisso, ma tipicamente [0.1, 20])
+    // Sigma — drag (no fixed limits, typically [0.1, 20])
     // // ------------------------------------------------------------------
     // PropertyWidget::DragFloat(
     //   "Sigma",
@@ -156,8 +151,10 @@ struct ChromaticAberrationNode : ShaderNode {
   }
 
   [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    auto result = VisualNode::deserialize_params(j);
-    if (!result) return result;
+    if (auto result = VisualNode::deserialize_params(j); !result) {
+      return result;
+    }
+
     if (j.contains("strength")) strength = j["strength"];
     return OperationResult::ok();
   }
@@ -207,8 +204,10 @@ struct PixelateNode : ShaderNode {
   }
 
   [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    auto result = VisualNode::deserialize_params(j);
-    if (!result) return result;
+    if (auto result = VisualNode::deserialize_params(j); !result) {
+      return result;
+    }
+
     if (j.contains("pixel_size")) pixel_size = j["pixel_size"];
     return OperationResult::ok();
   }

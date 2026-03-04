@@ -7,7 +7,7 @@
 #include "spdlog/spdlog.h"
 
 #include "engine/id_generator.h"
-#include "engine/node.h"
+#include "engine/nodes/node.h"
 
 struct Link {
   int id{};

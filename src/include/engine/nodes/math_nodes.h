@@ -1,10 +1,10 @@
 #ifndef NAG_ENGINE_MATH_NODES_H
 #define NAG_ENGINE_MATH_NODES_H
 
-#include "engine/node.h"
-
 #include <algorithm>
 #include <cmath>
+
+#include "engine/nodes/node.h"
 
 // ===========================================================================
 // BINARY OPERATORS (2 inputs -> 1 output)

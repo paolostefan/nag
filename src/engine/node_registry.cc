@@ -2,7 +2,7 @@
 
 #include "spdlog/spdlog.h"
 
-#include "engine/node.h"
+#include "../include/engine/nodes/node.h"
 
 NodeRegistry &NodeRegistry::instance() {
   static NodeRegistry instance;

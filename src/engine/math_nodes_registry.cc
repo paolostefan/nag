@@ -1,4 +1,4 @@
-#include "engine/math_nodes.h"
+#include "../include/engine/nodes/math_nodes.h"
 #include "engine/node_registry.h"
 
 namespace node_registration {

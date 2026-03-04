@@ -4,7 +4,8 @@
 #include <string>
 
 #include "GL/glew.h"
-#include "engine/visual_nodes.h"
+
+#include "engine/nodes/visual_node.h"
 #include "engine/shader_manager.h"
 #include "engine/shader_quad_helper.h"
 
@@ -53,6 +54,8 @@ struct ShaderNode : VisualNode {
   virtual void bind_params() {
   }
 
+  virtual void update_from_inputs() {}
+
   // ── VisualNode overrides ──────────────────────────────────────────────────
 
   bool initialize(const int width, const int height) override {
@@ -68,6 +71,8 @@ struct ShaderNode : VisualNode {
     if (!render_target || !render_target->is_valid() ||
         !shader || !shader->is_valid())
       return;
+
+    update_from_inputs();
 
     render_target->bind();
     render_target->clear();
@@ -92,7 +97,7 @@ protected:
   std::unique_ptr<RenderTarget> aux_target_;
 
   /**
-   * @brief Initialises aux_target_. Call from initialize() in two-pass nodes.
+   * @brief Initializes aux_target_. Call from initialize() in two-pass nodes.
    */
   bool initialize_aux(const int width, const int height) {
     aux_target_ = std::make_unique<RenderTarget>();
@@ -143,13 +148,14 @@ protected:
     int unit = 0;
     for (const auto &pin: inputs) {
       if (*pin.data_type != typeid(Texture *)) continue;
+
       GLuint tex_id = 0;
       if (const auto *s = dynamic_cast<Stream<Texture *> *>(pin.stream.get())) {
         if (s->value && s->value->is_valid()) tex_id = s->value->texture_id;
       }
       glActiveTexture(GL_TEXTURE0 + unit);
       glBindTexture(GL_TEXTURE_2D, tex_id);
-      prog->set_uniform(("u_texture_" + std::to_string(unit)).c_str(), unit);
+      prog->set_uniform("u_texture_" + std::to_string(unit), unit);
       ++unit;
     }
   }
@@ -162,7 +168,7 @@ protected:
       if (const auto *s = dynamic_cast<Stream<float> *>(pin.stream.get())) {
         value = s->value;
       }
-      prog->set_uniform(("u_" + pin.name).c_str(), value);
+      prog->set_uniform("u_" + pin.name, value);
     }
   }
 

@@ -1,8 +1,8 @@
 #include "gtest/gtest.h"
 
-#include "engine/node.h"
+#include "../src/include/engine/nodes/node.h"
 #include "engine/generator_nodes.h"
-#include "engine/math_nodes.h"
+#include "../src/include/engine/nodes/math_nodes.h"
 #include "engine/temporal_nodes.h"
 #include "engine/node_graph.h"
 

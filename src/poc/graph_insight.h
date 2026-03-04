@@ -3,7 +3,7 @@
 
 #include "editor/ui_window.h"
 #include "engine/generator_nodes.h"
-#include "engine/math_nodes.h"
+#include "../include/engine/nodes/math_nodes.h"
 #include "engine/node_graph.h"
 
 class GraphInsight : public UIWindow {

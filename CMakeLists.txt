@@ -7,6 +7,9 @@ set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME "dependencies")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Generate compile_commands.json for clangd and AI assistant tooling
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # OpenGL is required by SDL2
 find_package(OpenGL REQUIRED)
 
@@ -139,23 +142,6 @@ add_library(nag_engine_lib
     src/engine/shader_quad_helper.cc
     src/engine/temporal_nodes_registry.cc
     src/engine/visual_nodes_registry.cc
-    src/include/engine/effect_nodes.h
-    src/include/engine/generator_nodes.h
-    src/include/engine/id_generator.h
-    src/include/engine/node.h
-    src/include/engine/node_graph.h
-    src/include/engine/node_registry.h
-    src/include/engine/math_nodes.h
-    src/include/engine/operation_result.h
-    src/include/engine/render_target.h
-    src/include/engine/serialization/graph_serializer.h
-    src/include/engine/serialization/json_graph_serializer.h
-    src/include/engine/shader_node.h
-    src/include/engine/shader_quad_helper.h
-    src/include/engine/stream.h
-    src/include/engine/temporal_nodes.h
-    src/include/engine/visual_nodes.h
-    src/include/engine/visual_types.h
 )
 target_include_directories(nag_engine_lib PUBLIC
     src/include
@@ -173,31 +159,32 @@ target_link_libraries(nag_engine_lib PUBLIC
     nlohmann_json::nlohmann_json
 )
 
-target_compile_options(nag_engine_lib PRIVATE ${OPENMPT_CFLAGS_OTHER})
+target_compile_options(nag_engine_lib PRIVATE
+    ${OPENMPT_CFLAGS_OTHER}
+    -Wall
+    -Wextra
+    -Wpedantic
+    -Wshadow
+    -Wnon-virtual-dtor
+    -Wold-style-cast
+    -Woverloaded-virtual
+)
 
 # Editor library
 add_library(nag_editor_lib
     ${imgui_filedialog_SOURCE_DIR}/ImGuiFileDialog.cpp
-    ${imgui_filedialog_SOURCE_DIR}/ImGuiFileDialog.h
     src/_3rd_party/ImGuizmo/ImSequencer.cpp
     src/_3rd_party/imnodes/imnodes.cpp
     src/editor/command_history.cc
     src/editor/graph_commands.cc
+    src/editor/node_properties_panel.cc
     src/editor/preview_window.cc
     src/editor/toast_manager.cc
     src/editor/ui_window.cc
-    src/include/editor/command.h
-    src/include/editor/command_history.h
-    src/include/editor/graph_commands.h
-    src/include/editor/preview_window.h
-    src/include/editor/set_node_param_command.h
-    src/include/editor/ui_window.h
-    src/include/editor/property_widget.h
-    src/include/editor/node_properties_panel.cc
-    src/include/editor/node_properties_panel.h
 )
 
 target_include_directories(nag_editor_lib PUBLIC
+    src/include
     src/_3rd_party/ImGuizmo
     src/_3rd_party/imnodes
     ${iconfont_cppheaders_SOURCE_DIR}/

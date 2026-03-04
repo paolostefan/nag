@@ -12,11 +12,11 @@
 #include "spdlog/spdlog.h"
 
 #include "editor/scrolling_buffer.h"
-#include "engine/math_nodes.h"
+#include "../include/engine/nodes/math_nodes.h"
 #include "engine/node_registry.h"
 #include "engine/shader_quad_helper.h"
 #include "engine/temporal_nodes.h"
-#include "engine/visual_nodes.h"
+#include "../include/engine/nodes/visual_nodes.h"
 
 
 GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC", 1024, 768) {

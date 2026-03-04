@@ -9,9 +9,9 @@
 
 #include "editor/ui_window.h"
 #include "editor/preview_window.h"
-#include "engine/generator_nodes.h"
+#include "../include/engine/nodes/generator_nodes.h"
 #include "engine/node_graph.h"
-#include "engine/visual_nodes.h"
+#include "../include/engine/nodes/visual_nodes.h"
 #include "engine/serialization/json_graph_serializer.h"
 
 
