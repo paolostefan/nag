@@ -177,10 +177,12 @@ add_library(nag_editor_lib
     src/_3rd_party/imnodes/imnodes.cpp
     src/editor/command_history.cc
     src/editor/graph_commands.cc
+    src/editor/graph_editor_ui.cc
     src/editor/node_properties_panel.cc
     src/editor/preview_window.cc
     src/editor/toast_manager.cc
     src/editor/ui_window.cc
+    src/editor/graph_editor.cc
 )
 
 target_include_directories(nag_editor_lib PUBLIC

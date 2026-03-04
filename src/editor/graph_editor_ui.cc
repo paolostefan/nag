@@ -1,37 +1,29 @@
-#include "graph_visual_insight.h"
+#include "editor/graph_editor_ui.h"
 
 #include <algorithm>
 #include <unordered_set>
 
 #include "IconsFontAwesome6.h"
 #include "ImGuiFileDialog.h"
-#include "implot.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "backends/imgui_impl_sdl2.h"
 #include "editor/graph_commands.h"
 #include "spdlog/spdlog.h"
 
-#include "editor/scrolling_buffer.h"
-#include "engine/nodes/math_nodes.h"
 #include "engine/node_registry.h"
 #include "engine/shader_quad_helper.h"
-#include "engine/temporal_nodes.h"
 #include "engine/nodes/visual_nodes.h"
 
 
-GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC",
-                                                    1024, 768),
-                                           GraphEditor() {
-  // Init stuff
+GraphEditorUI::GraphEditorUI() : UIWindow("Graph Editor", 1024, 768) {
+  // Init graphics helpers
   ShaderQuadHelper::instance().initialize();
-  build_default_graph();
 
-  // ===============
-
+  // Initialize ImNodes
   ImNodes::CreateContext();
   editor_context = ImNodes::EditorContextCreate();
 
-  // from example imnodes code
+  // Configure ImNodes from example code
   ImNodes::PushAttributeFlag(ImNodesAttributeFlags_EnableLinkDetachWithDragClick);
 
   ImNodesIO &io = ImNodes::GetIO();
@@ -43,7 +35,7 @@ GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC",
 }
 
 
-void GraphVisualInsight::main_event_loop() {
+void GraphEditorUI::main_event_loop() {
   bool running = true;
   SDL_Event event;
 
@@ -61,6 +53,7 @@ void GraphVisualInsight::main_event_loop() {
         if (event.window.windowID == SDL_GetWindowID(window)) {
           running = false;
         }
+
         // ★ Close preview window → just close the preview, keep running.
         if (preview_window.IsOpen() &&
             event.window.windowID == preview_window.GetWindowID()) {
@@ -91,107 +84,20 @@ void GraphVisualInsight::main_event_loop() {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     SDL_GL_SwapWindow(window);
 
-    // Blit to preview window - only if open, not paused, and output node is valid
-    if (preview_window.IsOpen() &&
-        !preview_window.IsPaused() &&
-        output_node != nullptr) {
+    // Blit to preview window - only if open and output node is valid
+    if (preview_window.IsOpen() && output_node != nullptr) {
       const Texture *tex = output_node->get_texture();
       preview_window.Render(tex, gl_context, window);
     }
   }
 }
 
-// hardcoded default graph
-void GraphVisualInsight::build_default_graph() {
-  if (time_node == nullptr || output_node == nullptr) {
-    spdlog::error("Default graph requires TimeNode and OutputNode");
-    return;
-  }
-
-  // Noise node
-  auto noise_node = NoiseNode::create(1.0f, 4.0f, 3, 0.8f);
-  noise_node->position = {150, 30};
-  const auto noise_ptr = graph.add_node(std::move(noise_node));
-  graph.add_link(time_node->outputs[0], noise_ptr->inputs[0]);
-
-  // Oscillator A
-  auto lfo_a = LFONode::create(1.3f, 2.5f, LFONode::WaveShape::Sawtooth);
-  lfo_a->name = "Oscillator A";
-  lfo_a->position = {150, 110};
-  const Node *sin_a = graph.add_node(std::move(lfo_a));
-  graph.add_link(time_node->outputs[0], sin_a->inputs[0]);
-
-  // Oscillator B node connected to time
-  auto lfo_b_node = LFONode::create(.7f, 1.0f, LFONode::WaveShape::Sine, 0, .5f);
-  lfo_b_node->name = "Oscillator B";
-  lfo_b_node->position = {150, 190};
-  const Node *lfo_b = graph.add_node(std::move(lfo_b_node));
-  graph.add_link(time_node->outputs[0], lfo_b->inputs[0]);
-
-  // Adding node connected to A, B and Noise
-  auto adding_node = AddNode::create(3);
-  adding_node->position = {290, 30};
-  const auto adding = graph.add_node(std::move(adding_node));
-  graph.add_link(noise_ptr->outputs[0], adding->inputs[0]);
-  graph.add_link(sin_a->outputs[0], adding->inputs[1]);
-  graph.add_link(lfo_b->outputs[0], adding->inputs[2]);
-
-  // Visual: ClearColor
-  auto color_node = ClearColorNode::create(Color::yellow());
-  if (!color_node->initialize(400, 300)) {
-    throw std::runtime_error("ClearColorNode: failed to initialize");
-  }
-  color_node->position = {420, 220};
-  const auto color = graph.add_node(std::move(color_node));
-  graph.add_link(lfo_b->outputs[0], color->inputs[1] /* The green component will oscillate */);
-
-  // Visual: GradientNode (dangling)
-  auto grad_node = GradientNode::create(
-    GradientNode::Type::Radial, Color::cyan(), Color::transparent()
-  );
-  grad_node->position = {420, 40};
-  grad_node->initialize(400, 300);
-  grad_node->evaluate(); // TODO: remove this, it's here only because the node is dangling
-  const auto grad = graph.add_node(std::move(grad_node));
-
-  auto composite_node = CompositeNode::create(CompositeNode::BlendMode::Multiply, .5f);
-  composite_node->position = {620, 220};
-  if (!composite_node->initialize(400, 300)) {
-    throw std::runtime_error("Unable to start");
-  }
-  const auto composite = graph.add_node(std::move(composite_node));
-  graph.add_link(color->outputs[0], composite->inputs[0]);
-  graph.add_link(grad->outputs[0], composite->inputs[1]);
-
-  // Visual: OutputNode (sink) — receives the composited texture
-  graph.add_link(composite->outputs[0], output_node->inputs[0]);
-
-  // Set stream pointers
-  noise_stream_out = dynamic_cast<Stream<float> *>(noise_ptr->outputs[0].stream.get());
-  sin_a_stream_out = dynamic_cast<Stream<float> *>(sin_a->outputs[0].stream.get());
-  sin_b_stream_out = dynamic_cast<Stream<float> *>(lfo_b->outputs[0].stream.get());
-  out_stream = dynamic_cast<Stream<float> *>(adding->outputs[0].stream.get());
-}
-
 // ============================================================================
 // Graph Actions
 // ============================================================================
 
-void GraphVisualInsight::reset_graph() {
-  // invalidate pointers to clear references
-  time_node = nullptr;
-  output_node = nullptr;
 
-  noise_stream_out = nullptr;
-  sin_a_stream_out = nullptr;
-  sin_b_stream_out = nullptr;
-  out_stream = nullptr;
-
-  graph.clear();
-  node_pos_refresh = true;
-}
-
-void GraphVisualInsight::save_graph(const std::string &path) {
+void GraphEditorUI::save_graph(const std::string &path) {
   if (const auto result = serializer.save(graph, path)) {
     status_message = ICON_FA_CHECK "  Graph saved to " + path;
     spdlog::info("Graph saved to {}", path);
@@ -207,7 +113,7 @@ void GraphVisualInsight::save_graph(const std::string &path) {
 // delete_selected_nodes
 // ============================================================================
 
-void GraphVisualInsight::delete_selected_nodes() {
+void GraphEditorUI::delete_selected_nodes() {
   // Get selected node IDs from ImNodes
   const int num_selected = ImNodes::NumSelectedNodes();
   if (num_selected == 0) return;
@@ -222,25 +128,6 @@ void GraphVisualInsight::delete_selected_nodes() {
     nodes_to_delete.insert(id);
   }
 
-  // ---- Step 1: Invalidate plot stream pointers if deleted ---------------
-  for (const auto &node: graph.nodes) {
-    if (!nodes_to_delete.contains(node->id)) continue;
-
-    // Check if this node is connected to our plot streams
-    for (const auto &output: node->outputs) {
-      if (output.stream.get() == noise_stream_out ||
-          output.stream.get() == sin_a_stream_out ||
-          output.stream.get() == sin_b_stream_out ||
-          output.stream.get() == out_stream) {
-        // Null out the pointer to prevent dangling reference
-        if (output.stream.get() == noise_stream_out) noise_stream_out = nullptr;
-        if (output.stream.get() == sin_a_stream_out) sin_a_stream_out = nullptr;
-        if (output.stream.get() == sin_b_stream_out) sin_b_stream_out = nullptr;
-        if (output.stream.get() == out_stream) out_stream = nullptr;
-      }
-    }
-  }
-
   delete_nodes(nodes_to_delete);
 }
 
@@ -248,7 +135,7 @@ void GraphVisualInsight::delete_selected_nodes() {
 // delete_selected_links
 // ============================================================================
 
-void GraphVisualInsight::delete_selected_links() {
+void GraphEditorUI::delete_selected_links() {
   const int num_selected = ImNodes::NumSelectedLinks();
   if (num_selected == 0) return;
 
@@ -267,239 +154,13 @@ void GraphVisualInsight::delete_selected_links() {
 // render_ui
 // ============================================================================
 
-void GraphVisualInsight::render_ui() {
-  render_node_editor();
-
-  render_plot();
-}
-
-// ============================================================================
-// render_menu_bar
-// ============================================================================
-
-void GraphVisualInsight::render_menu_bar() {
-  if (!ImGui::BeginMenuBar()) return;
-
-  // ── File Menu ──────────────────────────────────────────────────────────────
-  if (ImGui::BeginMenu(ICON_FA_FILE "  File")) {
-    if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK "  Save Graph", "Ctrl+S")) {
-      IGFD::FileDialogConfig cfg;
-      cfg.path = ".";
-      cfg.fileName = "graph.json";
-      cfg.flags = ImGuiFileDialogFlags_ConfirmOverwrite;
-      ImGuiFileDialog::Instance()->OpenDialog(
-        kSaveDialogKey, "Save Graph", kFileFilter, cfg
-      );
-    }
-
-    if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "  Load Graph", "Ctrl+O")) {
-      IGFD::FileDialogConfig cfg;
-      cfg.path = ".";
-      ImGuiFileDialog::Instance()->OpenDialog(
-        kLoadDialogKey, "Load Graph", kFileFilter, cfg
-      );
-    }
-
-    ImGui::Separator();
-
-    if (ImGui::MenuItem(ICON_FA_ROTATE_LEFT "  Reset to Default")) {
-      reset_graph();
-      build_default_graph();
-      status_message = ICON_FA_CHECK "  Graph reset to default";
-      status_message_time = static_cast<float>(ImGui::GetTime());
-    }
-
-    ImGui::EndMenu();
-  }
-
-  // ── File Menu ──────────────────────────────────────────────────────────────
-  if (ImGui::BeginMenu("Edit")) {
-    if (ImGui::MenuItem("Undo",
-                        "Ctrl+Z",
-                        false,
-                        command_history.can_undo())) {
-      command_history.undo(graph);
-      node_pos_refresh.store(true);
-    }
-
-    if (ImGui::MenuItem("Redo",
-                        "Ctrl+Shift+Z",
-                        false,
-                        command_history.can_redo())) {
-      command_history.redo(graph);
-      node_pos_refresh.store(true);
-    }
-
-    ImGui::EndMenu();
-  }
-
-  // ── View menu ─────────────────
-
-  if (ImGui::BeginMenu(ICON_FA_TV "  View")) {
-    // Toggle preview window.
-    if (ImGui::MenuItem(ICON_FA_DISPLAY "  Preview Window",
-                        nullptr,
-                        preview_window.IsOpen())) {
-      if (preview_window.IsOpen()) {
-        preview_window.Close();
-      } else {
-        preview_window.Open(window, gl_context);
-      }
-    }
-
-    // Pause toggle — enabled only if the preview is open.
-    if (ImGui::MenuItem(ICON_FA_PAUSE "  Pause Preview",
-                        "Space",
-                        preview_window.IsPaused(),
-                        preview_window.IsOpen())) {
-      preview_window.TogglePause();
-    }
-
-    ImGui::EndMenu();
-  }
-
-
-  // ── Status Message (fade out after kStatusMessageDuration) ─────────────────
-  const float elapsed = static_cast<float>(ImGui::GetTime()) - status_message_time;
-  if (!status_message.empty() && elapsed < kStatusMessageDuration) {
-    // Alpha: 100% for 2s, then 1s fade out
-    constexpr float fade_start = kStatusMessageDuration - 1.0f;
-    const float alpha = elapsed > fade_start
-                          ? 1.0f - (elapsed - fade_start)
-                          : 1.0f;
-
-    ImGui::SameLine(0.0f, 30.0f);
-    ImGui::PushStyleColor(ImGuiCol_Text,
-                          ImVec4(0.6f, 1.0f, 0.6f, alpha));
-    ImGui::TextUnformatted(status_message.c_str());
-    ImGui::PopStyleColor();
-  }
-
-  ImGui::EndMenuBar();
-
-  // ── File Dialog: Save ──────────────────────────────────────────────────────
-  constexpr ImVec2 dialog_size{600.0f, 400.0f};
-  if (ImGuiFileDialog::Instance()->Display(
-    kSaveDialogKey, ImGuiWindowFlags_NoCollapse, dialog_size)) {
-    if (ImGuiFileDialog::Instance()->IsOk()) {
-      save_graph(ImGuiFileDialog::Instance()->GetFilePathName());
-    }
-    ImGuiFileDialog::Instance()->Close();
-  }
-
-  // ── File Dialog: Load ──────────────────────────────────────────────────────
-  if (ImGuiFileDialog::Instance()->Display(
-    kLoadDialogKey, ImGuiWindowFlags_NoCollapse, dialog_size)) {
-    if (ImGuiFileDialog::Instance()->IsOk()) {
-      const auto path = ImGuiFileDialog::Instance()->GetFilePathName();
-      if (auto result = load_graph(path); !result) {
-        status_message = ICON_FA_TRIANGLE_EXCLAMATION "  Load failed: " +
-                         result.error_message;
-        status_message_time = static_cast<float>(ImGui::GetTime());
-      } else {
-        // Stream pointers become null: empty plot after load
-        status_message = ICON_FA_CHECK "  Graph loaded from " + path;
-        status_message_time = static_cast<float>(ImGui::GetTime());
-        spdlog::info("Graph loaded from {}", path);
-      }
-    }
-    ImGuiFileDialog::Instance()->Close();
-  }
-}
-
-// ============================================================================
-// render_plot
-// ============================================================================
-
-void GraphVisualInsight::render_plot() {
-  static ScrollingBuffer buf_noise(1000);
-  static ScrollingBuffer buf_a(1000);
-  static ScrollingBuffer buf_b(1000);
-  static ScrollingBuffer buf_out(1000);
-
-  if (ImGui::Begin("Time plot")) {
-    // Toolbar plot
-    if (!plot_flowing) {
-      if (ImGui::Button(ICON_FA_PLAY "##play")) plot_flowing = true;
-    } else if (ImGui::Button(ICON_FA_PAUSE "##pause")) {
-      plot_flowing = false;
-    }
-
-    ImGui::SameLine();
-
-    const float display_time = time_node ? time_node->time : 0.0f;
-    ImGui::Text("Time: %.2fs", display_time);
-
-    ImGui::SameLine();
-    if (ImGui::Button("Reset")) {
-      if (time_node) time_node->time = 0.0f;
-      buf_noise.Erase();
-      buf_a.Erase();
-      buf_b.Erase();
-      buf_out.Erase();
-    }
-
-    ImGui::SameLine();
-    ImGui::SliderFloat("History", &plot_history, 1.0f, 30.0f);
-
-    // Tick
-    if (plot_flowing && time_node) {
-      time_node->step(ImGui::GetIO().DeltaTime);
-      graph.evaluate();
-
-      // Add points only of ptrs are still valid (null after load)
-      if (noise_stream_out)
-        buf_noise.AddPoint(time_node->time, noise_stream_out->value);
-      if (sin_a_stream_out)
-        buf_a.AddPoint(time_node->time, sin_a_stream_out->value);
-      if (sin_b_stream_out)
-        buf_b.AddPoint(time_node->time, sin_b_stream_out->value);
-      if (out_stream)
-        buf_out.AddPoint(time_node->time, out_stream->value);
-    }
-
-    // Plot
-    static ImPlotAxisFlags axis_flags = ImPlotAxisFlags_AutoFit;
-    static ImPlotSpec spec;
-    spec.Size = 0;
-    spec.Stride = 2 * sizeof(float);
-
-    if (ImPlot::BeginPlot("##plot", ImVec2(-1, 150))) {
-      ImPlot::SetupAxes(nullptr, nullptr, axis_flags, axis_flags);
-      ImPlot::SetupAxisLimits(
-        ImAxis_X1,
-        std::max(display_time - plot_history, 0.0f),
-        std::max(plot_history, display_time),
-        ImGuiCond_Always
-      );
-      ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
-
-      auto plot_line = [&](const char *label, ScrollingBuffer &buf) {
-        if (buf.Data.empty()) return;
-        spec.Offset = buf.Offset;
-        ImPlot::PlotLine(label,
-                         &buf.Data[0].x, &buf.Data[0].y,
-                         buf.Data.size(), spec);
-      };
-
-      plot_line("Noise", buf_noise);
-      plot_line("Sin A", buf_a);
-      plot_line("Sin B", buf_b);
-      plot_line("Sum", buf_out);
-
-      ImPlot::EndPlot();
-    }
-  }
-
-  ImGui::End(); // Time plot
-}
-
-// ============================================================================
-// render_node_editor
-// ============================================================================
-
-void GraphVisualInsight::render_node_editor() {
-  if (ImGui::Begin("Node Editor", nullptr, ImGuiWindowFlags_MenuBar)) {
+void GraphEditorUI::render_ui() {
+  if (ImGui::Begin("##NodeEditor", nullptr, ImGuiWindowFlags_MenuBar
+                                           | ImGuiWindowFlags_NoDecoration
+                                           | ImGuiWindowFlags_NoCollapse
+                                           | ImGuiWindowFlags_NoResize
+                                           | ImGuiWindowFlags_NoMove
+                                           | ImGuiWindowFlags_NoTitleBar)) {
     render_menu_bar();
 
     ImNodes::EditorContextSet(editor_context);
@@ -551,8 +212,7 @@ void GraphVisualInsight::render_node_editor() {
 
     // ── Links ──────────────────────────────────────────────────────────────────
     for (const auto &[id, start_pin_id, end_pin_id]: graph.links) {
-      ImNodes::Link(id, start_pin_id, end_pin_id
-      );
+      ImNodes::Link(id, start_pin_id, end_pin_id);
     }
 
     ImNodes::EndNodeEditor();
@@ -649,14 +309,6 @@ void GraphVisualInsight::render_node_editor() {
           status_message_time = static_cast<float>(ImGui::GetTime());
         }
       }
-
-      // TODO ctrl-z
-
-
-      // Preview pause toggle
-      if (ImGui::IsKeyPressed(ImGuiKey_Space) && preview_window.IsOpen()) {
-        preview_window.TogglePause();
-      }
     }
   }
   ImGui::End(); // Node editor
@@ -668,10 +320,135 @@ void GraphVisualInsight::render_node_editor() {
 }
 
 // ============================================================================
+// render_menu_bar
+// ============================================================================
+
+void GraphEditorUI::render_menu_bar() {
+  if (!ImGui::BeginMenuBar()) return;
+
+  // ── File Menu ──────────────────────────────────────────────────────────────
+  if (ImGui::BeginMenu(ICON_FA_FILE "  File")) {
+    if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK "  Save Graph", "Ctrl+S")) {
+      IGFD::FileDialogConfig cfg;
+      cfg.path = ".";
+      cfg.fileName = "graph.json";
+      cfg.flags = ImGuiFileDialogFlags_ConfirmOverwrite;
+      ImGuiFileDialog::Instance()->OpenDialog(
+        kSaveDialogKey, "Save Graph", kFileFilter, cfg
+      );
+    }
+
+    if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "  Load Graph", "Ctrl+O")) {
+      IGFD::FileDialogConfig cfg;
+      cfg.path = ".";
+      ImGuiFileDialog::Instance()->OpenDialog(
+        kLoadDialogKey, "Load Graph", kFileFilter, cfg
+      );
+    }
+
+    ImGui::Separator();
+
+    if (ImGui::MenuItem(ICON_FA_ROTATE_LEFT "  Reset to Default")) {
+      reset_graph();
+      build_default_graph();
+      status_message = ICON_FA_CHECK "  Graph reset to default";
+      status_message_time = static_cast<float>(ImGui::GetTime());
+    }
+
+    ImGui::EndMenu();
+  }
+
+  // ── Edit Menu ──────────────────────────────────────────────────────────────
+  if (ImGui::BeginMenu("Edit")) {
+    if (ImGui::MenuItem("Undo",
+                        "Ctrl+Z",
+                        false,
+                        command_history.can_undo())) {
+      command_history.undo(graph);
+      node_pos_refresh.store(true);
+    }
+
+    if (ImGui::MenuItem("Redo",
+                        "Ctrl+Shift+Z",
+                        false,
+                        command_history.can_redo())) {
+      command_history.redo(graph);
+      node_pos_refresh.store(true);
+    }
+
+    ImGui::EndMenu();
+  }
+
+  // ── View menu ─────────────────────
+
+  if (ImGui::BeginMenu(ICON_FA_TV "  View")) {
+    // Toggle preview window.
+    if (ImGui::MenuItem(ICON_FA_DISPLAY "  Preview Window",
+                        nullptr,
+                        preview_window.IsOpen())) {
+      if (preview_window.IsOpen()) {
+        preview_window.Close();
+      } else {
+        preview_window.Open(window, gl_context);
+      }
+    }
+
+    ImGui::EndMenu();
+  }
+
+
+  // ── Status Message (fade out after kStatusMessageDuration) ─────────────────
+  const float elapsed = static_cast<float>(ImGui::GetTime()) - status_message_time;
+  if (!status_message.empty() && elapsed < kStatusMessageDuration) {
+    // Alpha: 100% for 2s, then 1s fade out
+    constexpr float fade_start = kStatusMessageDuration - 1.0f;
+    const float alpha = elapsed > fade_start
+                          ? 1.0f - (elapsed - fade_start)
+                          : 1.0f;
+
+    ImGui::SameLine(0.0f, 30.0f);
+    ImGui::PushStyleColor(ImGuiCol_Text,
+                          ImVec4(0.6f, 1.0f, 0.6f, alpha));
+    ImGui::TextUnformatted(status_message.c_str());
+    ImGui::PopStyleColor();
+  }
+
+  ImGui::EndMenuBar();
+
+  // ── File Dialog: Save ──────────────────────────────────────────────────────
+  constexpr ImVec2 dialog_size{600.0f, 400.0f};
+  if (ImGuiFileDialog::Instance()->Display(
+    kSaveDialogKey, ImGuiWindowFlags_NoCollapse, dialog_size)) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
+      save_graph(ImGuiFileDialog::Instance()->GetFilePathName());
+    }
+    ImGuiFileDialog::Instance()->Close();
+  }
+
+  // ── File Dialog: Load ──────────────────────────────────────────────────────
+  if (ImGuiFileDialog::Instance()->Display(
+    kLoadDialogKey, ImGuiWindowFlags_NoCollapse, dialog_size)) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
+      const auto path = ImGuiFileDialog::Instance()->GetFilePathName();
+      if (auto result = load_graph(path); !result) {
+        status_message = ICON_FA_TRIANGLE_EXCLAMATION "  Load failed: " +
+                         result.error_message;
+        status_message_time = static_cast<float>(ImGui::GetTime());
+      } else {
+        status_message = ICON_FA_CHECK "  Graph loaded from " + path;
+        status_message_time = static_cast<float>(ImGui::GetTime());
+        spdlog::info("Graph loaded from {}", path);
+      }
+    }
+    ImGuiFileDialog::Instance()->Close();
+  }
+}
+
+// ============================================================================
 // render_context_menu
 // ============================================================================
 
-void GraphVisualInsight::render_context_menu() {
+void GraphEditorUI::render_context_menu() {
   if (ImGui::BeginPopup("add_node_popup")) {
     // Screen space
     const ImVec2 spawn_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
@@ -778,7 +555,7 @@ void GraphVisualInsight::render_context_menu() {
 // Helpers
 // ============================================================================
 
-void GraphVisualInsight::render_visual_node_body(
+void GraphEditorUI::render_visual_node_body(
   const VisualNode *visual_node) {
   if (!visual_node ||
       !visual_node->render_target ||
@@ -799,13 +576,9 @@ void GraphVisualInsight::render_visual_node_body(
   );
 }
 
-unsigned int GraphVisualInsight::get_pin_color(const Pin &pin) {
+unsigned int GraphEditorUI::get_pin_color(const Pin &pin) {
   if (*pin.data_type == typeid(float)) return ImColor(100, 200, 100);
   if (*pin.data_type == typeid(Texture *)) return ImColor(200, 100, 200);
   if (*pin.data_type == typeid(void)) return ImColor(150, 150, 150);
   return ImColor(100, 100, 200);
-}
-
-int main(int, char **) {
-  return GraphVisualInsight().run();
 }

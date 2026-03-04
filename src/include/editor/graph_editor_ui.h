@@ -1,9 +1,8 @@
-#ifndef NAG_GRAPH_INSIGHT_H
-#define NAG_GRAPH_INSIGHT_H
+#ifndef NAG_EDITOR_GRAPH_EDITOR_UI_H
+#define NAG_EDITOR_GRAPH_EDITOR_UI_H
 
 #include "imnodes.h"
 #include "editor/node_properties_panel.h"
-
 #include "editor/ui_window.h"
 #include "editor/graph_editor.h"
 #include "editor/preview_window.h"
@@ -11,31 +10,54 @@
 #include "engine/nodes/visual_nodes.h"
 
 
-class GraphVisualInsight : public UIWindow, public GraphEditor {
+/**
+ * @class GraphEditorUI
+ * @brief A complete node graph editor UI component combining UIWindow and GraphEditor.
+ *
+ * This class provides a full-featured node editor with:
+ * - Visual node graph editing via ImNodes
+ * - File save/load functionality
+ * - Node creation/deletion with undo/redo support
+ * - Preview window for visual nodes
+ * - Time-based evaluation system
+ */
+class GraphEditorUI : public UIWindow, public GraphEditor {
 public:
-  void build_default_graph();
+  GraphEditorUI();
 
-  GraphVisualInsight();
+  ~GraphEditorUI() override = default;
 
 protected:
   void main_event_loop() override;
 
   void render_ui() override;
 
-  void reset_graph() override;
-
 private:
   // ── Rendering ─────────────────────────────────────────────────────────────
+
+  /**
+   * @brief Renders the menu bar with File, Edit, and View menus.
+   */
   void render_menu_bar();
 
-  void render_plot();
-
-  void render_node_editor();
-
+  /**
+   * @brief Renders context menus (add node, delete selection).
+   */
   void render_context_menu();
 
+  /**
+   * @brief Renders a visual preview of a visual node in the editor.
+   *
+   * @param visual_node The visual node to render (must be non-null)
+   */
   static void render_visual_node_body(const VisualNode *visual_node);
 
+  /**
+   * @brief Gets the color for a pin based on its data type.
+   *
+   * @param pin The pin to get the color for
+   * @return ImColor for the pin
+   */
   static unsigned int get_pin_color(const Pin &pin);
 
   // ── Graph Actions ─────────────────────────────────────────────────────────
@@ -51,8 +73,7 @@ private:
    * @brief Deletes selected nodes and their associated links.
    *
    * Safely removes nodes from the graph and cleans up any links
-   * that reference the deleted nodes. Invalidates stream pointers
-   * if any deleted node was being plotted.
+   * that reference the deleted nodes.
    */
   void delete_selected_nodes();
 
@@ -63,23 +84,19 @@ private:
 
   // ── Graph State ───────────────────────────────────────────────────────────
 
+  /**
+   * @brief Preview window for displaying visual node outputs.
+   */
   PreviewWindow preview_window;
-
-  Stream<float> *noise_stream_out{};
-  Stream<float> *sin_a_stream_out{};
-  Stream<float> *sin_b_stream_out{};
-  Stream<float> *out_stream{};
 
   // ── ImNodes State ─────────────────────────────────────────────────────────
   ImNodesEditorContext *editor_context{nullptr};
 
   // ── UI State ──────────────────────────────────────────────────────────────
 
-  /** Controls plot time flow. */
-  bool plot_flowing{true};
-
-  float plot_history{10.0f};
-
+  /**
+   * @brief Node properties panel for inspecting/editing selected nodes.
+   */
   NodePropertiesPanel node_properties_panel_;
 
   /**
@@ -99,4 +116,4 @@ private:
 };
 
 
-#endif //NAG_GRAPH_INSIGHT_H
+#endif // NAG_EDITOR_GRAPH_EDITOR_UI_H
