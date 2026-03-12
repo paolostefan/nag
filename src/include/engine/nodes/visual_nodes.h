@@ -75,17 +75,14 @@ private:
   void update_from_inputs() {
     // Update color from inputs[0-3] if connected (r, g, b, a)
     if (inputs.size() >= 4) {
-      if (const auto *r_stream = dynamic_cast<Stream<float> *>(inputs[0].stream.get())) {
-        color.x = r_stream->value;
-      }
-      if (const auto *g_stream = dynamic_cast<Stream<float> *>(inputs[1].stream.get())) {
-        color.y = g_stream->value;
-      }
-      if (const auto *b_stream = dynamic_cast<Stream<float> *>(inputs[2].stream.get())) {
-        color.z = b_stream->value;
-      }
-      if (const auto *a_stream = dynamic_cast<Stream<float> *>(inputs[3].stream.get())) {
-        color.w = a_stream->value;
+      for (int i = 0; i < 4; i++) {
+
+        // Skip if not connected, the value will be taken from the node's own color parameter
+        if (!inputs[i].connected) continue;
+
+        if (const auto *stream = dynamic_cast<Stream<float> *>(inputs[i].stream.get())) {
+          color[i] = stream->value;
+        }
       }
     }
   }
@@ -333,7 +330,7 @@ struct CompositeNode : VisualNode {
 
   void render() override {
     if (!render_target || !render_target->is_valid() ||
-      !shader || !shader->is_valid()) {
+        !shader || !shader->is_valid()) {
       return;
     }
 
