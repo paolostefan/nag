@@ -125,10 +125,6 @@ void ShaderProgram::use() const {
     glUseProgram(program);
 }
 
-void ShaderProgram::unuse() {
-  glUseProgram(0);
-}
-
 GLint ShaderProgram::get_uniform_location(const std::string &name) {
   if (const auto it = uniform_cache.find(name); it != uniform_cache.end())
     return it->second;
@@ -137,7 +133,7 @@ GLint ShaderProgram::get_uniform_location(const std::string &name) {
   uniform_cache[name] = loc;
 
   if (loc == -1) {
-    spdlog::warn("Uniform '{}' not found in shader", name);
+    spdlog::warn("Uniform '{}' not found in shader {}", name, shader_name);
   }
 
   return loc;
@@ -181,7 +177,7 @@ std::shared_ptr<ShaderProgram> ShaderManager::load(const std::string &name,
     return it->second;
   }
 
-  auto shader = std::make_shared<ShaderProgram>();
+  auto shader = std::make_shared<ShaderProgram>(name);
   if (!shader->load_from_files(vert_path, frag_path)) {
     spdlog::error("Failed to load shader '{}'", name);
     return nullptr;

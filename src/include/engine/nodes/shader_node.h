@@ -54,7 +54,8 @@ struct ShaderNode : VisualNode {
   virtual void bind_params() {
   }
 
-  virtual void update_from_inputs() {}
+  virtual void update_from_inputs() {
+  }
 
   // ── VisualNode overrides ──────────────────────────────────────────────────
 
@@ -74,7 +75,6 @@ struct ShaderNode : VisualNode {
 
     update_from_inputs();
 
-    render_target->bind();
     render_target->clear();
     shader->use();
 
@@ -119,7 +119,6 @@ protected:
   void draw_pass(RenderTarget &target,
                  ShaderProgram &prog,
                  const GLuint tex_id_override = 0) const {
-    target.bind();
     target.clear();
     prog.use();
 
@@ -163,11 +162,17 @@ protected:
   // Sets float uniform "u_<pin.name>" for every float input pin.
   void bind_float_inputs(ShaderProgram *prog) const {
     for (const auto &pin: inputs) {
+
       if (*pin.data_type != typeid(float)) continue;
-      float value = 0.0f;
+
+      float value;
       if (const auto *s = dynamic_cast<Stream<float> *>(pin.stream.get())) {
         value = s->value;
+      } else {
+        // If the pin maps to a parameter modifiable via GUI, use the param value instead.
+        value = get_param(pin.name);
       }
+
       prog->set_uniform("u_" + pin.name, value);
     }
   }
@@ -175,12 +180,14 @@ protected:
   // Unbinds all texture units used by Texture* input pins.
   void unbind_texture_inputs() const {
     int unit = 0;
+
     for (const auto &pin: inputs) {
       if (*pin.data_type != typeid(Texture *)) continue;
       glActiveTexture(GL_TEXTURE0 + unit);
       glBindTexture(GL_TEXTURE_2D, 0);
       ++unit;
     }
+
     glActiveTexture(GL_TEXTURE0);
   }
 };
