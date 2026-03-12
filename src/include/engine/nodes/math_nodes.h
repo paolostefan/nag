@@ -39,7 +39,7 @@ struct MultiplyNode : MultiInputNode {
   [[nodiscard]] static std::unique_ptr<MultiplyNode> create() {
     auto node = std::make_unique<MultiplyNode>();
     node->add_output("product");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -81,7 +81,7 @@ struct DivideNode : MultiInputNode {
   [[nodiscard]] static std::unique_ptr<DivideNode> create() {
     auto node = std::make_unique<DivideNode>();
     node->add_output("quotient");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -121,7 +121,7 @@ struct AddNode : MultiInputNode {
   [[nodiscard]] static std::unique_ptr<AddNode> create(const size_t num_inputs = 2) {
     auto node = std::make_unique<AddNode>(num_inputs);
     node->add_output("sum");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -154,7 +154,7 @@ struct SubtractNode : MultiInputNode {
   [[nodiscard]] static std::unique_ptr<SubtractNode> create() {
     auto node = std::make_unique<SubtractNode>();
     node->add_output("a-b");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -187,7 +187,7 @@ struct ModuloNode : MultiInputNode {
   [[nodiscard]] static std::unique_ptr<ModuloNode> create() {
     auto node = std::make_unique<ModuloNode>();
     node->add_output("a%b");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -220,7 +220,7 @@ struct PowerNode : MultiInputNode {
   [[nodiscard]] static std::unique_ptr<PowerNode> create() {
     auto node = std::make_unique<PowerNode>();
     node->add_output("a^b");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -260,7 +260,7 @@ struct MinNode : MultiInputNode {
   [[nodiscard]] static std::unique_ptr<MinNode> create(const uint8_t num_inputs = 2) {
     auto node = std::make_unique<MinNode>(num_inputs);
     node->add_output("min");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -300,7 +300,7 @@ struct MaxNode : MultiInputNode {
   [[nodiscard]] static std::unique_ptr<MaxNode> create(const uint8_t num_inputs = 2) {
     auto node = std::make_unique<MaxNode>(num_inputs);
     node->add_output("max");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -337,7 +337,7 @@ struct AbsNode : Node {
     auto node = std::make_unique<AbsNode>();
     node->add_input("a");
     node->add_output("abs(a)");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -370,7 +370,7 @@ struct FloorNode : Node {
     auto node = std::make_unique<FloorNode>();
     node->add_input("a");
     node->add_output("floor(a)");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -403,7 +403,7 @@ struct CeilNode : Node {
     auto node = std::make_unique<CeilNode>();
     node->add_input("a");
     node->add_output("ceil(a)");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -436,7 +436,7 @@ struct RoundNode : Node {
     auto node = std::make_unique<RoundNode>();
     node->add_input("a");
     node->add_output("round(a)");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -472,7 +472,7 @@ struct SqrtNode : Node {
     auto node = std::make_unique<SqrtNode>();
     node->add_input("a");
     node->add_output("sqrt(a)");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -505,7 +505,7 @@ struct NegateNode : Node {
     auto node = std::make_unique<NegateNode>();
     node->add_input("a");
     node->add_output("-a");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -534,7 +534,7 @@ struct SinNode : Node {
     auto node = std::make_unique<SinNode>();
     node->add_input("a");
     node->add_output("sin(a)");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -568,7 +568,7 @@ struct CosNode : Node {
     auto node = std::make_unique<CosNode>();
     node->add_input("a");
     node->add_output("cos(a)");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -601,7 +601,7 @@ struct TanNode : Node {
     auto node = std::make_unique<TanNode>();
     node->add_input("a");
     node->add_output("tan(a)");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -685,7 +685,7 @@ struct RemapNode : Node {
     node->out_max = out_max;
     node->add_input("in");
     node->add_output("out");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -744,7 +744,7 @@ struct ClampNode : Node {
     node->max_value = max_value;
     node->add_input("in");
     node->add_output("out");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -784,7 +784,7 @@ struct LerpNode : Node {
     node->add_input("b");
     node->add_input("t");
     node->add_output("out");
-    return std::move(node);
+    return node;
   }
 };
 
@@ -848,7 +848,7 @@ struct SmoothStepNode : Node {
     node->edge1 = edge1;
     node->add_input("in");
     node->add_output("out");
-    return std::move(node);
+    return node;
   }
 };
 

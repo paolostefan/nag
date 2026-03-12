@@ -10,7 +10,7 @@
 #include "engine/stream.h"
 
 class CommandHistory;
-class NodeGraph;
+struct NodeGraph;
 
 enum PinDirection:uint8_t {
   Input,
@@ -82,6 +82,10 @@ struct Pin {
   // Global pin id graph-wise
   int id{};
 
+  /// Whether this pin is currently connected to another pin via a link.
+  bool connected{false};
+
+  // Whether this is an input or output pin
   PinDirection direction{Input};
 
   // Used only by input pins
@@ -127,7 +131,7 @@ struct Node {
 
   ImVec2 position{};
 
-  // TODO: make these std:array's of a reasonable size (10? 20? a node can't have 2000+ pins)
+  // TODO: make inputs & outputs std:array's of a reasonable size (20? a node should not have 100+ pins)
   std::vector<Pin> inputs;
   std::vector<Pin> outputs;
 
@@ -177,10 +181,9 @@ struct Node {
    * Override this in derived classes to load custom parameters.
    * Base implementation does nothing and returns success.
    *
-   * @param j JSON object with node parameters
    * @return Result indicating success or error
    */
-  [[nodiscard]] virtual OperationResult deserialize_params(const nlohmann::json &j) {
+  [[nodiscard]] virtual OperationResult deserialize_params(const nlohmann::json &) {
     return OperationResult::ok();
   }
 
@@ -193,7 +196,7 @@ struct Node {
   /// Implementations should use the PropertyWidget helpers to ensure that
   /// edits are recorded in CommandHistory with correct undo/redo semantics.
   ///
-  /// @param graph    The active node graph (forwarded to history.execute).
+  /// @param graph    The active node graph (forwarded to `history.execute()`).
   /// @param history  The command history.
   virtual void draw_properties(NodeGraph &graph, CommandHistory &history) {
     // Default: no parameters to show.
@@ -201,7 +204,13 @@ struct Node {
     (void) history;
   }
 
-  // Add typed input
+  [[nodiscard]] virtual float get_param(const std::string &param_name) const {
+    // Default implementation: no parameters, return 0.
+    (void) param_name;
+    return 0.0f;
+  }
+
+  // Add a typed input Pin to this Node
   template<typename T>
   void add_typed_input(const std::string &pin_name = "in") {
     Pin pin;
@@ -228,6 +237,22 @@ struct Node {
 
   void add_output(const std::string &pin_name = "out") {
     add_typed_output<float>(pin_name);
+  }
+
+  /**
+   * @brief Get a pointer to an input pin by name.
+   * @param input_name
+   * @return The pin referenced by this name, or nullptr if not found.
+   * Note that the returned pointer may be invalidated if the node's inputs are modified
+   * (e.g. by add_input).
+   */
+  Pin *get_input(const std::string &input_name) {
+    for (auto &pin: inputs) {
+      if (pin.name == input_name) {
+        return &pin;
+      }
+    }
+    return nullptr;
   }
 }; // Node
 
