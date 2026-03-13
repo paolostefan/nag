@@ -78,15 +78,6 @@ struct BlurNode : ShaderNode {
     return OperationResult::ok();
   }
 
-  [[nodiscard]] static std::unique_ptr<BlurNode> create(const float radius = 4.0f) {
-    auto node = std::make_unique<BlurNode>();
-    node->radius = radius;
-    node->add_typed_input<Texture *>("texture");
-    node->add_typed_input<float>("radius"); // animatable via pin
-    node->add_typed_output<Texture *>("texture");
-    return node;
-  }
-
   void draw_properties(NodeGraph &graph, CommandHistory &history) override {
     // ------------------------------------------------------------------
     // Radius — slider with range [0, 64]
@@ -95,11 +86,14 @@ struct BlurNode : ShaderNode {
       "Radius",
       /*node_id=*/id,
       /*value=*/radius,
-      /*setter=*/[](Node &n, float v) {
+      /*setter=*/[](Node &n, const float v) {
         dynamic_cast<BlurNode &>(n).radius = v;
       },
       graph, history,
-      /*min=*/0.0f, /*max=*/64.0f);
+      /*min=*/0.0f, /*max=*/64.0f,
+      /*format=*/"%.1f",
+      /*disabled=*/get_input("radius")->connected
+    );
 
     // ------------------------------------------------------------------
     // Sigma — drag (no fixed limits, typically [0.1, 20])
@@ -113,6 +107,33 @@ struct BlurNode : ShaderNode {
     //   },
     //   graph, history,
     //   /*speed=*/0.05f, /*min=*/0.01f, /*max=*/20.0f);
+  }
+
+  [[nodiscard]] float get_param(const std::string &param_name) const override {
+    if (param_name == "radius") return radius;
+    return 0.0f;
+  }
+
+private:
+  void update_from_inputs() override {
+    // If radius pin is connected, override the member variable with the input value.
+    if (const Pin *radius_pin = get_input("radius");
+      radius_pin && radius_pin->connected) {
+      if (const auto *s =
+          dynamic_cast<Stream<float> *>(radius_pin->stream.get())) {
+        radius = s->value;
+      }
+    }
+  }
+
+public:
+  [[nodiscard]] static std::unique_ptr<BlurNode> create(const float radius = 4.0f) {
+    auto node = std::make_unique<BlurNode>();
+    node->radius = radius;
+    node->add_typed_input<Texture *>("texture");
+    node->add_typed_input<float>("radius"); // animatable via pin
+    node->add_typed_output<Texture *>("texture");
+    return node;
   }
 };
 
