@@ -105,7 +105,7 @@ struct CircleNode : ShaderNode {
   }
 
 private:
-  void update_from_inputs() {
+  void update_from_inputs() override {
     if (inputs.size() >= 2) {
       if (const auto *x_stream = dynamic_cast<Stream<float> *>(inputs[0].stream.get())) {
         position.x = x_stream->value;
