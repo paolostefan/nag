@@ -4,7 +4,6 @@
 
 #include <fstream>
 #include <sstream>
-#include <vector>
 
 #include "spdlog/spdlog.h"
 
@@ -85,8 +84,9 @@ bool ShaderProgram::load_from_source(const std::string &vert_src, const std::str
 }
 
 GLuint ShaderProgram::compile_shader(const GLenum type, const std::string &source) {
-  GLuint shader = glCreateShader(type);
+  const GLuint shader = glCreateShader(type);
   const char *src = source.c_str();
+
   glShaderSource(shader, 1, &src, nullptr);
   glCompileShader(shader);
 
@@ -199,4 +199,23 @@ std::shared_ptr<ShaderProgram> ShaderManager::get(const std::string &name) {
 void ShaderManager::clear() {
   spdlog::info("Clearing shader cache ({} shaders)", shaders.size());
   shaders.clear();
+}
+
+std::shared_ptr<ShaderProgram> ShaderManager::load_from_source(const std::string &name,
+                                                   const std::string &vert_src,
+                                                   const std::string &frag_src) {
+  if (const auto it = shaders.find(name); it != shaders.end()) {
+    spdlog::debug("Shader '{}' already loaded, returning cached version", name);
+    return it->second;
+  }
+
+  auto shader = std::make_shared<ShaderProgram>(name);
+  if (!shader->load_from_source(vert_src, frag_src)) {
+    spdlog::error("Failed to load shader '{}' from source", name);
+    return nullptr;
+  }
+
+  shaders[name] = shader;
+  spdlog::info("Shader '{}' loaded successfully from source", name);
+  return shader;
 }

@@ -4,6 +4,8 @@
 #include "GL/glew.h"
 #include "SDL.h"
 #include "engine/render_target.h"
+#include "engine/shader_manager.h"
+#include "engine/fullscreen_quad_renderer.h"
 
 /**
  * @brief Secondary SDL window that blits a Texture* to screen via a
@@ -76,12 +78,9 @@ public:
   }
 
 private:
-  /** Compiles and links the blit shader. Returns program id or 0 on error. */
-  [[nodiscard]] static GLuint compile_blit_shader();
-
   SDL_Window *window_{nullptr};
-  GLuint shader_program_{0};
-  GLuint vao_{0}; ///< Empty VAO required by core profile.
+  std::shared_ptr<ShaderProgram> shader_program_{nullptr};
+  GLuint vao_{0}; ///< Empty VAO required by core profile for gl_VertexID.
   bool paused_{false};
 };
 

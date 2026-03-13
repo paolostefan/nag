@@ -3,52 +3,28 @@
 void ShaderQuadHelper::initialize() {
   if (initialized) return;
 
-  // Fullscreen quad vertices (position + tex coord)
-  constexpr float vertices[] = {
-    // pos (x, y)       // tex coord (u, v)
-    -1.f, -1.f, /*    */ 0.f, 0.f,
-    1.f, -1.f, /*     */ 1.f, 0.f,
-    1.f, 1.f, /*      */ 1.f, 1.f,
-
-    -1.f, -1.f, /*    */ 0.f, 0.f,
-    1.f, 1.f, /*      */ 1.f, 1.f,
-    -1.f, 1.f, /*     */ 0.f, 1.f,
-  };
-
+  // Create an empty VAO — required for core profile OpenGL even with gl_VertexID.
   glGenVertexArrays(1, &vao);
-  glGenBuffers(1, &vbo);
 
-  glBindVertexArray(vao);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-  // Position attribute (location = 0)
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
-  glEnableVertexAttribArray(0);
-
-  // Tex coord attribute (location = 1)
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
-                        reinterpret_cast<void *>(2 * sizeof(float)));
-  glEnableVertexAttribArray(1);
-
-  glBindVertexArray(0);
   initialized = true;
 }
 
 void ShaderQuadHelper::render() const {
   if (!initialized) return;
 
+  // Bind the VAO before drawing.
   glBindVertexArray(vao);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
+  FullscreenQuadRenderer::instance().render();
   glBindVertexArray(0);
 }
 
 void ShaderQuadHelper::cleanup() {
   if (!initialized) return;
 
-  glDeleteVertexArrays(1, &vao);
-  glDeleteBuffers(1, &vbo);
-  vao = 0;
-  vbo = 0;
+  if (vao) {
+    glDeleteVertexArrays(1, &vao);
+    vao = 0;
+  }
+
   initialized = false;
 }

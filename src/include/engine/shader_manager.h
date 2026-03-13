@@ -65,6 +65,10 @@ public:
                                       const std::string &vert_path,
                                       const std::string &frag_path);
 
+  std::shared_ptr<ShaderProgram> load_from_source(const std::string &name,
+                                                   const std::string &vert_src,
+                                                   const std::string &frag_src);
+
   std::shared_ptr<ShaderProgram> get(const std::string &name);
 
   void clear();

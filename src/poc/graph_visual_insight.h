@@ -13,11 +13,11 @@
 
 class GraphVisualInsight : public UIWindow, public GraphEditor {
 public:
-  void build_default_graph();
-
   GraphVisualInsight();
 
 protected:
+  void build_default_graph() override;
+
   void main_event_loop() override;
 
   void render_ui() override;

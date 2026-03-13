@@ -1,11 +1,12 @@
 #include "editor/graph_editor.h"
 
 #include "editor/graph_commands.h"
+#include "engine/nodes/visual_node.h"
 
 GraphEditor::GraphEditor() {
   register_all_builtin_nodes();
 
-  build_default_graph();
+  GraphEditor::build_default_graph();
 }
 
 void GraphEditor::reset_graph() {

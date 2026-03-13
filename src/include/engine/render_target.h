@@ -1,9 +1,7 @@
 #ifndef NAG_ENGINE_RENDER_TARGET_H
 #define NAG_ENGINE_RENDER_TARGET_H
 
-
 #include "GL/glew.h"
-
 
 class RenderTarget {
 public:
@@ -90,7 +88,7 @@ struct Texture {
 
   Texture() = default;
 
-  Texture(GLuint id, int w, int h) : texture_id(id), width(w), height(h) {
+  Texture(const GLuint id, const int w, const int h) : texture_id(id), width(w), height(h) {
   }
 
   [[nodiscard]] constexpr bool is_valid() const { return texture_id != 0; }

@@ -44,62 +44,6 @@ void main() {
 }
 )glsl";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-namespace {
-  /** Compiles a single shader stage. Returns 0 and logs on error. */
-  GLuint CompileStage(const GLenum type, const char *src) {
-    const GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &src, nullptr);
-    glCompileShader(shader);
-
-    GLint ok = 0;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
-    if (!ok) {
-      char log[512];
-      glGetShaderInfoLog(shader, sizeof(log), nullptr, log);
-      spdlog::error("PreviewWindow shader compile error: {}", log);
-      glDeleteShader(shader);
-      return 0;
-    }
-    return shader;
-  }
-} // namespace
-
-// ── PreviewWindow::CompileBlitShader ──────────────────────────────────────────
-
-GLuint PreviewWindow::compile_blit_shader() {
-  const GLuint vert = CompileStage(GL_VERTEX_SHADER, kVertexShaderSrc);
-  const GLuint frag = CompileStage(GL_FRAGMENT_SHADER, kFragmentShaderSrc);
-
-  if (!vert || !frag) {
-    glDeleteShader(vert);
-    glDeleteShader(frag);
-    return 0;
-  }
-
-  const GLuint program = glCreateProgram();
-  glAttachShader(program, vert);
-  glAttachShader(program, frag);
-  glLinkProgram(program);
-
-  // Shaders are now linked into the program — no longer needed.
-  glDeleteShader(vert);
-  glDeleteShader(frag);
-
-  GLint ok = 0;
-  glGetProgramiv(program, GL_LINK_STATUS, &ok);
-  if (!ok) {
-    char log[512];
-    glGetProgramInfoLog(program, sizeof(log), nullptr, log);
-    spdlog::error("PreviewWindow shader link error: {}", log);
-    glDeleteProgram(program);
-    return 0;
-  }
-
-  return program;
-}
-
 // ── PreviewWindow::Open ───────────────────────────────────────────────────────
 
 bool PreviewWindow::open(SDL_Window *parent_window, SDL_GLContext gl_context) {
@@ -126,18 +70,19 @@ bool PreviewWindow::open(SDL_Window *parent_window, SDL_GLContext gl_context) {
     return false;
   }
 
-  // Switch to the preview window to compile the shader and create the VAO,
+  // Switch to the preview window to load the shader,
   // then give the context back to the parent window.
   SDL_GL_MakeCurrent(window_, gl_context);
 
-  shader_program_ = compile_blit_shader();
-  if (!shader_program_) {
+  shader_program_ = ShaderManager::instance().load_from_source("preview_blit", kVertexShaderSrc, kFragmentShaderSrc);
+  if (!shader_program_ || !shader_program_->is_valid()) {
     SDL_DestroyWindow(window_);
     window_ = nullptr;
     SDL_GL_MakeCurrent(parent_window, gl_context);
     return false;
   }
 
+  // Create an empty VAO for rendering with gl_VertexID.
   glGenVertexArrays(1, &vao_);
 
   SDL_GL_MakeCurrent(parent_window, gl_context);
@@ -152,13 +97,12 @@ bool PreviewWindow::open(SDL_Window *parent_window, SDL_GLContext gl_context) {
 void PreviewWindow::close() {
   if (!window_) return;
 
-  // GL resources must be released while the context is current on this window.
-  // NOTE: the caller is responsible for ensuring the GL context is still valid
-  // at destruction time. In practice, Close() is called before SDL_Quit().
-  if (shader_program_) {
-    glDeleteProgram(shader_program_);
-    shader_program_ = 0;
-  }
+  // Make the preview window context current to delete GL resources.
+  SDL_GL_MakeCurrent(window_, nullptr);
+
+  // GL resources are managed by ShaderManager, no need to delete shader.
+  shader_program_ = nullptr;
+
   if (vao_) {
     glDeleteVertexArrays(1, &vao_);
     vao_ = 0;
@@ -190,19 +134,19 @@ void PreviewWindow::render(const Texture *texture,
   glClearColor(0.f, 0.f, 0.f, 0.f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  glUseProgram(shader_program_);
+  shader_program_->use();
 
   // Bind the texture to unit 0 and set the uniform.
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture->texture_id);
-  glUniform1i(glGetUniformLocation(shader_program_, "u_texture"), 0);
+  shader_program_->set_uniform("u_texture", 0);
 
-  // Draw 6 vertices — the vertex shader generates positions from gl_VertexID.
+  // Draw the fullscreen quad using gl_VertexID.
   glBindVertexArray(vao_);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
+  FullscreenQuadRenderer::instance().render();
   glBindVertexArray(0);
 
-  glUseProgram(0);
+  ShaderProgram::unuse();
 
   // ── 4. Present + restore context ──────────────────────────────────────────
   SDL_GL_SwapWindow(window_);
