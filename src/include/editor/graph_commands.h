@@ -124,6 +124,9 @@ public:
    */
   explicit DeleteLinksCommand(std::unordered_set<int> link_ids);
 
+  /// To delete just one link, you can also use the constructor that takes a single link ID:
+  explicit DeleteLinksCommand(int link_id);
+
   bool execute(NodeGraph &graph) override;
 
   bool undo(NodeGraph &graph) override;

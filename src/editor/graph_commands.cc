@@ -192,12 +192,12 @@ bool DeleteNodesCommand::undo(NodeGraph &graph) {
   // Recreate links using pin indices and remapped node IDs
   for (const auto &sl: deleted_links_by_index_) {
     // Resolve new node IDs (nodes not deleted keep their original ID)
-    const int new_src_id = id_remap.count(sl.src_node_id)
-                                  ? id_remap.at(sl.src_node_id)
-                                  : sl.src_node_id;
-    const int new_dst_id = id_remap.count(sl.dst_node_id)
-                                  ? id_remap.at(sl.dst_node_id)
-                                  : sl.dst_node_id;
+    const int new_src_id = id_remap.contains(sl.src_node_id)
+                             ? id_remap.at(sl.src_node_id)
+                             : sl.src_node_id;
+    const int new_dst_id = id_remap.contains(sl.dst_node_id)
+                             ? id_remap.at(sl.dst_node_id)
+                             : sl.dst_node_id;
 
     const Pin *start_pin = nullptr;
     const Pin *end_pin = nullptr;
@@ -305,6 +305,10 @@ DeleteLinksCommand::DeleteLinksCommand(std::unordered_set<int> link_ids)
   : link_ids_(std::move(link_ids)) {
 }
 
+DeleteLinksCommand::DeleteLinksCommand(const int link_id)
+  : link_ids_(std::unordered_set{link_id}) {
+}
+
 bool DeleteLinksCommand::execute(NodeGraph &graph) {
   if (deleted_links_.empty()) {
     // Capture links for undo
@@ -315,18 +319,11 @@ bool DeleteLinksCommand::execute(NodeGraph &graph) {
     }
   }
 
-  // Detach streams
+  // Remove links
   for (const auto &link: deleted_links_) {
-    for (const auto &node: graph.nodes) {
-      for (auto &pin: node->inputs) {
-        if (pin.id == link.end_pin_id) {
-          pin.stream = nullptr;
-        }
-      }
-    }
+    graph.remove_link(link.id);
   }
 
-  // Remove links
   std::erase_if(graph.links, [this](const Link &link) {
     return link_ids_.contains(link.id);
   });
