@@ -52,14 +52,17 @@ namespace PropertyWidget {
   /// @param min         Minimum value (default 0.0f).
   /// @param max         Maximum value (default 0.0f = no limit).
   /// @param format      Printf format string (default "%.3f").
+  /// @param disabled    If true, the widget is rendered disabled and does not emit commands (default false).
   inline void DragFloat(const std::string &label, int node_id, float &value,
                         std::function<void(Node &, float)> setter,
                         NodeGraph &graph, CommandHistory &history,
                         const float speed = 0.01f, const float min = 0.0f, const float max = 0.0f,
-                        const char *format = "%.3f") {
+                        const char *format = "%.3f",
+                        const bool disabled = false) {
     const std::string key = internal::MakeKey(node_id, label);
     auto &before_map = internal::BeforeMap<float>();
 
+    ImGui::BeginDisabled(disabled);
     ImGui::DragFloat(label.c_str(), &value, speed, min, max, format);
 
     if (ImGui::IsItemActivated()) {
@@ -67,8 +70,7 @@ namespace PropertyWidget {
     }
 
     if (ImGui::IsItemDeactivatedAfterEdit()) {
-      auto it = before_map.find(key);
-      if (it != before_map.end()) {
+      if (auto it = before_map.find(key); it != before_map.end()) {
         const float value_before = it->second;
         before_map.erase(it);
 
@@ -81,6 +83,8 @@ namespace PropertyWidget {
         }
       }
     }
+
+    ImGui::EndDisabled();
   }
 
   // ---------------------------------------------------------------------------
@@ -98,14 +102,17 @@ namespace PropertyWidget {
   /// @param min     Minimum value (default 0.0f).
   /// @param max     Maximum value (default 1.0f).
   /// @param format  Printf format string (default "%.3f").
+  /// @param disabled If true, the slider is rendered disabled and does not emit commands (default false).
   inline void SliderFloat(const std::string &label, int node_id, float &value,
                           std::function<void(Node &, float)> setter,
                           NodeGraph &graph, CommandHistory &history,
                           const float min = 0.0f, const float max = 1.0f,
-                          const char *format = "%.3f") {
+                          const char *format = "%.3f",
+                          const bool disabled = false) {
     const std::string key = internal::MakeKey(node_id, label);
     auto &before_map = internal::BeforeMap<float>();
 
+    ImGui::BeginDisabled(disabled);
     ImGui::SliderFloat(label.c_str(), &value, min, max, format);
 
     if (ImGui::IsItemActivated()) {
@@ -126,6 +133,8 @@ namespace PropertyWidget {
         }
       }
     }
+
+    ImGui::EndDisabled();
   }
 
   // ---------------------------------------------------------------------------
@@ -134,19 +143,23 @@ namespace PropertyWidget {
 
   /// @brief Renders a ColorEdit4 widget and emits an undo command on release.
   ///
-  /// @param label   The label for the color edit widget.
-  /// @param node_id The ID of the node this property belongs to.
-  /// @param value   Reference to an ImVec4 color field on the node.
-  /// @param setter  Callable to restore the value during undo/redo.
-  /// @param graph   The node graph (passed to history.execute).
-  /// @param history The command history.
-  /// @param flags   ImGui color edit flags (default 0).
+  /// @param label    The label for the color edit widget.
+  /// @param node_id  The ID of the node this property belongs to.
+  /// @param value    Reference to an ImVec4 color field on the node.
+  /// @param setter   Callable to restore the value during undo/redo.
+  /// @param graph    The node graph (passed to history.execute).
+  /// @param history  The command history.
+  /// @param flags    ImGui color edit flags (default 0).
+  /// @param disabled If true, the widget is rendered disabled and does not emit commands (default false).
   inline void ColorEdit4(const std::string &label, int node_id, ImVec4 &value,
                          std::function<void(Node &, ImVec4)> setter,
                          NodeGraph &graph, CommandHistory &history,
-                         const ImGuiColorEditFlags flags = 0) {
+                         const ImGuiColorEditFlags flags = 0,
+                         const bool disabled = false) {
     const std::string key = internal::MakeKey(node_id, label);
     auto &before_map = internal::BeforeMap<ImVec4>();
+
+    ImGui::BeginDisabled(disabled);
 
     ImGui::ColorEdit4(label.c_str(), reinterpret_cast<float *>(&value), flags);
 
@@ -173,6 +186,8 @@ namespace PropertyWidget {
         }
       }
     }
+
+    ImGui::EndDisabled();
   }
 
   // ---------------------------------------------------------------------------
@@ -181,23 +196,28 @@ namespace PropertyWidget {
 
   /// @brief Renders a Combo widget for enum-like int values.
   ///
-  /// @param label The label for the combo widget.
-  /// @param node_id The ID of the node this property belongs to.
-  /// @param value Reference to the int/enum field on the node.
-  /// @param items Null-terminated array of item labels (e.g. {"Normal", "Add",
-  ///              "Multiply", nullptr}).
+  /// @param label      The label for the combo widget.
+  /// @param node_id    The ID of the node this property belongs to.
+  /// @param value      Reference to the int/enum field on the node.
+  /// @param items      Null-terminated array of item labels (e.g. {"Normal", "Add",
+  ///                  "Multiply", nullptr}).
   /// @param item_count The number of items in @ref items.
-  /// @param setter Callable accepting (Node&, int) to restore the value during
-  ///                undo/redo.
-  /// @param graph The node graph (passed to `history.execute()`).
-  /// @param history The command history.
+  /// @param setter     Callable accepting (Node&, int) to restore the value during
+  ///                   undo/redo.
+  /// @param graph      The node graph (passed to `history.execute()`).
+  /// @param history    The command history.
+  /// @param disabled   If true, the combo is rendered disabled and does not emit commands (default false).
   inline void Combo(const std::string &label, int node_id, int &value,
                     const char *const*items,
-                    int item_count,
+                    const int item_count,
                     std::function<void(Node &, int)> setter,
-                    NodeGraph &graph, CommandHistory &history) {
+                    NodeGraph &graph,
+                    CommandHistory &history,
+                    const bool disabled = false) {
     const std::string key = internal::MakeKey(node_id, label);
     auto &before_map = internal::BeforeMap<int>();
+
+    ImGui::BeginDisabled(disabled);
 
     // Capture before on open (Activated fires on first click on a Combo).
     if (ImGui::IsItemActivated()) {
@@ -218,6 +238,8 @@ namespace PropertyWidget {
             node_id, label, value_before, value, std::move(setter)));
       }
     }
+
+    ImGui::EndDisabled();
   }
 } // namespace PropertyWidget
 
