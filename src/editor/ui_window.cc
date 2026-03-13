@@ -116,13 +116,13 @@ bool UIWindow::initialize() {
   ImFontConfig icons_config;
   icons_config.MergeMode = true;
   icons_config.PixelSnapH = true;
-  icons_config.GlyphMaxAdvanceX = 13.0f; // Use if you want to make the icon monospaced
+  icons_config.GlyphMaxAdvanceX = 13.f; // Use if you want to make the icon monospaced
   icons_config.FontDataOwnedByAtlas = false; // We don't want ImGui to free the font data
 
   io->Fonts->AddFontFromMemoryTTF(
     font_awesome_6_free_solid_900_otf,
     font_awesome_6_free_solid_900_otf_len,
-    13.0f,
+    13.f,
     &icons_config,
     icons_ranges);
   // End of font loading stuff

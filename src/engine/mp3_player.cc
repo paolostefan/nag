@@ -137,5 +137,5 @@ void Mp3Player::decode(float *out, int frames)
 
   const int samples = done / sizeof(int16_t);
   for (int i = 0; i < samples; ++i)
-    out[i] = pcm[i] / 32768.0f;
+    out[i] = pcm[i] / 32768.f;
 }

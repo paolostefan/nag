@@ -50,7 +50,7 @@ inline ImVec2 EvalCubicBezier(
 {
     // B(t) = (1-t)**3 p0 + 3(1 - t)**2 t P1 + 3(1-t)t**2 P2 + t**3 P3
 
-    const float u = 1.0f - t;
+    const float u = 1.f - t;
     const float b0 = u * u * u;
     const float b1 = 3 * u * u * t;
     const float b2 = 3 * u * t * t;
@@ -67,7 +67,7 @@ ImVec2 GetClosestPointOnCubicBezier(const int num_segments, const ImVec2& p, con
     ImVec2 p_last = cb.P0;
     ImVec2 p_closest;
     float  p_closest_dist = FLT_MAX;
-    float  t_step = 1.0f / (float)num_segments;
+    float  t_step = 1.f / (float)num_segments;
     for (int i = 1; i <= num_segments; ++i)
     {
         ImVec2 p_current = EvalCubicBezier(t_step * i, cb.P0, cb.P1, cb.P2, cb.P3);
@@ -138,7 +138,7 @@ inline float EvalImplicitLineEq(const ImVec2& p1, const ImVec2& p2, const ImVec2
     return (p2.y - p1.y) * p.x + (p1.x - p2.x) * p.y + (p2.x * p1.y - p1.x * p2.y);
 }
 
-inline int Sign(float val) { return int(val > 0.0f) - int(val < 0.0f); }
+inline int Sign(float val) { return int(val > 0.f) - int(val < 0.f); }
 
 inline bool RectangleOverlapsLineSegment(const ImRect& rect, const ImVec2& p1, const ImVec2& p2)
 {
@@ -193,7 +193,7 @@ inline bool RectangleOverlapsBezier(const ImRect& rectangle, const CubicBezier& 
 {
     ImVec2 current =
         EvalCubicBezier(0.f, cubic_bezier.P0, cubic_bezier.P1, cubic_bezier.P2, cubic_bezier.P3);
-    const float dt = 1.0f / cubic_bezier.NumSegments;
+    const float dt = 1.f / cubic_bezier.NumSegments;
     for (int s = 0; s < cubic_bezier.NumSegments; ++s)
     {
         ImVec2 next = EvalCubicBezier(
@@ -1311,7 +1311,7 @@ inline ImVec2 GetNodeTitleBarOrigin(const ImNodeData& node)
 inline ImVec2 GetNodeContentOrigin(const ImNodeData& node)
 {
     const ImVec2 title_bar_height =
-        ImVec2(0.f, node.TitleBarContentRect.GetHeight() + 2.0f * node.LayoutStyle.Padding.y);
+        ImVec2(0.f, node.TitleBarContentRect.GetHeight() + 2.f * node.LayoutStyle.Padding.y);
     return node.Origin + title_bar_height + node.LayoutStyle.Padding;
 }
 
@@ -1337,7 +1337,7 @@ void DrawGrid(ImNodesEditorContext& editor, const ImVec2& canvas_size)
          x += GImNodes->Style.GridSpacing)
     {
         GImNodes->CanvasDrawList->AddLine(
-            EditorSpaceToScreenSpace(ImVec2(x, 0.0f)),
+            EditorSpaceToScreenSpace(ImVec2(x, 0.f)),
             EditorSpaceToScreenSpace(ImVec2(x, canvas_size.y)),
             offset.x - x == 0.f && draw_primary ? line_color_prim : line_color);
     }
@@ -1346,7 +1346,7 @@ void DrawGrid(ImNodesEditorContext& editor, const ImVec2& canvas_size)
          y += GImNodes->Style.GridSpacing)
     {
         GImNodes->CanvasDrawList->AddLine(
-            EditorSpaceToScreenSpace(ImVec2(0.0f, y)),
+            EditorSpaceToScreenSpace(ImVec2(0.f, y)),
             EditorSpaceToScreenSpace(ImVec2(canvas_size.x, y)),
             offset.y - y == 0.f && draw_primary ? line_color_prim : line_color);
     }
@@ -1387,7 +1387,7 @@ TriangleOffsets CalculateTriangleOffsets(const float side_length)
     //
     // The length from the base to the midpoint is (1 / 3) * h. The length from
     // the midpoint to the triangle vertex is (2 / 3) * h.
-    const float sqrt_3 = sqrtf(3.0f);
+    const float sqrt_3 = sqrtf(3.f);
     const float left_offset = -0.1666666666667f * sqrt_3 * side_length;
     const float right_offset = 0.333333333333f * sqrt_3 * side_length;
     const float vertical_offset = 0.5f * side_length;
@@ -1684,7 +1684,7 @@ void EndPinAttribute()
 
 void Initialize(ImNodesContext* context)
 {
-    context->CanvasOriginScreenSpace = ImVec2(0.0f, 0.0f);
+    context->CanvasOriginScreenSpace = ImVec2(0.f, 0.f);
     context->CanvasRectScreenSpace = ImRect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
     context->CurrentScope = ImNodesScope_None;
 
@@ -1707,7 +1707,7 @@ void Shutdown(ImNodesContext* ctx) { EditorContextFree(ctx->DefaultEditorCtx); }
 static inline bool IsMiniMapActive()
 {
     ImNodesEditorContext& editor = EditorContextGet();
-    return editor.MiniMapEnabled && editor.MiniMapSizeFraction > 0.0f;
+    return editor.MiniMapEnabled && editor.MiniMapSizeFraction > 0.f;
 }
 
 static inline bool IsMiniMapHovered()
@@ -1730,7 +1730,7 @@ static inline void CalcMiniMapLayout()
     float  mini_map_scaling;
     {
         const ImVec2 max_size =
-            ImFloor(editor_rect.GetSize() * editor.MiniMapSizeFraction - border * 2.0f);
+            ImFloor(editor_rect.GetSize() * editor.MiniMapSizeFraction - border * 2.f);
         const float  max_size_aspect_ratio = max_size.x / max_size.y;
         const ImVec2 grid_content_size = editor.GridContentBounds.IsInverted()
                                              ? max_size
@@ -1751,21 +1751,21 @@ static inline void CalcMiniMapLayout()
         switch (editor.MiniMapLocation)
         {
         case ImNodesMiniMapLocation_BottomRight:
-            align.x = 1.0f;
-            align.y = 1.0f;
+            align.x = 1.f;
+            align.y = 1.f;
             break;
         case ImNodesMiniMapLocation_BottomLeft:
-            align.x = 0.0f;
-            align.y = 1.0f;
+            align.x = 0.f;
+            align.y = 1.f;
             break;
         case ImNodesMiniMapLocation_TopRight:
-            align.x = 1.0f;
-            align.y = 0.0f;
+            align.x = 1.f;
+            align.y = 0.f;
             break;
         case ImNodesMiniMapLocation_TopLeft: // [[fallthrough]]
         default:
-            align.x = 0.0f;
-            align.y = 0.0f;
+            align.x = 0.f;
+            align.y = 0.f;
             break;
         }
 
@@ -1987,7 +1987,7 @@ ImNodesIO::MultipleSelectModifier::MultipleSelectModifier() : Modifier(NULL) {}
 
 ImNodesIO::ImNodesIO()
     : EmulateThreeButtonMouse(), LinkDetachWithModifierClick(),
-      AltMouseButton(ImGuiMouseButton_Middle), AutoPanningSpeed(1000.0f)
+      AltMouseButton(ImGuiMouseButton_Middle), AutoPanningSpeed(1000.f)
 {
 }
 
@@ -1995,8 +1995,8 @@ ImNodesStyle::ImNodesStyle()
     : GridSpacing(24.f), NodeCornerRounding(4.f), NodePadding(8.f, 8.f), NodeBorderThickness(1.f),
       LinkThickness(3.f), LinkLineSegmentsPerLength(0.1f), LinkHoverDistance(10.f),
       PinCircleRadius(4.f), PinQuadSideLength(7.f), PinTriangleSideLength(9.5),
-      PinLineThickness(1.f), PinHoverRadius(10.f), PinOffset(0.f), MiniMapPadding(8.0f, 8.0f),
-      MiniMapOffset(4.0f, 4.0f), Flags(ImNodesStyleFlags_NodeOutline | ImNodesStyleFlags_GridLines),
+      PinLineThickness(1.f), PinHoverRadius(10.f), PinOffset(0.f), MiniMapPadding(8.f, 8.f),
+      MiniMapOffset(4.f, 4.f), Flags(ImNodesStyleFlags_NodeOutline | ImNodesStyleFlags_GridLines),
       Colors()
 {
 }
@@ -2227,7 +2227,7 @@ void BeginNodeEditor()
     GImNodes->MousePos = ImGui::GetIO().MousePos;
     GImNodes->LeftMouseClicked = ImGui::IsMouseClicked(0);
     GImNodes->LeftMouseReleased = ImGui::IsMouseReleased(0);
-    GImNodes->LeftMouseDragging = ImGui::IsMouseDragging(0, 0.0f);
+    GImNodes->LeftMouseDragging = ImGui::IsMouseDragging(0, 0.f);
     GImNodes->AltMouseClicked =
         (GImNodes->Io.EmulateThreeButtonMouse.Modifier != NULL &&
          *GImNodes->Io.EmulateThreeButtonMouse.Modifier && GImNodes->LeftMouseClicked) ||
@@ -2235,7 +2235,7 @@ void BeginNodeEditor()
     GImNodes->AltMouseDragging =
         (GImNodes->Io.EmulateThreeButtonMouse.Modifier != NULL && GImNodes->LeftMouseDragging &&
          (*GImNodes->Io.EmulateThreeButtonMouse.Modifier)) ||
-        ImGui::IsMouseDragging(GImNodes->Io.AltMouseButton, 0.0f);
+        ImGui::IsMouseDragging(GImNodes->Io.AltMouseButton, 0.f);
     GImNodes->AltMouseScrollDelta = ImGui::GetIO().MouseWheel;
     GImNodes->MultipleSelectModifier =
         (GImNodes->Io.MultipleSelectModifier.Modifier != NULL

@@ -228,7 +228,7 @@ std::unique_ptr<Node> JsonGraphSerializer::deserialize_node(const json &j) {
   const auto type = static_cast<NodeType>(j.value("type", 0));
   const std::string name = j.value("name", "<unnamed>");
 
-  ImVec2 position{0.0f, 0.0f};
+  ImVec2 position{0.f, 0.f};
   if (j.contains("position") && j["position"].is_array() && j["position"].size() >= 2) {
     position.x = j["position"][0];
     position.y = j["position"][1];

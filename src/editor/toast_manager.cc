@@ -59,15 +59,15 @@ void ToastManager::render()
     const ImVec4 border_color = get_color_for_type(toast.type, toast.fade_progress);
 
     // Apply alpha to text color
-    const ImVec4 text_color = ImVec4(1.0f, 1.0f, 1.0f, toast.fade_progress);
+    const ImVec4 text_color = ImVec4(1.f, 1.f, 1.f, toast.fade_progress);
 
     // Push styles
     ImGui::PushStyleColor(ImGuiCol_WindowBg, bg_color);
     ImGui::PushStyleColor(ImGuiCol_Border, border_color);
     ImGui::PushStyleColor(ImGuiCol_Text, text_color);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 2.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.0f, 10.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 8.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 2.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12.f, 10.f));
 
     // Create window
     const std::string window_id = "##toast_" + std::to_string(reinterpret_cast<uintptr_t>(&toast));
@@ -90,7 +90,7 @@ void ToastManager::render()
     ImGui::SameLine();
 
     // Word-wrap the message
-    ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + toast_width - 60.0f);
+    ImGui::PushTextWrapPos(ImGui::GetCursorPos().x + toast_width - 60.f);
     ImGui::TextWrapped("%s", toast.message.c_str());
     ImGui::PopTextWrapPos();
 

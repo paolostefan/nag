@@ -22,7 +22,7 @@
  * Useful as a background or for testing.
  */
 struct ClearColorNode : VisualNode {
-  Color color{0.0f, 0.0f, 0.0f, 1.0f};
+  Color color{0.f, 0.f, 0.f, 1.f};
 
   ClearColorNode() {
     type = NodeType::ClearColor;
@@ -119,9 +119,9 @@ struct GradientNode : VisualNode {
   };
 
   Type gradient_type{Type::Linear};
-  Color color_start{1.0f, 0.0f, 0.0f, 1.0f};
-  Color color_end{0.0f, 0.0f, 1.0f, 1.0f};
-  Vec2 direction{1.0f, 0.0f};
+  Color color_start{1.f, 0.f, 0.f, 1.f};
+  Color color_end{0.f, 0.f, 1.f, 1.f};
+  Vec2 direction{1.f, 0.f};
   Vec2 center{0.5f, 0.5f};
 
   std::shared_ptr<ShaderProgram> shader;
@@ -153,7 +153,7 @@ struct GradientNode : VisualNode {
     update_from_inputs();
 
     render_target->bind();
-    render_target->clear(0.0f, 0.0f, 0.0f, 0.0f);
+    render_target->clear(0.f, 0.f, 0.f, 0.f);
 
     shader->use();
 
@@ -305,7 +305,7 @@ struct CompositeNode : VisualNode {
   };
 
   BlendMode blend_mode{BlendMode::Normal};
-  float opacity{1.0f};
+  float opacity{1.f};
 
   std::shared_ptr<ShaderProgram> shader;
 
@@ -352,7 +352,7 @@ struct CompositeNode : VisualNode {
     }
 
     render_target->bind();
-    render_target->clear(0.0f, 0.0f, 0.0f, 0.0f);
+    render_target->clear(0.f, 0.f, 0.f, 0.f);
 
     shader->use();
 
@@ -415,7 +415,7 @@ struct CompositeNode : VisualNode {
    * Create a composite node.
    */
   static std::unique_ptr<CompositeNode> create(const BlendMode blend_mode = BlendMode::Normal,
-                                               const float opacity = 1.0f) {
+                                               const float opacity = 1.f) {
     auto node = std::make_unique<CompositeNode>();
     node->blend_mode = blend_mode;
     node->opacity = opacity;

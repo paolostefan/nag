@@ -107,9 +107,9 @@ private:
   std::string status_message;
 
   /** Timestamp (ImGui time) when status_message was set. */
-  float status_message_time{0.0f};
+  float status_message_time{0.f};
 
-  static constexpr float kStatusMessageDuration{3.0f}; // seconds
+  static constexpr float kStatusMessageDuration{3.f}; // seconds
   static constexpr auto kSaveDialogKey{"SaveGraphDlg"};
   static constexpr auto kLoadDialogKey{"LoadGraphDlg"};
   static constexpr auto kFileFilter{"JSON files{.json},All files{.*}"};

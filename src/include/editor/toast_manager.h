@@ -30,7 +30,7 @@ struct ToastNotification
         message(msg),
         creation_time(std::chrono::steady_clock::now()),
         duration_seconds(duration),
-        fade_progress(0.0f),
+        fade_progress(0.f),
         dismissed(false)
   {
   }
@@ -41,7 +41,7 @@ struct ToastNotification
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
         now - creation_time);
-    return elapsed.count() / 1000.0f;
+    return elapsed.count() / 1000.f;
   }
 
   // Check if toast should be removed
@@ -61,8 +61,8 @@ struct ToastNotification
     {
       // Fast fade out when manually dismissed
       fade_progress -= 0.1f;
-      if (fade_progress < 0.0f)
-        fade_progress = 0.0f;
+      if (fade_progress < 0.f)
+        fade_progress = 0.f;
     }
     else if (elapsed < fade_in_duration)
     {
@@ -73,14 +73,14 @@ struct ToastNotification
     {
       // Fade out
       float fade_out_elapsed = elapsed - (duration_seconds - fade_out_duration);
-      fade_progress = 1.0f - (fade_out_elapsed / fade_out_duration);
-      if (fade_progress < 0.0f)
-        fade_progress = 0.0f;
+      fade_progress = 1.f - (fade_out_elapsed / fade_out_duration);
+      if (fade_progress < 0.f)
+        fade_progress = 0.f;
     }
     else
     {
       // Fully visible
-      fade_progress = 1.0f;
+      fade_progress = 1.f;
     }
   }
 };
@@ -95,7 +95,7 @@ public:
   }
 
   // Add a new toast notification
-  void add_toast(ToastType type, const std::string &message, float duration = 4.0f);
+  void add_toast(ToastType type, const std::string &message, float duration = 4.f);
 
   // Render all active toasts (call this in your main loop)
   void render();
@@ -121,18 +121,18 @@ private:
   ToastManager(const ToastManager &) = delete;
   ToastManager &operator=(const ToastManager &) = delete;
 
-  ImVec4 get_color_for_type(ToastType type, float alpha = 1.0f) const;
+  ImVec4 get_color_for_type(ToastType type, float alpha = 1.f) const;
   const char *get_icon_for_type(ToastType type) const;
 
   std::vector<ToastNotification> toasts;
   mutable std::mutex toasts_mutex;
 
   // Configuration
-  float position_offset_x = 10.0f;
-  float position_offset_y = 10.0f;
-  float toast_width = 300.0f;
-  float toast_height = 80.0f;
-  float toast_spacing = 10.0f;
+  float position_offset_x = 10.f;
+  float position_offset_y = 10.f;
+  float toast_width = 300.f;
+  float toast_height = 80.f;
+  float toast_spacing = 10.f;
   size_t max_visible_toasts = 5;
 };
 

@@ -66,7 +66,7 @@ const int hardcoded_node_id = 1;
 ImNodes::BeginNodeEditor();
 
 ImNodes::BeginNode(hardcoded_node_id);
-ImGui::Dummy(ImVec2(80.0f, 45.0f));
+ImGui::Dummy(ImVec2(80.f, 45.f));
 ImNodes::EndNode();
 
 ImNodes::EndNodeEditor();

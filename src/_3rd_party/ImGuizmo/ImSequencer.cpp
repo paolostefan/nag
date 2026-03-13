@@ -44,7 +44,7 @@ namespace ImSequencer
       bool clickedBtn = containedClick && io.MouseReleased[0];
       int btnColor = overBtn ? 0xAAEAFFAA : 0x77A3B2AA;
       if (containedClick && io.MouseDownDuration[0] > 0)
-         btnRect.Expand(2.0f);
+         btnRect.Expand(2.f);
 
       float midy = pos.y + 16 / 2 - 0.5f;
       float midx = pos.x + 16 / 2 - 0.5f;
@@ -358,9 +358,9 @@ namespace ImSequencer
                sequence->DoubleClick(i);
             }
             // Ensure grabbable handles
-            const float max_handle_width = slotP2.x - slotP1.x / 3.0f;
-            const float min_handle_width = ImMin(10.0f, max_handle_width);
-            const float handle_width = ImClamp(framePixelWidth / 2.0f, min_handle_width, max_handle_width);
+            const float max_handle_width = slotP2.x - slotP1.x / 3.f;
+            const float min_handle_width = ImMin(10.f, max_handle_width);
+            const float handle_width = ImClamp(framePixelWidth / 2.f, min_handle_width, max_handle_width);
             ImRect rects[3] = { ImRect(slotP1, ImVec2(slotP1.x + handle_width, slotP2.y))
                 , ImRect(ImVec2(slotP2.x - handle_width, slotP1.y), slotP2)
                 , ImRect(slotP1, slotP2) };

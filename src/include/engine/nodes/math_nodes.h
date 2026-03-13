@@ -104,7 +104,7 @@ struct AddNode : MultiInputNode {
         throw std::runtime_error("Invalid output pin");
       }
 
-      float sum = 0.0f;
+      float sum = 0.f;
       for (const auto &pin: inputs) {
         if (const auto *const in = dynamic_cast<Stream<float> *>(pin.stream.get())) {
           // This avoids crash on disconnected pins
@@ -463,7 +463,7 @@ struct SqrtNode : Node {
     }
 
     // Clamp to avoid NaN from negative values
-    const float value = std::max(0.0f, in->value);
+    const float value = std::max(0.f, in->value);
     out->update(std::sqrt(value));
     mark_inputs_consumed();
   }
@@ -613,10 +613,10 @@ struct TanNode : Node {
  * Maps value from [in_min, in_max] to [out_min, out_max].
  */
 struct RemapNode : Node {
-  float in_min{0.0f};
-  float in_max{1.0f};
-  float out_min{0.0f};
-  float out_max{1.0f};
+  float in_min{0.f};
+  float in_max{1.f};
+  float out_min{0.f};
+  float out_max{1.f};
 
   RemapNode() {
     type = NodeType::Remap;
@@ -674,10 +674,10 @@ struct RemapNode : Node {
     }
   }
 
-  [[nodiscard]] static std::unique_ptr<RemapNode> create(const float in_min = 0.0f,
-                                                         const float in_max = 1.0f,
-                                                         const float out_min = 0.0f,
-                                                         const float out_max = 1.0f) {
+  [[nodiscard]] static std::unique_ptr<RemapNode> create(const float in_min = 0.f,
+                                                         const float in_max = 1.f,
+                                                         const float out_min = 0.f,
+                                                         const float out_max = 1.f) {
     auto node = std::make_unique<RemapNode>();
     node->in_min = in_min;
     node->in_max = in_max;
@@ -693,8 +693,8 @@ struct RemapNode : Node {
  * Clamps the input stream to the specified range and writes the result to the output stream.
  */
 struct ClampNode : Node {
-  float min_value{0.0f};
-  float max_value{1.0f};
+  float min_value{0.f};
+  float max_value{1.f};
 
   ClampNode() {
     type = NodeType::Clamp;
@@ -737,8 +737,8 @@ struct ClampNode : Node {
     }
   }
 
-  [[nodiscard]] static std::unique_ptr<ClampNode> create(const float min_value = 0.0f,
-                                                         const float max_value = 1.0f) {
+  [[nodiscard]] static std::unique_ptr<ClampNode> create(const float min_value = 0.f,
+                                                         const float max_value = 1.f) {
     auto node = std::make_unique<ClampNode>();
     node->min_value = min_value;
     node->max_value = max_value;
@@ -771,7 +771,7 @@ struct LerpNode : Node {
       return;
     }
 
-    const float t = std::clamp(in_t->value, 0.0f, 1.0f);
+    const float t = std::clamp(in_t->value, 0.f, 1.f);
     const float result = in_a->value + t * (in_b->value - in_a->value);
 
     out->update(result);
@@ -792,8 +792,8 @@ struct LerpNode : Node {
  * Smooth interpolation with ease in/out (Hermite interpolation)
  */
 struct SmoothStepNode : Node {
-  float edge0{0.0f};
-  float edge1{1.0f};
+  float edge0{0.f};
+  float edge1{1.f};
 
   SmoothStepNode() {
     type = NodeType::SmoothStep;
@@ -813,10 +813,10 @@ struct SmoothStepNode : Node {
     }
 
     // Clamp t to [0, 1]
-    const float t = std::clamp((in->value - edge0) / (edge1 - edge0), 0.0f, 1.0f);
+    const float t = std::clamp((in->value - edge0) / (edge1 - edge0), 0.f, 1.f);
 
     // Hermite interpolation: 3t² - 2t³
-    const float smooth = t * t * (3.0f - 2.0f * t);
+    const float smooth = t * t * (3.f - 2.f * t);
 
     out->update(smooth);
     mark_inputs_consumed();
@@ -841,8 +841,8 @@ struct SmoothStepNode : Node {
     }
   }
 
-  [[nodiscard]] static std::unique_ptr<SmoothStepNode> create(const float edge0 = 0.0f,
-                                                              const float edge1 = 1.0f) {
+  [[nodiscard]] static std::unique_ptr<SmoothStepNode> create(const float edge0 = 0.f,
+                                                              const float edge1 = 1.f) {
     auto node = std::make_unique<SmoothStepNode>();
     node->edge0 = edge0;
     node->edge1 = edge1;

@@ -46,7 +46,7 @@ void GraphInsight::render_ui() {
   static ScrollingBuffer buffer_out(1000);
 
   static bool flow = true;
-  static float history = 10.0f;
+  static float history = 10.f;
 
   if (!flow) {
     if (ImGui::Button(ICON_FA_PLAY "##play")) {
@@ -60,14 +60,14 @@ void GraphInsight::render_ui() {
   ImGui::Text("Time: %.2fs", time_node->time);
   ImGui::SameLine();
   if (ImGui::Button("Reset")) {
-    time_node->time = .0f;
+    time_node->time = 0.f;
     buffer_in_a.Erase();
     buffer_in_b.Erase();
     buffer_out.Erase();
   }
 
   ImGui::SameLine();
-  ImGui::SliderFloat("History", &history, 1.0f, 30.0f);
+  ImGui::SliderFloat("History", &history, 1.f, 30.f);
 
   if (flow) {
     time_node->step(ImGui::GetIO().DeltaTime);
@@ -84,7 +84,7 @@ void GraphInsight::render_ui() {
   if (ImPlot::BeginPlot("##plot", ImVec2(-1, 150))) {
     ImPlot::SetupAxes(nullptr, nullptr, axis_flags, axis_flags);
     ImPlot::SetupAxisLimits(ImAxis_X1,
-                            std::max(time_node->time - history, 0.0f), std::max(history, time_node->time),
+                            std::max(time_node->time - history, 0.f), std::max(history, time_node->time),
                             ImGuiCond_Always);
     ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
 

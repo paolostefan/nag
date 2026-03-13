@@ -78,7 +78,7 @@ private:
   /** Controls plot time flow. */
   bool plot_flowing{true};
 
-  float plot_history{10.0f};
+  float plot_history{10.f};
 
   NodePropertiesPanel node_properties_panel_;
 
@@ -90,9 +90,9 @@ private:
   std::string status_message;
 
   /** Timestamp (ImGui time) when status_message was set. */
-  float status_message_time{0.0f};
+  float status_message_time{0.f};
 
-  static constexpr float kStatusMessageDuration{3.0f}; // seconds
+  static constexpr float kStatusMessageDuration{3.f}; // seconds
   static constexpr auto kSaveDialogKey{"SaveGraphDlg"};
   static constexpr auto kLoadDialogKey{"LoadGraphDlg"};
   static constexpr auto kFileFilter{"JSON files{.json},All files{.*}"};

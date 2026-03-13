@@ -12,7 +12,7 @@
 struct CircleNode : ShaderNode {
   Vec2 position{0.5f, 0.5f};
   float radius{0.2f};
-  Vec4 color{1.0f, 1.0f, 1.0f, 1.0f};
+  Vec4 color{1.f, 1.f, 1.f, 1.f};
   float edge_smoothness{0.01f};
 
   CircleNode() {
@@ -101,7 +101,7 @@ struct CircleNode : ShaderNode {
         dynamic_cast<CircleNode &>(n).edge_smoothness = v;
       },
       graph, history,
-      /*min=*/0.0f, /*max=*/1.0f);
+      /*min=*/0.f, /*max=*/1.f);
   }
 
 private:

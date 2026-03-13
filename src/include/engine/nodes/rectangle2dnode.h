@@ -14,9 +14,9 @@
 struct Rectangle2DNode : ShaderNode {
   Vec2 position{0.5f, 0.5f}; // Center position [0,1]
   Vec2 size{0.3f, 0.2f}; // Width, height
-  float rotation{0.0f}; // Radians
-  Color color{1.0f, 1.0f, 1.0f, 1.0f};
-  float corner_radius{0.0f}; // For rounded corners
+  float rotation{0.f}; // Radians
+  Color color{1.f, 1.f, 1.f, 1.f};
+  float corner_radius{0.f}; // For rounded corners
 
   Rectangle2DNode() {
     type = NodeType::Rectangle2D;
@@ -146,7 +146,7 @@ public:
         dynamic_cast<Rectangle2DNode &>(n).corner_radius = v;
       },
       graph, history,
-      /*min=*/0.0f, /*max=*/1.0f);
+      /*min=*/0.f, /*max=*/1.f);
   }
 };
 

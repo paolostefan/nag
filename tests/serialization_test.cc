@@ -55,9 +55,9 @@ TEST_F(SerializationTest, SaveAndLoadSingleNode) {
   NodeGraph graph;
 
   // Create LFO node
-  auto lfo = LFONode::create(2.5f, 1.0f, LFONode::WaveShape::Sawtooth, 0.5f, 0.1f);
+  auto lfo = LFONode::create(2.5f, 1.f, LFONode::WaveShape::Sawtooth, 0.5f, 0.1f);
   lfo->name = "Test LFO";
-  lfo->position = {100.0f, 200.0f};
+  lfo->position = {100.f, 200.f};
   const uint64_t original_id = lfo->id;
 
   graph.add_node(std::move(lfo));
@@ -81,12 +81,12 @@ TEST_F(SerializationTest, SaveAndLoadSingleNode) {
   EXPECT_EQ(loaded_node->name, "Test LFO");
   EXPECT_EQ(loaded_node->type, NodeType::LFO);
   EXPECT_FLOAT_EQ(loaded_node->frequency, 2.5f);
-  EXPECT_FLOAT_EQ(loaded_node->amplitude, 1.0f);
+  EXPECT_FLOAT_EQ(loaded_node->amplitude, 1.f);
   EXPECT_EQ(loaded_node->wave_shape, LFONode::WaveShape::Sawtooth);
   EXPECT_FLOAT_EQ(loaded_node->phase, 0.5f);
   EXPECT_FLOAT_EQ(loaded_node->offset, 0.1f);
-  EXPECT_FLOAT_EQ(loaded_node->position.x, 100.0f);
-  EXPECT_FLOAT_EQ(loaded_node->position.y, 200.0f);
+  EXPECT_FLOAT_EQ(loaded_node->position.x, 100.f);
+  EXPECT_FLOAT_EQ(loaded_node->position.y, 200.f);
 
   // ID should be different (regenerated)
   EXPECT_NE(loaded_node->id, original_id);
@@ -104,7 +104,7 @@ TEST_F(SerializationTest, SaveAndLoadGraphWithLinks) {
   const Node *time_ptr = graph.add_node(std::move(time_node));
 
   // Create LFO connected to time
-  auto lfo_node = LFONode::create(1.5f, 2.0f);
+  auto lfo_node = LFONode::create(1.5f, 2.f);
   lfo_node->name = "LFO";
   const Node *lfo_ptr = graph.add_node(std::move(lfo_node));
 
@@ -245,7 +245,7 @@ TEST_F(SerializationTest, NodeIDsAreRemapped) {
 TEST_F(SerializationTest, SaveAndLoadClearColorNode) {
   NodeGraph graph;
 
-  auto clear_node = ClearColorNode::create(Vec4(0.2f, 0.5f, 0.8f, 1.0f));
+  auto clear_node = ClearColorNode::create(Vec4(0.2f, 0.5f, 0.8f, 1.f));
   clear_node->name = "Background";
 
   // Initialize con dimensioni specifiche
@@ -273,7 +273,7 @@ TEST_F(SerializationTest, SaveAndLoadClearColorNode) {
   EXPECT_FLOAT_EQ(loaded_node->color.x, 0.2f);
   EXPECT_FLOAT_EQ(loaded_node->color.y, 0.5f);
   EXPECT_FLOAT_EQ(loaded_node->color.z, 0.8f);
-  EXPECT_FLOAT_EQ(loaded_node->color.w, 1.0f);
+  EXPECT_FLOAT_EQ(loaded_node->color.w, 1.f);
 
   // Verify render target was recreated
   ASSERT_NE(loaded_node->render_target, nullptr);
@@ -290,8 +290,8 @@ TEST_F(SerializationTest, SaveAndLoadGradientNode) {
 
   auto gradient = GradientNode::create(
     GradientNode::Type::Radial,
-    Vec4(1.0f, 0.0f, 0.0f, 1.0f), // Red
-    Vec4(0.0f, 0.0f, 1.0f, 0.5f) // Semi-transparent blue
+    Vec4(1.f, 0.f, 0.f, 1.f), // Red
+    Vec4(0.f, 0.f, 1.f, 0.5f) // Semi-transparent blue
   );
   gradient->name = "Radial Gradient";
   gradient->center = {0.3f, 0.7f};
@@ -315,15 +315,15 @@ TEST_F(SerializationTest, SaveAndLoadGradientNode) {
   EXPECT_EQ(loaded->gradient_type, GradientNode::Type::Radial);
 
   // Color start
-  EXPECT_FLOAT_EQ(loaded->color_start.x, 1.0f);
-  EXPECT_FLOAT_EQ(loaded->color_start.y, 0.0f);
-  EXPECT_FLOAT_EQ(loaded->color_start.z, 0.0f);
-  EXPECT_FLOAT_EQ(loaded->color_start.w, 1.0f);
+  EXPECT_FLOAT_EQ(loaded->color_start.x, 1.f);
+  EXPECT_FLOAT_EQ(loaded->color_start.y, 0.f);
+  EXPECT_FLOAT_EQ(loaded->color_start.z, 0.f);
+  EXPECT_FLOAT_EQ(loaded->color_start.w, 1.f);
 
   // Color end
-  EXPECT_FLOAT_EQ(loaded->color_end.x, 0.0f);
-  EXPECT_FLOAT_EQ(loaded->color_end.y, 0.0f);
-  EXPECT_FLOAT_EQ(loaded->color_end.z, 1.0f);
+  EXPECT_FLOAT_EQ(loaded->color_end.x, 0.f);
+  EXPECT_FLOAT_EQ(loaded->color_end.y, 0.f);
+  EXPECT_FLOAT_EQ(loaded->color_end.z, 1.f);
   EXPECT_FLOAT_EQ(loaded->color_end.w, 0.5f);
 
   // Center and direction
@@ -346,7 +346,7 @@ TEST_F(SerializationTest, SaveAndLoadCircleNode) {
   auto circle = CircleNode::create(
     Vec2(0.7f, 0.3f), // position
     0.15f, // radius
-    Vec4(0.0f, 1.0f, 0.0f, 0.8f) // green semi-transparent
+    Vec4(0.f, 1.f, 0.f, 0.8f) // green semi-transparent
   );
   circle->name = "Moving Circle";
   circle->edge_smoothness = 0.02f;
@@ -371,9 +371,9 @@ TEST_F(SerializationTest, SaveAndLoadCircleNode) {
   EXPECT_FLOAT_EQ(loaded->radius, 0.15f);
   EXPECT_FLOAT_EQ(loaded->edge_smoothness, 0.02f);
 
-  EXPECT_FLOAT_EQ(loaded->color.x, 0.0f);
-  EXPECT_FLOAT_EQ(loaded->color.y, 1.0f);
-  EXPECT_FLOAT_EQ(loaded->color.z, 0.0f);
+  EXPECT_FLOAT_EQ(loaded->color.x, 0.f);
+  EXPECT_FLOAT_EQ(loaded->color.y, 1.f);
+  EXPECT_FLOAT_EQ(loaded->color.z, 0.f);
   EXPECT_FLOAT_EQ(loaded->color.w, 0.8f);
 }
 
@@ -386,7 +386,7 @@ TEST_F(SerializationTest, SaveAndLoadRectangleNode) {
   auto rect = Rectangle2DNode::create(
     Vec2(0.5f, 0.5f),
     Vec2(0.4f, 0.3f),
-    Color(1.0f, 1.0f, 0.0f, 1.0f)
+    Color(1.f, 1.f, 0.f, 1.f)
   );
   rect->name = "Yellow Rectangle";
   rect->rotation = 0.785f; // 45 degrees
@@ -414,10 +414,10 @@ TEST_F(SerializationTest, SaveAndLoadRectangleNode) {
   EXPECT_FLOAT_EQ(loaded->rotation, 0.785f);
   EXPECT_FLOAT_EQ(loaded->corner_radius, 0.05f);
 
-  EXPECT_FLOAT_EQ(loaded->color.r(), 1.0f);
-  EXPECT_FLOAT_EQ(loaded->color.g(), 1.0f);
-  EXPECT_FLOAT_EQ(loaded->color.b(), 0.0f);
-  EXPECT_FLOAT_EQ(loaded->color.a(), 1.0f);
+  EXPECT_FLOAT_EQ(loaded->color.r(), 1.f);
+  EXPECT_FLOAT_EQ(loaded->color.g(), 1.f);
+  EXPECT_FLOAT_EQ(loaded->color.b(), 0.f);
+  EXPECT_FLOAT_EQ(loaded->color.a(), 1.f);
 }
 
 // ============================================================================
@@ -478,7 +478,7 @@ TEST_F(SerializationTest, SaveAndLoadVisualPipeline) {
 
   auto composite = CompositeNode::create(
     CompositeNode::BlendMode::Add,
-    1.0f
+    1.f
   );
   composite->name = "Additive Composite";
   ASSERT_TRUE(composite->initialize(800, 600));

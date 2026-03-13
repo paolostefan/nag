@@ -23,7 +23,7 @@
 //   uniform int       u_horizontal;   // 1 = horizontal pass, 0 = vertical
 //
 struct BlurNode : ShaderNode {
-  float radius{4.0f};
+  float radius{4.f};
 
   BlurNode() {
     type = NodeType::Blur;
@@ -90,7 +90,7 @@ struct BlurNode : ShaderNode {
         dynamic_cast<BlurNode &>(n).radius = v;
       },
       graph, history,
-      /*min=*/0.0f, /*max=*/64.0f,
+      /*min=*/0.f, /*max=*/64.f,
       /*format=*/"%.1f",
       /*disabled=*/get_input("radius")->connected
     );
@@ -106,12 +106,12 @@ struct BlurNode : ShaderNode {
     //     dynamic_cast<BlurNode &>(n).sigma = v;
     //   },
     //   graph, history,
-    //   /*speed=*/0.05f, /*min=*/0.01f, /*max=*/20.0f);
+    //   /*speed=*/0.05f, /*min=*/0.01f, /*max=*/20.f);
   }
 
   [[nodiscard]] float get_param(const std::string &param_name) const override {
     if (param_name == "radius") return radius;
-    return 0.0f;
+    return 0.f;
   }
 
 private:
@@ -127,7 +127,7 @@ private:
   }
 
 public:
-  [[nodiscard]] static std::unique_ptr<BlurNode> create(const float radius = 4.0f) {
+  [[nodiscard]] static std::unique_ptr<BlurNode> create(const float radius = 4.f) {
     auto node = std::make_unique<BlurNode>();
     node->radius = radius;
     node->add_typed_input<Texture *>("texture");
@@ -155,7 +155,7 @@ public:
 //   uniform vec2      u_resolution;
 //
 struct ChromaticAberrationNode : ShaderNode {
-  float strength{3.0f};
+  float strength{3.f};
 
   ChromaticAberrationNode() {
     type = NodeType::ChromaticAberration;
@@ -181,7 +181,7 @@ struct ChromaticAberrationNode : ShaderNode {
   }
 
   [[nodiscard]] static std::unique_ptr<ChromaticAberrationNode> create(
-    const float strength = 3.0f) {
+    const float strength = 3.f) {
     auto node = std::make_unique<ChromaticAberrationNode>();
     node->strength = strength;
     node->add_typed_input<Texture *>("texture");
@@ -208,7 +208,7 @@ struct ChromaticAberrationNode : ShaderNode {
 //   uniform vec2      u_resolution;
 //
 struct PixelateNode : ShaderNode {
-  float pixel_size{8.0f};
+  float pixel_size{8.f};
 
   PixelateNode() {
     type = NodeType::Pixelate;
@@ -234,7 +234,7 @@ struct PixelateNode : ShaderNode {
   }
 
   [[nodiscard]] static std::unique_ptr<PixelateNode> create(
-    const float pixel_size = 8.0f) {
+    const float pixel_size = 8.f) {
     auto node = std::make_unique<PixelateNode>();
     node->pixel_size = pixel_size;
     node->add_typed_input<Texture *>("texture");

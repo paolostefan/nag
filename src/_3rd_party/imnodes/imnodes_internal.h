@@ -152,8 +152,8 @@ struct ImNodeData
     bool          Draggable;
 
     ImNodeData(const int node_id)
-        : Id(node_id), Origin(0.0f, 0.0f), TitleBarContentRect(),
-          Rect(ImVec2(0.0f, 0.0f), ImVec2(0.0f, 0.0f)), ColorStyle(), LayoutStyle(), PinIndices(),
+        : Id(node_id), Origin(0.f, 0.f), TitleBarContentRect(),
+          Rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f)), ColorStyle(), LayoutStyle(), PinIndices(),
           Draggable(true)
     {
     }
@@ -285,8 +285,8 @@ struct ImNodesEditorContext
     ImNodesEditorContext()
         : Nodes(), Pins(), Links(), Panning(0.f, 0.f), SelectedNodeIndices(), SelectedLinkIndices(),
           SelectedNodeOffsets(), PrimaryNodeOffset(0.f, 0.f), ClickInteraction(),
-          MiniMapEnabled(false), MiniMapSizeFraction(0.0f), MiniMapNodeHoveringCallback(NULL),
-          MiniMapNodeHoveringCallbackUserData(NULL), MiniMapScaling(0.0f)
+          MiniMapEnabled(false), MiniMapSizeFraction(0.f), MiniMapNodeHoveringCallback(NULL),
+          MiniMapNodeHoveringCallbackUserData(NULL), MiniMapScaling(0.f)
     {
     }
 };

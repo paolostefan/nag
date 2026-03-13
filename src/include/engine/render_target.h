@@ -42,7 +42,7 @@ public:
   /**
    * Clear the render target.
    */
-  void clear(const float r = 0.0f, const float g = 0.0f, const float b = 0.0f, const float a = 0.0f) const {
+  void clear(const float r = 0.f, const float g = 0.f, const float b = 0.f, const float a = 0.f) const {
     if (initialized_) {
       bind();
       glClearColor(r, g, b, a);

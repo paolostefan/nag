@@ -405,14 +405,14 @@ void GraphEditorUI::render_menu_bar() {
   const float elapsed = static_cast<float>(ImGui::GetTime()) - status_message_time;
   if (!status_message.empty() && elapsed < kStatusMessageDuration) {
     // Alpha: 100% for 2s, then 1s fade out
-    constexpr float fade_start = kStatusMessageDuration - 1.0f;
+    constexpr float fade_start = kStatusMessageDuration - 1.f;
     const float alpha = elapsed > fade_start
-                          ? 1.0f - (elapsed - fade_start)
-                          : 1.0f;
+                          ? 1.f - (elapsed - fade_start)
+                          : 1.f;
 
-    ImGui::SameLine(0.0f, 30.0f);
+    ImGui::SameLine(0.f, 30.f);
     ImGui::PushStyleColor(ImGuiCol_Text,
-                          ImVec4(0.6f, 1.0f, 0.6f, alpha));
+                          ImVec4(0.6f, 1.f, 0.6f, alpha));
     ImGui::TextUnformatted(status_message.c_str());
     ImGui::PopStyleColor();
   }
@@ -420,7 +420,7 @@ void GraphEditorUI::render_menu_bar() {
   ImGui::EndMenuBar();
 
   // ── File Dialog: Save ──────────────────────────────────────────────────────
-  constexpr ImVec2 dialog_size{600.0f, 400.0f};
+  constexpr ImVec2 dialog_size{600.f, 400.f};
   if (ImGuiFileDialog::Instance()->Display(
     kSaveDialogKey, ImGuiWindowFlags_NoCollapse, dialog_size)) {
     if (ImGuiFileDialog::Instance()->IsOk()) {
@@ -568,7 +568,7 @@ void GraphEditorUI::render_visual_node_body(
     return;
   }
 
-  constexpr float kPreviewWidth = 150.0f;
+  constexpr float kPreviewWidth = 150.f;
   const float aspect =
       static_cast<float>(visual_node->render_target->get_height()) /
       static_cast<float>(visual_node->render_target->get_width());

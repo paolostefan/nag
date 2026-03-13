@@ -49,14 +49,14 @@ namespace PropertyWidget {
   /// @param graph       The node graph (passed to history.execute).
   /// @param history     The command history.
   /// @param speed       DragFloat speed (default 0.01f).
-  /// @param min         Minimum value (default 0.0f).
-  /// @param max         Maximum value (default 0.0f = no limit).
+  /// @param min         Minimum value (default 0.f).
+  /// @param max         Maximum value (default 0.f = no limit).
   /// @param format      Printf format string (default "%.3f").
   /// @param disabled    If true, the widget is rendered disabled and does not emit commands (default false).
   inline void DragFloat(const std::string &label, int node_id, float &value,
                         std::function<void(Node &, float)> setter,
                         NodeGraph &graph, CommandHistory &history,
-                        const float speed = 0.01f, const float min = 0.0f, const float max = 0.0f,
+                        const float speed = 0.01f, const float min = 0.f, const float max = 0.f,
                         const char *format = "%.3f",
                         const bool disabled = false) {
     const std::string key = internal::MakeKey(node_id, label);
@@ -99,14 +99,14 @@ namespace PropertyWidget {
   /// @param setter  Callable to restore the value during undo/redo.
   /// @param graph   The node graph (passed to history.execute).
   /// @param history The command history.
-  /// @param min     Minimum value (default 0.0f).
-  /// @param max     Maximum value (default 1.0f).
+  /// @param min     Minimum value (default 0.f).
+  /// @param max     Maximum value (default 1.f).
   /// @param format  Printf format string (default "%.3f").
   /// @param disabled If true, the slider is rendered disabled and does not emit commands (default false).
   inline void SliderFloat(const std::string &label, int node_id, float &value,
                           std::function<void(Node &, float)> setter,
                           NodeGraph &graph, CommandHistory &history,
-                          const float min = 0.0f, const float max = 1.0f,
+                          const float min = 0.f, const float max = 1.f,
                           const char *format = "%.3f",
                           const bool disabled = false) {
     const std::string key = internal::MakeKey(node_id, label);

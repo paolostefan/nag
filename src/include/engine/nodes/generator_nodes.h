@@ -10,9 +10,9 @@
  * Node that outputs a constant float value.
  */
 struct ConstantFloatNode : Node {
-  float value{0.0f};
+  float value{0.f};
 
-  explicit ConstantFloatNode(const float _value = 0.0f)
+  explicit ConstantFloatNode(const float _value = 0.f)
     : value(_value) {
     type = NodeType::Constant;
     name = "Constant";
@@ -26,7 +26,7 @@ struct ConstantFloatNode : Node {
     }
   }
 
-  static std::unique_ptr<Node> create(const float _value = 0.0f) {
+  static std::unique_ptr<Node> create(const float _value = 0.f) {
     auto node = std::make_unique<ConstantFloatNode>(_value);
     node->add_output("out");
     return node;
@@ -34,7 +34,7 @@ struct ConstantFloatNode : Node {
 };
 
 struct TimeNode : Node {
-  float time{0.0f};
+  float time{0.f};
 
   explicit TimeNode() {
     type = NodeType::Time;
@@ -67,8 +67,8 @@ struct TimeNode : Node {
  * Node that outputs a noise value based on a sinusoidal approximation.
  */
 struct NoiseNode : Node {
-  float frequency{1.0f};
-  float amplitude{1.0f};
+  float frequency{1.f};
+  float amplitude{1.f};
   int octaves{1};
   float persistence{0.5f};
 
@@ -90,14 +90,14 @@ struct NoiseNode : Node {
       return;
     }
 
-    float result = 0.0f;
+    float result = 0.f;
     float amp = amplitude;
     float freq = frequency;
 
     for (int i = 0; i < octaves; ++i) {
       result += simple_noise(in->value * freq) * amp;
       amp *= persistence;
-      freq *= 2.0f;
+      freq *= 2.f;
     }
 
     out->update(result);
@@ -127,8 +127,8 @@ struct NoiseNode : Node {
     }
   }
 
-  static std::unique_ptr<NoiseNode> create(const float frequency = 1.0f,
-                                           const float amplitude = 1.0f,
+  static std::unique_ptr<NoiseNode> create(const float frequency = 1.f,
+                                           const float amplitude = 1.f,
                                            const int octaves = 1,
                                            const float persistence = 0.5f) {
     auto node = std::make_unique<NoiseNode>();
@@ -155,8 +155,8 @@ private:
  * Node that outputs a random float value within a specified range.
  */
 struct RandomNode : Node {
-  float min_value{0.0f};
-  float max_value{1.0f};
+  float min_value{0.f};
+  float max_value{1.f};
   int seed{42};
 
   uint64_t last_trigger_version{0};
@@ -245,7 +245,7 @@ struct RandomNode : Node {
  *  Node that outputs a sequence of values based on a trigger input.
  */
 struct StepSequencerNode : Node {
-  std::vector<float> steps{0.0f, 0.5f, 1.0f, 0.5f}; // Default pattern
+  std::vector<float> steps{0.f, 0.5f, 1.f, 0.5f}; // Default pattern
   uint64_t current_step{0};
   uint64_t last_trigger_version{0};
 

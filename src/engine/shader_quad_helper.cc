@@ -3,16 +3,16 @@
 void ShaderQuadHelper::initialize() {
   if (initialized) return;
 
-  // Fullscreen quad vertices (position + texcoord)
+  // Fullscreen quad vertices (position + tex coord)
   constexpr float vertices[] = {
-    // pos (x, y)       // texcoord (u, v)
-    -1.0f, -1.0f, /* */ 0.0f, 0.0f,
-    1.0f, -1.0f, /*  */ 1.0f, 0.0f,
-    1.0f, 1.0f, /*   */ 1.0f, 1.0f,
+    // pos (x, y)       // tex coord (u, v)
+    -1.f, -1.f, /*    */ 0.f, 0.f,
+    1.f, -1.f, /*     */ 1.f, 0.f,
+    1.f, 1.f, /*      */ 1.f, 1.f,
 
-    -1.0f, -1.0f, /* */ 0.0f, 0.0f,
-    1.0f, 1.0f, /*   */ 1.0f, 1.0f,
-    -1.0f, 1.0f, /*  */ 0.0f, 1.0f,
+    -1.f, -1.f, /*    */ 0.f, 0.f,
+    1.f, 1.f, /*      */ 1.f, 1.f,
+    -1.f, 1.f, /*     */ 0.f, 1.f,
   };
 
   glGenVertexArrays(1, &vao);
@@ -26,7 +26,7 @@ void ShaderQuadHelper::initialize() {
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), nullptr);
   glEnableVertexAttribArray(0);
 
-  // Texcoord attribute (location = 1)
+  // Tex coord attribute (location = 1)
   glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float),
                         reinterpret_cast<void *>(2 * sizeof(float)));
   glEnableVertexAttribArray(1);

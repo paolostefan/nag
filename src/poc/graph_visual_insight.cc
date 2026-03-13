@@ -109,7 +109,7 @@ void GraphVisualInsight::build_default_graph() {
   }
 
   // Noise node
-  auto noise_node = NoiseNode::create(1.0f, 4.0f, 3, 0.8f);
+  auto noise_node = NoiseNode::create(1.f, 4.f, 3, 0.8f);
   noise_node->position = {150, 30};
   const auto noise_ptr = graph.add_node(std::move(noise_node));
   graph.add_link(time_node->outputs[0], noise_ptr->inputs[0]);
@@ -122,7 +122,7 @@ void GraphVisualInsight::build_default_graph() {
   graph.add_link(time_node->outputs[0], sin_a->inputs[0]);
 
   // Oscillator B node connected to time
-  auto lfo_b_node = LFONode::create(.7f, 1.0f, LFONode::WaveShape::Sine, 0, .5f);
+  auto lfo_b_node = LFONode::create(.7f, 1.f, LFONode::WaveShape::Sine, 0, .5f);
   lfo_b_node->name = "Oscillator B";
   lfo_b_node->position = {150, 190};
   const Node *lfo_b = graph.add_node(std::move(lfo_b_node));
@@ -363,14 +363,14 @@ void GraphVisualInsight::render_menu_bar() {
   const float elapsed = static_cast<float>(ImGui::GetTime()) - status_message_time;
   if (!status_message.empty() && elapsed < kStatusMessageDuration) {
     // Alpha: 100% for 2s, then 1s fade out
-    constexpr float fade_start = kStatusMessageDuration - 1.0f;
+    constexpr float fade_start = kStatusMessageDuration - 1.f;
     const float alpha = elapsed > fade_start
-                          ? 1.0f - (elapsed - fade_start)
-                          : 1.0f;
+                          ? 1.f - (elapsed - fade_start)
+                          : 1.f;
 
-    ImGui::SameLine(0.0f, 30.0f);
+    ImGui::SameLine(0.f, 30.f);
     ImGui::PushStyleColor(ImGuiCol_Text,
-                          ImVec4(0.6f, 1.0f, 0.6f, alpha));
+                          ImVec4(0.6f, 1.f, 0.6f, alpha));
     ImGui::TextUnformatted(status_message.c_str());
     ImGui::PopStyleColor();
   }
@@ -378,7 +378,7 @@ void GraphVisualInsight::render_menu_bar() {
   ImGui::EndMenuBar();
 
   // ── File Dialog: Save ──────────────────────────────────────────────────────
-  constexpr ImVec2 dialog_size{600.0f, 400.0f};
+  constexpr ImVec2 dialog_size{600.f, 400.f};
   if (ImGuiFileDialog::Instance()->Display(
     kSaveDialogKey, ImGuiWindowFlags_NoCollapse, dialog_size)) {
     if (ImGuiFileDialog::Instance()->IsOk()) {
@@ -427,12 +427,12 @@ void GraphVisualInsight::render_plot() {
 
     ImGui::SameLine();
 
-    const float display_time = time_node ? time_node->time : 0.0f;
+    const float display_time = time_node ? time_node->time : 0.f;
     ImGui::Text("Time: %.2fs", display_time);
 
     ImGui::SameLine();
     if (ImGui::Button("Reset")) {
-      if (time_node) time_node->time = 0.0f;
+      if (time_node) time_node->time = 0.f;
       buf_noise.Erase();
       buf_a.Erase();
       buf_b.Erase();
@@ -440,7 +440,7 @@ void GraphVisualInsight::render_plot() {
     }
 
     ImGui::SameLine();
-    ImGui::SliderFloat("History", &plot_history, 1.0f, 30.0f);
+    ImGui::SliderFloat("History", &plot_history, 1.f, 30.f);
 
     // Tick
     if (plot_flowing && time_node) {
@@ -468,7 +468,7 @@ void GraphVisualInsight::render_plot() {
       ImPlot::SetupAxes(nullptr, nullptr, axis_flags, axis_flags);
       ImPlot::SetupAxisLimits(
         ImAxis_X1,
-        std::max(display_time - plot_history, 0.0f),
+        std::max(display_time - plot_history, 0.f),
         std::max(plot_history, display_time),
         ImGuiCond_Always
       );
@@ -787,7 +787,7 @@ void GraphVisualInsight::render_visual_node_body(
     return;
   }
 
-  constexpr float kPreviewWidth = 150.0f;
+  constexpr float kPreviewWidth = 150.f;
   const float aspect =
       static_cast<float>(visual_node->render_target->get_height()) /
       static_cast<float>(visual_node->render_target->get_width());

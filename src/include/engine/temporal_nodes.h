@@ -26,10 +26,10 @@ struct LFONode : Node {
   };
 
   WaveShape wave_shape{WaveShape::Sine};
-  float frequency{1.0f}; // Hz
-  float amplitude{1.0f};
-  float phase{0.0f}; // Radians
-  float offset{0.0f}; // DC offset
+  float frequency{1.f}; // Hz
+  float amplitude{1.f};
+  float phase{0.f}; // Radians
+  float offset{0.f}; // DC offset
   float pulse_width{0.5f}; // For square wave (0-1)
 
   LFONode() {
@@ -50,9 +50,9 @@ struct LFONode : Node {
     }
 
     const float time = in->value;
-    const float angle = 2.0f * PI * frequency * time + phase;
+    const float angle = 2.f * PI * frequency * time + phase;
 
-    float wave_value = 0.0f;
+    float wave_value = 0.f;
 
     switch (wave_shape) {
       case WaveShape::Sine:
@@ -60,20 +60,20 @@ struct LFONode : Node {
         break;
 
       case WaveShape::Square: {
-        const float normalized_phase = std::fmod(angle / (2.0f * PI), 1.0f);
-        wave_value = normalized_phase < pulse_width ? 1.0f : -1.0f;
+        const float normalized_phase = std::fmod(angle / (2.f * PI), 1.f);
+        wave_value = normalized_phase < pulse_width ? 1.f : -1.f;
       }
       break;
 
       case WaveShape::Triangle: {
-        const float normalized_phase = std::fmod(angle / (2.0f * PI), 1.0f);
-        wave_value = 4.0f * std::abs(normalized_phase - 0.5f) - 1.0f;
+        const float normalized_phase = std::fmod(angle / (2.f * PI), 1.f);
+        wave_value = 4.f * std::abs(normalized_phase - 0.5f) - 1.f;
       }
       break;
 
       case WaveShape::Sawtooth: {
-        const float normalized_phase = std::fmod(angle / (2.0f * PI), 1.0f);
-        wave_value = 2.0f * normalized_phase - 1.0f;
+        const float normalized_phase = std::fmod(angle / (2.f * PI), 1.f);
+        wave_value = 2.f * normalized_phase - 1.f;
       }
       break;
     }
@@ -122,11 +122,11 @@ struct LFONode : Node {
    * @param offset DC offset (default: 0)
    */
   static std::unique_ptr<LFONode> create(
-    const float frequency = 1.0f,
-    const float amplitude = 1.0f,
+    const float frequency = 1.f,
+    const float amplitude = 1.f,
     const WaveShape wave_shape = WaveShape::Sine,
-    const float phase = 0.0f,
-    const float offset = 0.0f) {
+    const float phase = 0.f,
+    const float offset = 0.f) {
     auto node = std::make_unique<LFONode>();
     node->frequency = frequency;
     node->amplitude = amplitude;
@@ -162,9 +162,9 @@ struct EnvelopeNode : Node {
   float release_time{0.2f}; // Seconds
 
   State current_state{Idle};
-  float envelope_value{0.0f};
-  float state_start_time{0.0f};
-  float state_start_value{0.0f};
+  float envelope_value{0.f};
+  float state_start_time{0.f};
+  float state_start_value{0.f};
   bool was_triggered{false};
 
   EnvelopeNode() {
@@ -260,33 +260,33 @@ private:
 
     switch (current_state) {
       case Idle:
-        envelope_value = 0.0f;
+        envelope_value = 0.f;
         break;
 
       case Attack:
-        if (attack_time > 0.0f) {
-          const float progress = std::min(1.0f, elapsed / attack_time);
-          envelope_value = state_start_value + progress * (1.0f - state_start_value);
+        if (attack_time > 0.f) {
+          const float progress = std::min(1.f, elapsed / attack_time);
+          envelope_value = state_start_value + progress * (1.f - state_start_value);
 
-          if (progress >= 1.0f) {
+          if (progress >= 1.f) {
             current_state = Decay;
             state_start_time = time;
-            state_start_value = 1.0f;
+            state_start_value = 1.f;
           }
         } else {
-          envelope_value = 1.0f;
+          envelope_value = 1.f;
           current_state = Decay;
           state_start_time = time;
-          state_start_value = 1.0f;
+          state_start_value = 1.f;
         }
         break;
 
       case Decay:
-        if (decay_time > 0.0f) {
-          const float progress = std::min(1.0f, elapsed / decay_time);
-          envelope_value = 1.0f - progress * (1.0f - sustain_level);
+        if (decay_time > 0.f) {
+          const float progress = std::min(1.f, elapsed / decay_time);
+          envelope_value = 1.f - progress * (1.f - sustain_level);
 
-          if (progress >= 1.0f) {
+          if (progress >= 1.f) {
             current_state = Sustain;
           }
         } else {
@@ -300,16 +300,16 @@ private:
         break;
 
       case Release:
-        if (release_time > 0.0f) {
-          const float progress = std::min(1.0f, elapsed / release_time);
-          envelope_value = state_start_value * (1.0f - progress);
+        if (release_time > 0.f) {
+          const float progress = std::min(1.f, elapsed / release_time);
+          envelope_value = state_start_value * (1.f - progress);
 
-          if (progress >= 1.0f) {
+          if (progress >= 1.f) {
             current_state = Idle;
-            envelope_value = 0.0f;
+            envelope_value = 0.f;
           }
         } else {
-          envelope_value = 0.0f;
+          envelope_value = 0.f;
           current_state = Idle;
         }
         break;
@@ -347,12 +347,12 @@ public:
  * Useful for echo effects and temporal offsets.
  */
 struct DelayNode : Node {
-  float delay_time{1.0f}; // Seconds
-  float sample_rate{60.0f}; // Samples per second (matched to frame rate)
+  float delay_time{1.f}; // Seconds
+  float sample_rate{60.f}; // Samples per second (matched to frame rate)
 
   std::deque<float> buffer;
   size_t max_buffer_size{0};
-  float last_time{0.0f};
+  float last_time{0.f};
   bool initialized{false};
 
   DelayNode() {
@@ -390,14 +390,14 @@ struct DelayNode : Node {
     // Initialize on first run
     if (!initialized) {
       buffer.clear();
-      buffer.resize(max_buffer_size, 0.0f);
+      buffer.resize(max_buffer_size, 0.f);
       last_time = current_time;
       initialized = true;
     }
 
     // Check if we should add a new sample (time-based sampling)
     const float time_delta = current_time - last_time;
-    if (time_delta >= (1.0f / sample_rate)) {
+    if (time_delta >= (1.f / sample_rate)) {
       // Add new value to buffer
       buffer.push_back(current_value);
 
@@ -410,7 +410,7 @@ struct DelayNode : Node {
     }
 
     // Output oldest value from buffer
-    const float delayed_value = buffer.empty() ? 0.0f : buffer.front();
+    const float delayed_value = buffer.empty() ? 0.f : buffer.front();
     out->update(delayed_value);
     mark_inputs_consumed();
   }
@@ -447,8 +447,8 @@ struct DelayNode : Node {
    * @param sample_rate Sampling rate in Hz (default: 60)
    */
   static std::unique_ptr<DelayNode> create(
-    const float delay_time = 1.0f,
-    const float sample_rate = 60.0f) {
+    const float delay_time = 1.f,
+    const float sample_rate = 60.f) {
     auto node = std::make_unique<DelayNode>();
     node->delay_time = delay_time;
     node->sample_rate = sample_rate;
@@ -468,8 +468,8 @@ struct DelayNode : Node {
  */
 struct SmootherNode : Node {
   float smooth_time{0.1f}; // Time to reach ~63% of target (seconds)
-  float current_value{0.0f};
-  float last_time{0.0f};
+  float current_value{0.f};
+  float last_time{0.f};
   bool initialized{false};
 
   SmootherNode() {
@@ -505,8 +505,8 @@ struct SmootherNode : Node {
 
     // Exponential smoothing
     // Formula: current += (target - current) * (1 - exp(-dt / smooth_time))
-    if (smooth_time > 0.0f && dt > 0.0f) {
-      const float alpha = 1.0f - std::exp(-dt / smooth_time);
+    if (smooth_time > 0.f && dt > 0.f) {
+      const float alpha = 1.f - std::exp(-dt / smooth_time);
       current_value += (target - current_value) * alpha;
     } else {
       // No smoothing

@@ -207,7 +207,7 @@ struct Node {
   [[nodiscard]] virtual float get_param(const std::string &param_name) const {
     // Default implementation: no parameters, return 0.
     (void) param_name;
-    return 0.0f;
+    return 0.f;
   }
 
   // Add a typed input Pin to this Node

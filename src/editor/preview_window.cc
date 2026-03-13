@@ -187,7 +187,7 @@ void PreviewWindow::render(const Texture *texture,
   glViewport(0, 0, w, h);
 
   // ── 3. Clear + draw ────────────────────────────────────────────────────────
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  glClearColor(0.f, 0.f, 0.f, 0.f);
   glClear(GL_COLOR_BUFFER_BIT);
 
   glUseProgram(shader_program_);
