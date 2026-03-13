@@ -34,7 +34,6 @@ GraphInsight::GraphInsight() : UIWindow("Graph insight POC", 800, 600) {
   sin_a_stream_out = dynamic_cast<Stream<float> *>(sin_a->outputs[0].stream.get());
   sin_b_stream_out = dynamic_cast<Stream<float> *>(sin_b->outputs[0].stream.get());
   out_stream = dynamic_cast<Stream<float> *>(adding_node->outputs[0].stream.get());
-
 }
 
 
@@ -80,6 +79,9 @@ void GraphInsight::render_ui() {
   }
 
   static ImPlotAxisFlags axis_flags = ImPlotAxisFlags_AutoFit;
+  static ImPlotSpec spec;
+  spec.Size = 0;
+  spec.Stride = 2 * sizeof(float);
 
   if (ImPlot::BeginPlot("##plot", ImVec2(-1, 150))) {
     ImPlot::SetupAxes(nullptr, nullptr, axis_flags, axis_flags);
@@ -88,26 +90,17 @@ void GraphInsight::render_ui() {
                             ImGuiCond_Always);
     ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
 
-    if (!buffer_in_a.Data.empty()) {
-      ImPlot::PlotLine("Input A",
-                       &buffer_in_a.Data[0].x, &buffer_in_a.Data[0].y,
-                       buffer_in_a.Data.size(),
-                       0, buffer_in_a.Offset, 2 * sizeof(float));
-    }
+    auto plot_line = [&](const char *label, ScrollingBuffer &buf) {
+      if (buf.Data.empty()) return;
+      spec.Offset = buf.Offset;
+      ImPlot::PlotLine(label,
+                       &buf.Data[0].x, &buf.Data[0].y,
+                       buf.Data.size(), spec);
+    };
 
-    if (!buffer_in_b.Data.empty()) {
-      ImPlot::PlotLine("Input B",
-                       &buffer_in_b.Data[0].x, &buffer_in_b.Data[0].y,
-                       buffer_in_b.Data.size(),
-                       0, buffer_in_b.Offset, 2 * sizeof(float));
-    }
-
-    if (!buffer_out.Data.empty()) {
-      ImPlot::PlotLine("Output (A+B)",
-                       &buffer_out.Data[0].x, &buffer_out.Data[0].y,
-                       buffer_out.Data.size(),
-                       0, buffer_out.Offset, 2 * sizeof(float));
-    }
+    plot_line("Input A", buffer_in_a);
+    plot_line("Input B", buffer_in_b);
+    plot_line("Output (A+B)", buffer_out);
 
     ImPlot::EndPlot();
   }
