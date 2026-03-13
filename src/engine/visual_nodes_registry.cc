@@ -1,4 +1,7 @@
-#include "engine/nodes/visual_nodes.h"
+#include "engine/nodes/clear_color_node.h"
+#include "engine/nodes/composite_node.h"
+#include "engine/nodes/gradient_node.h"
+#include "engine/nodes/output_node.h"
 #include "engine/node_registry.h"
 
 namespace node_registration {
@@ -18,8 +21,6 @@ namespace node_registration {
       "Visual",
       "Renders linear or radial gradient"
     );
-
-
 
     registry.register_node<CompositeNode>(
       NodeType::Composite,

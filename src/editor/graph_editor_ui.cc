@@ -12,7 +12,6 @@
 
 #include "engine/node_registry.h"
 #include "engine/shader_quad_helper.h"
-#include "engine/nodes/visual_nodes.h"
 
 
 GraphEditorUI::GraphEditorUI() : UIWindow("Graph Editor", 1024, 768) {

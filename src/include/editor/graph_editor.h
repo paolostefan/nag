@@ -6,7 +6,7 @@
 #include "engine/node_graph.h"
 #include "editor/command_history.h"
 #include "engine/nodes/generator_nodes.h"
-#include "engine/nodes/visual_nodes.h"
+#include "engine/nodes/output_node.h"
 #include "engine/serialization/json_graph_serializer.h"
 
 
@@ -39,7 +39,7 @@ protected:
    */
   virtual void reset_graph();
 
-  void build_default_graph();
+  virtual void build_default_graph();
 
   /**
    * @brief Loads a graph from the given path, replacing the current one.

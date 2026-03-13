@@ -1,6 +1,8 @@
 #ifndef NAG_ENGINE_VISUAL_NODE_H
 #define NAG_ENGINE_VISUAL_NODE_H
 
+#include "spdlog/spdlog.h"
+
 #include "engine/nodes/node.h"
 #include "engine/render_target.h"
 

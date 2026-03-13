@@ -6,8 +6,7 @@
 #include "editor/ui_window.h"
 #include "editor/graph_editor.h"
 #include "editor/preview_window.h"
-#include "engine/nodes/generator_nodes.h"
-#include "engine/nodes/visual_nodes.h"
+#include "engine/nodes/visual_node.h"
 
 
 /**
