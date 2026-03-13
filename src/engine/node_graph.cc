@@ -38,6 +38,7 @@ bool NodeGraph::add_link(const Pin &start_pin, const Pin &end_pin) {
   }
 
   // Find the actual pins in the graph
+  // TODO: is it really necessary to search for the pins again? Can we guarantee the caller provides valid pins from this graph?
   const Pin *actual_start_pin = nullptr;
   Pin *actual_end_pin = nullptr;
 
@@ -73,6 +74,7 @@ bool NodeGraph::add_link(const Pin &start_pin, const Pin &end_pin) {
 
   // Connect pins
   actual_end_pin->stream = actual_start_pin->stream;
+  actual_end_pin->connected = true;
 
   Link link;
   link.id = link_id_generator.generate_id();
@@ -108,6 +110,31 @@ bool NodeGraph::add_link(const int start_pin_id, const int end_pin_id) {
 
   spdlog::error("Invalid link");
   return false;
+}
+
+void NodeGraph::remove_link(const int link_id) {
+  const auto it = std::ranges::find_if(links,
+    [link_id](const Link &link) { return link.id == link_id; });
+
+  if (it == links.end()) {
+    spdlog::error("Link {} not found", link_id);
+    return;
+  }
+
+  const Link &link = *it;
+
+  // Detach stream from input pin
+  for (const auto &node: nodes) {
+    for (auto &pin: node->inputs) {
+      if (pin.id == link.end_pin_id) {
+        pin.stream = nullptr;
+        pin.connected = false;
+        break;
+      }
+    }
+  }
+
+  links.erase(it);
 }
 
 void NodeGraph::evaluate() const {
@@ -223,9 +250,9 @@ void NodeGraph::evaluate() const {
   return false;
 }
 
-[[nodiscard]] Node *NodeGraph::find_node(const int id) const {
+[[nodiscard]] Node *NodeGraph::find_node(const int node_id) const {
   for (const auto &node: nodes) {
-    if (node->id == id) return node.get();
+    if (node->id == node_id) return node.get();
   }
   return nullptr;
 }
