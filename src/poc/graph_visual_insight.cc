@@ -62,9 +62,9 @@ void GraphVisualInsight::main_event_loop() {
           running = false;
         }
         // ★ Close preview window → just close the preview, keep running.
-        if (preview_window.IsOpen() &&
+        if (preview_window.is_open() &&
             event.window.windowID == preview_window.GetWindowID()) {
-          preview_window.Close();
+          preview_window.close();
         }
       }
     }
@@ -92,11 +92,11 @@ void GraphVisualInsight::main_event_loop() {
     SDL_GL_SwapWindow(window);
 
     // Blit to preview window - only if open, not paused, and output node is valid
-    if (preview_window.IsOpen() &&
-        !preview_window.IsPaused() &&
+    if (preview_window.is_open() &&
+        !preview_window.is_paused() &&
         output_node != nullptr) {
       const Texture *tex = output_node->get_texture();
-      preview_window.Render(tex, gl_context, window);
+      preview_window.render(tex, gl_context, window);
     }
   }
 }
@@ -339,20 +339,20 @@ void GraphVisualInsight::render_menu_bar() {
     // Toggle preview window.
     if (ImGui::MenuItem(ICON_FA_DISPLAY "  Preview Window",
                         nullptr,
-                        preview_window.IsOpen())) {
-      if (preview_window.IsOpen()) {
-        preview_window.Close();
+                        preview_window.is_open())) {
+      if (preview_window.is_open()) {
+        preview_window.close();
       } else {
-        preview_window.Open(window, gl_context);
+        preview_window.open(window, gl_context);
       }
     }
 
     // Pause toggle — enabled only if the preview is open.
     if (ImGui::MenuItem(ICON_FA_PAUSE "  Pause Preview",
                         "Space",
-                        preview_window.IsPaused(),
-                        preview_window.IsOpen())) {
-      preview_window.TogglePause();
+                        preview_window.is_paused(),
+                        preview_window.is_open())) {
+      preview_window.toggle_pause();
     }
 
     ImGui::EndMenu();
@@ -654,8 +654,8 @@ void GraphVisualInsight::render_node_editor() {
 
 
       // Preview pause toggle
-      if (ImGui::IsKeyPressed(ImGuiKey_Space) && preview_window.IsOpen()) {
-        preview_window.TogglePause();
+      if (ImGui::IsKeyPressed(ImGuiKey_Space) && preview_window.is_open()) {
+        preview_window.toggle_pause();
       }
     }
   }
