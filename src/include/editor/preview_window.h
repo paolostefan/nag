@@ -20,7 +20,7 @@ class PreviewWindow {
 public:
   PreviewWindow() = default;
 
-  ~PreviewWindow() { Close(); }
+  ~PreviewWindow() { close(); }
 
   // Non-copyable, non-movable (owns GL resources).
   PreviewWindow(const PreviewWindow &) = delete;
@@ -36,13 +36,13 @@ public:
    *                       the calling thread).
    * @return true on success.
    */
-  bool Open(SDL_Window *parent_window, SDL_GLContext gl_context);
+  bool open(SDL_Window *parent_window, SDL_GLContext gl_context);
 
   /**
    * @brief Destroys the SDL_Window and releases GL resources.
    * Safe to call multiple times.
    */
-  void Close();
+  void close();
 
   /**
    * @brief Blits @p texture to the preview window.
@@ -59,13 +59,13 @@ public:
    * @param gl_context The shared GL context.
    * @param return_to  The window to restore MakeCurrent on after the blit.
    */
-  void Render(const Texture *texture,
+  void render(const Texture *texture,
               SDL_GLContext gl_context,
-              SDL_Window *return_to);
+              SDL_Window *return_to) const;
 
-  [[nodiscard]] bool IsOpen() const { return window_ != nullptr; }
-  [[nodiscard]] bool IsPaused() const { return paused_; }
-  void TogglePause() { paused_ = !paused_; }
+  [[nodiscard]] bool is_open() const { return window_ != nullptr; }
+  [[nodiscard]] bool is_paused() const { return paused_; }
+  void toggle_pause() { paused_ = !paused_; }
 
   /**
    * @brief Returns the SDL window ID, used to match SDL_WINDOWEVENT_CLOSE.
@@ -77,7 +77,7 @@ public:
 
 private:
   /** Compiles and links the blit shader. Returns program id or 0 on error. */
-  [[nodiscard]] static GLuint CompileBlitShader();
+  [[nodiscard]] static GLuint compile_blit_shader();
 
   SDL_Window *window_{nullptr};
   GLuint shader_program_{0};

@@ -68,7 +68,7 @@ namespace {
 
 // ── PreviewWindow::CompileBlitShader ──────────────────────────────────────────
 
-GLuint PreviewWindow::CompileBlitShader() {
+GLuint PreviewWindow::compile_blit_shader() {
   const GLuint vert = CompileStage(GL_VERTEX_SHADER, kVertexShaderSrc);
   const GLuint frag = CompileStage(GL_FRAGMENT_SHADER, kFragmentShaderSrc);
 
@@ -102,7 +102,7 @@ GLuint PreviewWindow::CompileBlitShader() {
 
 // ── PreviewWindow::Open ───────────────────────────────────────────────────────
 
-bool PreviewWindow::Open(SDL_Window *parent_window, SDL_GLContext gl_context) {
+bool PreviewWindow::open(SDL_Window *parent_window, SDL_GLContext gl_context) {
   if (window_) return true; // Already open.
 
   // Position the preview window next to the parent.
@@ -130,7 +130,7 @@ bool PreviewWindow::Open(SDL_Window *parent_window, SDL_GLContext gl_context) {
   // then give the context back to the parent window.
   SDL_GL_MakeCurrent(window_, gl_context);
 
-  shader_program_ = CompileBlitShader();
+  shader_program_ = compile_blit_shader();
   if (!shader_program_) {
     SDL_DestroyWindow(window_);
     window_ = nullptr;
@@ -147,9 +147,9 @@ bool PreviewWindow::Open(SDL_Window *parent_window, SDL_GLContext gl_context) {
   return true;
 }
 
-// ── PreviewWindow::Close ──────────────────────────────────────────────────────
+// ── PreviewWindow::close ──────────────────────────────────────────────────────
 
-void PreviewWindow::Close() {
+void PreviewWindow::close() {
   if (!window_) return;
 
   // GL resources must be released while the context is current on this window.
@@ -172,10 +172,10 @@ void PreviewWindow::Close() {
 
 // ── PreviewWindow::Render ─────────────────────────────────────────────────────
 
-void PreviewWindow::Render(const Texture *texture,
+void PreviewWindow::render(const Texture *texture,
                            SDL_GLContext gl_context,
-                           SDL_Window *return_to) {
-  if (!IsOpen() || !texture || !texture->is_valid()) return;
+                           SDL_Window *return_to) const {
+  if (!is_open() || !texture || !texture->is_valid()) return;
 
   // ── 1. Switch context to the preview window ────────────────────────────────
   SDL_GL_MakeCurrent(window_, gl_context);
@@ -187,7 +187,7 @@ void PreviewWindow::Render(const Texture *texture,
   glViewport(0, 0, w, h);
 
   // ── 3. Clear + draw ────────────────────────────────────────────────────────
-  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
   glUseProgram(shader_program_);
