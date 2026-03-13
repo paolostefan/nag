@@ -113,6 +113,8 @@ private:
   static constexpr auto kSaveDialogKey{"SaveGraphDlg"};
   static constexpr auto kLoadDialogKey{"LoadGraphDlg"};
   static constexpr auto kFileFilter{"JSON files{.json},All files{.*}"};
+
+  std::atomic<bool> is_time_flowing{true};
 };
 
 

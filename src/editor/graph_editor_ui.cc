@@ -55,9 +55,9 @@ void GraphEditorUI::main_event_loop() {
         }
 
         // ★ Close preview window → just close the preview, keep running.
-        if (preview_window.IsOpen() &&
+        if (preview_window.is_open() &&
             event.window.windowID == preview_window.GetWindowID()) {
-          preview_window.Close();
+          preview_window.close();
         }
       }
     }
@@ -85,9 +85,11 @@ void GraphEditorUI::main_event_loop() {
     SDL_GL_SwapWindow(window);
 
     // Blit to preview window - only if open and output node is valid
-    if (preview_window.IsOpen() && output_node != nullptr) {
+    if (preview_window.is_open() &&
+        !preview_window.is_paused() &&
+        output_node != nullptr) {
       const Texture *tex = output_node->get_texture();
-      preview_window.Render(tex, gl_context, window);
+      preview_window.render(tex, gl_context, window);
     }
   }
 }
@@ -156,17 +158,18 @@ void GraphEditorUI::delete_selected_links() {
 
 void GraphEditorUI::render_ui() {
   if (ImGui::Begin("##NodeEditor", nullptr, ImGuiWindowFlags_MenuBar
-                                           | ImGuiWindowFlags_NoDecoration
-                                           | ImGuiWindowFlags_NoCollapse
-                                           | ImGuiWindowFlags_NoResize
-                                           | ImGuiWindowFlags_NoMove
-                                           | ImGuiWindowFlags_NoTitleBar)) {
+                                            | ImGuiWindowFlags_NoDecoration
+                                            | ImGuiWindowFlags_NoCollapse
+                                            | ImGuiWindowFlags_NoResize
+                                            | ImGuiWindowFlags_NoMove
+                                            | ImGuiWindowFlags_NoTitleBar)) {
     render_menu_bar();
 
     ImNodes::EditorContextSet(editor_context);
     ImNodes::BeginNodeEditor();
 
     const bool refresh_positions = node_pos_refresh.exchange(false);
+    const bool flowing = is_time_flowing.load(std::memory_order_acquire);
 
     // ── Nodes ──────────────────────────────────────────────────────────────────
     for (const auto &node: graph.nodes) {
@@ -178,11 +181,21 @@ void GraphEditorUI::render_ui() {
       ImNodes::BeginNode(node->id);
 
       ImNodes::BeginNodeTitleBar();
-      ImGui::TextUnformatted(node->name.c_str());
+      if (auto *tn = dynamic_cast<TimeNode *>(node.get())) {
+        ImGui::Text("Time [%.2f s]", tn->time);
+
+        if (flowing) {
+          tn->step(ImGui::GetIO().DeltaTime);
+          graph.evaluate();
+        }
+      } else {
+        ImGui::TextUnformatted(node->name.c_str());
+      }
+
       ImNodes::EndNodeTitleBar();
 
       if (node->inputs.size() + node->outputs.size() == 0) {
-        ImGui::TextUnformatted("No inputs and outputs?!");
+        ImGui::TextUnformatted("No in/out?!");
       }
 
       for (const auto &pin: node->inputs) {
@@ -250,9 +263,8 @@ void GraphEditorUI::render_ui() {
 
     // ── Link Creation ──────────────────────────────────────────────────────────
     int start_pin_id, end_pin_id;
-    if (ImNodes::IsLinkCreated(
-      &start_pin_id,
-      &end_pin_id)) {
+    if (ImNodes::IsLinkCreated(&start_pin_id,
+                               &end_pin_id)) {
       auto add_link_command = std::make_unique<AddLinkCommand>(
         start_pin_id, end_pin_id);
 
@@ -262,24 +274,9 @@ void GraphEditorUI::render_ui() {
     // ── Link Deletion ──────────────────────────────────────────────────────────
     int link_id;
     if (ImNodes::IsLinkDestroyed(&link_id)) {
-      for (const auto &link: graph.links) {
-        if (link.id == link_id) {
-          for (const auto &node: graph.nodes) {
-            for (auto &pin: node->inputs) {
-              if (pin.id == link.end_pin_id) {
-                pin.stream = nullptr;
-                goto link_cleanup_done;
-              }
-            }
-          }
-        link_cleanup_done:
-          break;
-        }
-      }
+      auto delete_links_command = std::make_unique<DeleteLinksCommand>(link_id);
 
-      std::erase_if(graph.links, [link_id](const Link &link) {
-        return link.id == link_id;
-      });
+      command_history.execute(graph, std::move(delete_links_command));
     }
 
     // ==========================================================================
@@ -383,14 +380,21 @@ void GraphEditorUI::render_menu_bar() {
 
   if (ImGui::BeginMenu(ICON_FA_TV "  View")) {
     // Toggle preview window.
-    if (ImGui::MenuItem(ICON_FA_DISPLAY "  Preview Window",
+    if (ImGui::MenuItem(ICON_FA_DISPLAY " Preview Window",
                         nullptr,
-                        preview_window.IsOpen())) {
-      if (preview_window.IsOpen()) {
-        preview_window.Close();
+                        preview_window.is_open())) {
+      if (preview_window.is_open()) {
+        preview_window.close();
       } else {
-        preview_window.Open(window, gl_context);
+        preview_window.open(window, gl_context);
       }
+    }
+
+    const bool flowing = is_time_flowing.load(std::memory_order_acquire);
+    if (ImGui::MenuItem(ICON_FA_PLAY " Live",
+                        nullptr,
+                        flowing)) {
+      is_time_flowing.store(!flowing, std::memory_order_release);
     }
 
     ImGui::EndMenu();
