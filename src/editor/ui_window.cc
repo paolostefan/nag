@@ -71,12 +71,19 @@ void UIWindow::main_event_loop() {
 }
 
 bool UIWindow::initialize() {
+
+  // SDL must be initialized before creating the OpenGL context, which is required for GLEW initialization.
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
+    spdlog::critical("SDL_Init failed: {}", SDL_GetError());
+    return false;
+  }
+
   // OpenGL version
   const auto glsl_version = "#version 330";
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
   // Main window
   window = SDL_CreateWindow(
