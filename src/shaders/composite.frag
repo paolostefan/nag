@@ -6,12 +6,12 @@ out vec4 frag_color;
 uniform vec2 u_resolution;
 uniform sampler2D u_texture_0; // Base texture
 uniform sampler2D u_texture_1; // Blend texture
-uniform int u_blend_mode;  // 0=Normal, 1=Add, 2=Multiply, 3=Screen
+uniform int u_blend_mode; // 0=Normal, 1=Add, 2=Multiply, 3=Screen
 uniform float u_opacity;
 
 void main() {
     vec4 base = texture(u_texture_0, v_texcoord);
-    vec4 blend = texture(u_texture_1,  v_texcoord);
+    vec4 blend = texture(u_texture_1, v_texcoord);
 
     vec4 result = base;
 

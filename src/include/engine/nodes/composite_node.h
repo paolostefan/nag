@@ -27,7 +27,6 @@ struct CompositeNode : ShaderNode {
   BlendMode blend_mode{BlendMode::Normal};
   float opacity{1.f};
 
-
   CompositeNode() {
     type = NodeType::Composite;
     name = CompositeNode::shader_name();
