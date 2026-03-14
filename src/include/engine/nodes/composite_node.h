@@ -1,10 +1,10 @@
 #ifndef  NAG_ENGINE_NODES_COMPOSITE_NODE_H
 #define  NAG_ENGINE_NODES_COMPOSITE_NODE_H
 
+#include <memory>
+
 #include "editor/property_widget.h"
-#include "engine/nodes/visual_node.h"
-#include "engine/shader_manager.h"
-#include "engine/shader_quad_helper.h"
+#include "engine/nodes/shader_node.h"
 
 // ===========================================================================
 // COMPOSITE NODE
@@ -16,7 +16,7 @@
  *
  * Defaults to 2 texture inputs and has always a texture output.
  */
-struct CompositeNode : VisualNode {
+struct CompositeNode : ShaderNode {
   enum class BlendMode : uint8_t {
     Normal, // Alpha blend
     Add, // Additive
@@ -27,78 +27,23 @@ struct CompositeNode : VisualNode {
   BlendMode blend_mode{BlendMode::Normal};
   float opacity{1.f};
 
-  std::shared_ptr<ShaderProgram> shader;
 
   CompositeNode() {
     type = NodeType::Composite;
-    name = "Composite";
+    name = CompositeNode::shader_name();
   }
 
-  bool initialize(const int width, const int height) override {
-    if (!VisualNode::initialize(width, height)) {
-      return false;
-    }
-
-    shader = ShaderManager::instance().load(
-      "composite",
-      "shaders/fullscreen_quad.vert",
-      "shaders/composite.frag"
-    );
-
-    return shader && shader->is_valid();
+  [[nodiscard]] const char *shader_name() const override {
+    return "composite";
   }
 
-  void render() override {
-    if (!render_target || !render_target->is_valid() ||
-        !shader || !shader->is_valid()) {
-      return;
-    }
+  [[nodiscard]] const char *frag_shader_path() const override {
+    return "shaders/composite.frag";
+  }
 
-    // Get input textures
-    const Texture *base_tex = nullptr;
-    const Texture *blend_tex = nullptr;
-
-    if (inputs.size() >= 2) {
-      if (const auto *const base_stream = dynamic_cast<Stream<Texture *> *>(inputs[0].stream.get())) {
-        base_tex = base_stream->value;
-      }
-      if (const auto *const blend_stream = dynamic_cast<Stream<Texture *> *>(inputs[1].stream.get())) {
-        blend_tex = blend_stream->value;
-      }
-    }
-
-    if (!base_tex || !blend_tex || !base_tex->is_valid() || !blend_tex->is_valid()) {
-      return;
-    }
-
-    render_target->bind();
-    render_target->clear(0.f, 0.f, 0.f, 0.f);
-
-    shader->use();
-
-    shader->set_uniform("u_resolution", render_target->get_fwidth(), render_target->get_fheight());
+  void bind_params() override {
     shader->set_uniform("u_blend_mode", static_cast<int>(blend_mode));
     shader->set_uniform("u_opacity", opacity);
-
-    // Bind textures
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, base_tex->texture_id);
-    shader->set_uniform("u_texture_base", 0);
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, blend_tex->texture_id);
-    shader->set_uniform("u_texture_blend", 1);
-
-    ShaderQuadHelper::instance().render();
-
-    ShaderProgram::unuse();
-    RenderTarget::unbind();
-
-    // Unbind textures
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, 0);
   }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
@@ -162,6 +107,16 @@ struct CompositeNode : VisualNode {
                           graph, history);
 
     blend_mode = static_cast<BlendMode>(blend_mode_int);
+
+    // Opacity
+    PropertyWidget::SliderFloat("Opacity",
+                                /* node_id=*/ id,
+                                /* value=*/ opacity,
+                                /* setter=*/[](Node &n, float value) {
+                                  dynamic_cast<CompositeNode &>(n).opacity = value;
+                                },
+                                graph, history,
+                                /* min=*/ 0.f, /* max=*/ 1.f);
   }
 };
 

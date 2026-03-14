@@ -62,9 +62,9 @@ struct ShaderNode : VisualNode {
   bool initialize(const int width, const int height) override {
     if (!VisualNode::initialize(width, height)) return false;
 
-    shader = ShaderManager::instance().load(
-      shader_name(), vert_shader_path(), frag_shader_path());
-
+    shader = ShaderManager::instance().load(shader_name(),
+                                            vert_shader_path(),
+                                            frag_shader_path());
     return shader && shader->is_valid();
   }
 
@@ -162,7 +162,6 @@ protected:
   // Sets float uniform "u_<pin.name>" for every float input pin.
   void bind_float_inputs(ShaderProgram *prog) const {
     for (const auto &pin: inputs) {
-
       if (*pin.data_type != typeid(float)) continue;
 
       float value;

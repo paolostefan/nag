@@ -103,9 +103,12 @@ namespace PropertyWidget {
   /// @param max     Maximum value (default 1.f).
   /// @param format  Printf format string (default "%.3f").
   /// @param disabled If true, the slider is rendered disabled and does not emit commands (default false).
-  inline void SliderFloat(const std::string &label, int node_id, float &value,
+  inline void SliderFloat(const std::string &label,
+                          int node_id,
+                          float &value,
                           std::function<void(Node &, float)> setter,
-                          NodeGraph &graph, CommandHistory &history,
+                          NodeGraph &graph,
+                          CommandHistory &history,
                           const float min = 0.f, const float max = 1.f,
                           const char *format = "%.3f",
                           const bool disabled = false) {
