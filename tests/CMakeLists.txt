@@ -49,14 +49,6 @@ target_link_libraries(
     nag_editor_lib
 )
 
-# Copy shaders to build directory
-file(GLOB SHADER_FILES "${CMAKE_SOURCE_DIR}/src/shaders/*")
-file(COPY ${SHADER_FILES} DESTINATION "${CMAKE_BINARY_DIR}/shaders")
-message(STATUS "Shaders copied to ${CMAKE_BINARY_DIR}/shaders:\n ${SHADER_FILES}")
-
-file(COPY ${SHADER_FILES} DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/shaders")
-message(STATUS "Shaders copied to ${CMAKE_CURRENT_BINARY_DIR}/shaders:\n ${SHADER_FILES}")
-
 # Add tests
 include(GoogleTest)
 gtest_discover_tests(engine_tests)

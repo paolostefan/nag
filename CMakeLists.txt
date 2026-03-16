@@ -128,7 +128,30 @@ FetchContent_MakeAvailable(iconfont_cppheaders)
 
 # Nag Engine
 
-file(GLOB ENGINE_SRCS src/engine/*.cc src/fx/*.cc)
+# Collect all shaders to embed them as resources in the executable
+file(GLOB_RECURSE SHADER_FILES src/shaders/*.vert src/shaders/*.frag src/shaders/*.geom)
+set(GENERATED_SHADER_HEADERS "")
+
+foreach (SHADER_FILE ${SHADER_FILES})
+    get_filename_component(SHADER_NAME ${SHADER_FILE} NAME)
+    string(REPLACE "." "_" VARIABLE_NAME ${SHADER_NAME})
+    set(OUTPUT_HEADER "${CMAKE_CURRENT_BINARY_DIR}/shaders/${VARIABLE_NAME}.h")
+
+    add_custom_command(
+        OUTPUT ${OUTPUT_HEADER}
+        COMMAND ${CMAKE_COMMAND}
+            -DINPUT_FILE=${SHADER_FILE}
+            -DOUTPUT_FILE=${OUTPUT_HEADER}
+            -DVARIABLE_NAME=k${VARIABLE_NAME}
+            -P ${CMAKE_SOURCE_DIR}/cmake/embed_shader.cmake
+        DEPENDS ${SHADER_FILE}
+        COMMENT "Embedding shader: ${SHADER_NAME}"
+    )
+
+    list(APPEND GENERATED_SHADER_HEADERS ${OUTPUT_HEADER})
+endforeach()
+
+file(GLOB ENGINE_SRCS src/engine/*.cc src/engine/nodes/*.h src/fx/*.cc)
 
 add_library(nag_engine_lib
     ${ENGINE_SRCS}
@@ -142,9 +165,11 @@ add_library(nag_engine_lib
     src/engine/shader_quad_helper.cc
     src/engine/temporal_nodes_registry.cc
     src/engine/visual_nodes_registry.cc
+    ${GENERATED_SHADER_HEADERS}
 )
 target_include_directories(nag_engine_lib PUBLIC
     src/include
+    ${CMAKE_CURRENT_BINARY_DIR}
     ${OPENMPT_INCLUDE_DIRS}
 )
 
@@ -209,16 +234,6 @@ target_link_libraries(editor PRIVATE nag_editor_lib)
 
 # Proofs of concept
 add_subdirectory(src/poc)
-
-# Copy shaders to build directory
-file(GLOB SHADER_FILES "${CMAKE_SOURCE_DIR}/src/shaders/*")
-file(COPY ${SHADER_FILES} DESTINATION "${CMAKE_BINARY_DIR}/shaders")
-message(STATUS "Shaders copied to ${CMAKE_BINARY_DIR}/shaders: ${SHADER_FILES}")
-
-# Install shaders
-install(DIRECTORY "${CMAKE_SOURCE_DIR}/src/shaders/"
-    DESTINATION "shaders"
-    FILES_MATCHING PATTERN "*.vert" PATTERN "*.frag" PATTERN "*.comp")
 
 # Enable testing
 add_subdirectory(tests)
