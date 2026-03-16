@@ -4,6 +4,7 @@
 #include "editor/property_widget.h"
 #include "engine/nodes/shader_node.h"
 #include "engine/visual_types.h"
+#include "shaders/circle_frag.h"
 
 /**
  * @class CircleNode
@@ -21,7 +22,7 @@ struct CircleNode : ShaderNode {
   }
 
   [[nodiscard]] const char *shader_name() const override { return "circle"; }
-  [[nodiscard]] const char *frag_shader_path() const override { return "shaders/circle.frag"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const override { return kcircle_frag; }
 
   void bind_params() override {
     shader->set_uniform("u_position", position.x, position.y);

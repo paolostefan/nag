@@ -3,7 +3,6 @@
 
 
 #include <GL/glew.h>
-#include "engine/fullscreen_quad_renderer.h"
 
 /**
  * Helper class for rendering fullscreen quads with shaders.

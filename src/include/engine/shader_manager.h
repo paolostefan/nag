@@ -12,7 +12,8 @@ class ShaderProgram {
 public:
   ShaderProgram() = default;
 
-  explicit ShaderProgram(std::string name_) : shader_name(std::move(name_)) {}
+  explicit ShaderProgram(std::string name_) : shader_name(std::move(name_)) {
+  }
 
   ~ShaderProgram();
 
@@ -62,12 +63,12 @@ public:
   static ShaderManager &instance();
 
   std::shared_ptr<ShaderProgram> load(const std::string &name,
-                                      const std::string &vert_path,
-                                      const std::string &frag_path);
+                                      const std::string &vert_src,
+                                      const std::string &frag_src);
 
   std::shared_ptr<ShaderProgram> load_from_source(const std::string &name,
-                                                   const std::string &vert_src,
-                                                   const std::string &frag_src);
+                                                  const std::string &vert_src,
+                                                  const std::string &frag_src);
 
   std::shared_ptr<ShaderProgram> get(const std::string &name);
 

@@ -143,7 +143,7 @@ void PreviewWindow::render(const Texture *texture,
 
   // Draw the fullscreen quad using gl_VertexID.
   glBindVertexArray(vao_);
-  FullscreenQuadRenderer::instance().render();
+  glDrawArrays(GL_TRIANGLES, 0, 6);
   glBindVertexArray(0);
 
   ShaderProgram::unuse();

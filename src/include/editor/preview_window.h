@@ -5,7 +5,6 @@
 #include "SDL.h"
 #include "engine/render_target.h"
 #include "engine/shader_manager.h"
-#include "engine/fullscreen_quad_renderer.h"
 
 /**
  * @brief Secondary SDL window that blits a Texture* to screen via a

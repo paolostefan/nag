@@ -14,7 +14,7 @@ void ShaderQuadHelper::render() const {
 
   // Bind the VAO before drawing.
   glBindVertexArray(vao);
-  FullscreenQuadRenderer::instance().render();
+  glDrawArrays(GL_TRIANGLES, 0, 6);
   glBindVertexArray(0);
 }
 

@@ -8,6 +8,7 @@
 #include "engine/nodes/visual_node.h"
 #include "engine/shader_manager.h"
 #include "engine/shader_quad_helper.h"
+#include "shaders/fullscreen_quad_vert.h"
 
 /**
  * @brief Base class for post-process / effect nodes driven by a fragment shader.
@@ -19,7 +20,7 @@
  *
  * Subclasses must implement:
  *   - shader_name()      unique key for ShaderManager cache (e.g. "blur_gaussian")
- *   - frag_shader_path() path relative to working dir  (e.g. "shaders/blur.frag")
+ *   - frag_shader_src() path relative to working dir  (e.g. "shaders/blur.frag")
  *   - bind_params()      set node-specific uniforms after the base class has
  *                        already bound textures and float pins
  *
@@ -39,13 +40,13 @@ struct ShaderNode : VisualNode {
   /** Unique shader cache key, e.g. "blur_gaussian". */
   [[nodiscard]] virtual const char *shader_name() const = 0;
 
-  /** Vertex shader path. Defaults to the shared fullscreen quad vertex shader. */
-  [[nodiscard]] virtual const char *vert_shader_path() const {
-    return "shaders/fullscreen_quad.vert";
+  /** Vertex shader source. Defaults to the shared fullscreen quad vertex shader. */
+  [[nodiscard]] virtual const char *vert_shader_src() const {
+    return kfullscreen_quad_vert;
   }
 
-  /** Fragment shader path, e.g. "shaders/blur.frag". */
-  [[nodiscard]] virtual const char *frag_shader_path() const = 0;
+  /** Fragment shader source. */
+  [[nodiscard]] virtual const char *frag_shader_src() const = 0;
 
   /**
    * @brief Called by render() after textures and float uniforms are bound.
@@ -63,8 +64,8 @@ struct ShaderNode : VisualNode {
     if (!VisualNode::initialize(width, height)) return false;
 
     shader = ShaderManager::instance().load(shader_name(),
-                                            vert_shader_path(),
-                                            frag_shader_path());
+                                            vert_shader_src(),
+                                            frag_shader_src());
     return shader && shader->is_valid();
   }
 

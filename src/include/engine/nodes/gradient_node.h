@@ -6,20 +6,15 @@
 #include "editor/property_widget.h"
 #include "nlohmann/json.hpp"
 
-#include "engine/nodes/visual_node.h"
-#include "engine/shader_manager.h"
-#include "engine/shader_quad_helper.h"
+#include "engine/nodes/shader_node.h"
 #include "engine/visual_types.h"
-
-
-// ===========================================================================
-// GRADIENT NODE
-// ===========================================================================
+#include "shaders/gradient_frag.h"
 
 /**
- * Renders a gradient to texture.
+ * @struct GradientNode
+ * @brief Renders a gradient to texture.
  */
-struct GradientNode : VisualNode {
+struct GradientNode : ShaderNode {
   enum class Type : uint8_t {
     Linear,
     Radial,
@@ -31,52 +26,13 @@ struct GradientNode : VisualNode {
   Vec2 direction{1.f, 0.f};
   Vec2 center{0.5f, 0.5f};
 
-  std::shared_ptr<ShaderProgram> shader;
-
   GradientNode() {
     type = NodeType::Gradient;
     name = "Gradient";
   }
 
-  bool initialize(const int width, const int height) override {
-    if (!VisualNode::initialize(width, height)) {
-      return false;
-    }
-
-    shader = ShaderManager::instance().load(
-      "gradient",
-      "shaders/fullscreen_quad.vert",
-      "shaders/gradient.frag"
-    );
-
-    return shader && shader->is_valid();
-  }
-
-  void render() override {
-    if (!render_target || !render_target->is_valid() || !shader || !shader->is_valid()) {
-      return;
-    }
-
-    update_from_inputs();
-
-    render_target->bind();
-    render_target->clear(0.f, 0.f, 0.f, 0.f);
-
-    shader->use();
-
-    shader->set_uniform("u_resolution", render_target->get_fwidth(), render_target->get_fheight());
-    shader->set_uniform("u_gradient_type", static_cast<int>(gradient_type));
-    shader->set_uniform("u_color_start", color_start.x, color_start.y, color_start.z, color_start.w);
-    shader->set_uniform("u_color_end", color_end.x, color_end.y, color_end.z, color_end.w);
-    shader->set_uniform("u_direction", direction.x, direction.y);
-    shader->set_uniform("u_center", center.x, center.y);
-
-    ShaderQuadHelper::instance().render();
-
-    ShaderProgram::unuse();
-
-    RenderTarget::unbind();
-  }
+  [[nodiscard]] const char *shader_name() const override { return "gradient"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const override { return kgradient_frag; }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
@@ -132,6 +88,30 @@ struct GradientNode : VisualNode {
     }
   }
 
+  void bind_params() override {
+    shader->set_uniform("u_gradient_type", static_cast<int>(gradient_type));
+    shader->set_uniform("u_color_start", color_start.x, color_start.y, color_start.z, color_start.w);
+    shader->set_uniform("u_color_end", color_end.x, color_end.y, color_end.z, color_end.w);
+    shader->set_uniform("u_direction", direction.x, direction.y);
+    shader->set_uniform("u_center", center.x, center.y);
+  }
+
+  /**
+  * Create a gradient node.
+  */
+  static std::unique_ptr<GradientNode> create(
+    const Type gradient_type = Type::Linear,
+    const Vec4 &color_start = Vec4::red(),
+    const Vec4 &color_end = Vec4::blue()) {
+    auto node = std::make_unique<GradientNode>();
+    node->gradient_type = gradient_type;
+    node->color_start = color_start;
+    node->color_end = color_end;
+
+    node->add_typed_output<Texture *>("texture");
+    return node;
+  }
+
   void draw_properties(NodeGraph &graph, CommandHistory &history) override {
     static constexpr const char *types[] = {"Linear", "Radial", nullptr};
     // Gradient type
@@ -170,26 +150,9 @@ struct GradientNode : VisualNode {
     );
   }
 
-private:
-  void update_from_inputs() {
+protected:
+  void update_from_inputs() override {
     // TODO: Add input connections for dynamic control
-  }
-
-public:
-  /**
-   * Create a gradient node.
-   */
-  static std::unique_ptr<GradientNode> create(
-    const Type gradient_type = Type::Linear,
-    const Vec4 &color_start = Vec4::red(),
-    const Vec4 &color_end = Vec4::blue()) {
-    auto node = std::make_unique<GradientNode>();
-    node->gradient_type = gradient_type;
-    node->color_start = color_start;
-    node->color_end = color_end;
-
-    node->add_typed_output<Texture *>("texture");
-    return node;
   }
 };
 

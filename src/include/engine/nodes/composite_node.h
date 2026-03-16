@@ -5,6 +5,7 @@
 
 #include "editor/property_widget.h"
 #include "engine/nodes/shader_node.h"
+#include "shaders/composite_frag.h"
 
 // ===========================================================================
 // COMPOSITE NODE
@@ -36,8 +37,8 @@ struct CompositeNode : ShaderNode {
     return "composite";
   }
 
-  [[nodiscard]] const char *frag_shader_path() const override {
-    return "shaders/composite.frag";
+  [[nodiscard]] constexpr const char *frag_shader_src() const override {
+    return kcomposite_frag;
   }
 
   void bind_params() override {

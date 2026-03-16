@@ -3,6 +3,9 @@
 
 #include "engine/nodes/shader_node.h"
 #include "editor/property_widget.h"
+#include "shaders/blur_frag.h"
+#include "shaders/chromatic_aberration_frag.h"
+#include "shaders/pixelate_frag.h"
 
 // ============================================================================
 // BlurNode — Gaussian blur, separable two-pass
@@ -31,7 +34,7 @@ struct BlurNode : ShaderNode {
   }
 
   [[nodiscard]] const char *shader_name() const override { return "blur_gaussian"; }
-  [[nodiscard]] const char *frag_shader_path() const override { return "shaders/blur.frag"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const override { return kblur_frag; }
 
   bool initialize(const int width, const int height) override {
     if (!ShaderNode::initialize(width, height)) return false;
@@ -163,7 +166,7 @@ struct ChromaticAberrationNode : ShaderNode {
   }
 
   [[nodiscard]] const char *shader_name() const override { return "chromatic_aberration"; }
-  [[nodiscard]] const char *frag_shader_path() const override { return "shaders/chromatic_aberration.frag"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const override { return kchromatic_aberration_frag; }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
@@ -216,7 +219,7 @@ struct PixelateNode : ShaderNode {
   }
 
   [[nodiscard]] const char *shader_name() const override { return "pixelate"; }
-  [[nodiscard]] const char *frag_shader_path() const override { return "shaders/pixelate.frag"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const override { return kpixelate_frag; }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();

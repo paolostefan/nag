@@ -170,15 +170,15 @@ ShaderManager &ShaderManager::instance() {
 }
 
 std::shared_ptr<ShaderProgram> ShaderManager::load(const std::string &name,
-                                                   const std::string &vert_path,
-                                                   const std::string &frag_path) {
+                                                   const std::string &vert_src,
+                                                   const std::string &frag_src) {
   if (const auto it = shaders.find(name); it != shaders.end()) {
     spdlog::debug("Shader '{}' already loaded, returning cached version", name);
     return it->second;
   }
 
   auto shader = std::make_shared<ShaderProgram>(name);
-  if (!shader->load_from_files(vert_path, frag_path)) {
+  if (!shader->load_from_source(vert_src, frag_src)) {
     spdlog::error("Failed to load shader '{}'", name);
     return nullptr;
   }
@@ -202,8 +202,8 @@ void ShaderManager::clear() {
 }
 
 std::shared_ptr<ShaderProgram> ShaderManager::load_from_source(const std::string &name,
-                                                   const std::string &vert_src,
-                                                   const std::string &frag_src) {
+                                                               const std::string &vert_src,
+                                                               const std::string &frag_src) {
   if (const auto it = shaders.find(name); it != shaders.end()) {
     spdlog::debug("Shader '{}' already loaded, returning cached version", name);
     return it->second;

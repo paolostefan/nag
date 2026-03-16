@@ -3,12 +3,11 @@
 
 #include "engine/nodes/shader_node.h"
 #include "engine/visual_types.h"
-
-// ===========================================================================
-// RECTANGLE 2D NODE
-// ===========================================================================
+#include "shaders/rectangle_frag.h"
 
 /**
+ * @struct Rectangle2DNode
+ *
  * Renders a 2D rectangle using a fragment shader.
  */
 struct Rectangle2DNode : ShaderNode {
@@ -24,7 +23,7 @@ struct Rectangle2DNode : ShaderNode {
   }
 
   [[nodiscard]] const char *shader_name() const override { return "rectangle"; }
-  [[nodiscard]] const char *frag_shader_path() const override { return "shaders/rectangle.frag"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const override { return krectangle_frag; }
 
   void bind_params() override
   {
