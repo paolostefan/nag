@@ -166,6 +166,7 @@ add_library(nag_engine_lib
     src/engine/temporal_nodes_registry.cc
     src/engine/visual_nodes_registry.cc
     ${GENERATED_SHADER_HEADERS}
+    src/engine/property_widget.cc
 )
 target_include_directories(nag_engine_lib PUBLIC
     src/include

@@ -32,6 +32,7 @@ target_link_libraries(
     engine_tests
     GTest::gtest_main
     nag_engine_lib
+    nag_editor_lib
 )
 
 # ============================================================================
