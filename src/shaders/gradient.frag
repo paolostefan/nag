@@ -12,7 +12,7 @@ uniform vec2 u_center; // for radial
 
 
 void main() {
-    vec2 uv = gl_FragCoord.xy / u_resolution;
+    vec2 uv = v_texcoord;
 
     float t = 0;
 

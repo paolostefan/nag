@@ -17,7 +17,7 @@ float rounded_box_sdf(vec2 p, vec2 b, float r) {
 }
 
 void main() {
-    vec2 uv = gl_FragCoord.xy / u_resolution;
+    vec2 uv = v_texcoord;
 
     // Transform to rectangle space
     vec2 p = uv - u_position;
