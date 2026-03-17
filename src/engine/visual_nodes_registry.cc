@@ -33,6 +33,7 @@ namespace node_registration {
       NodeType::Output,
       "Output",
       "Visual",
-      "Sink: displays the final texture");
+      "Sink: displays the final texture"
+    );
   }
 } // namespace node_registration

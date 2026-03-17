@@ -8,29 +8,36 @@ namespace node_registration {
     registry.register_node<ConstantFloatNode>(
       NodeType::Constant,
       "Constant",
-      "Generator",
+      "Generators",
       "Outputs a constant value"
     );
 
     registry.register_node<TimeNode>(
       NodeType::Time,
       "Time",
-      "Generator",
+      "Generators",
       "Outputs the global time counter"
     );
 
     registry.register_node<NoiseNode>(
       NodeType::Noise,
       "Noise",
-      "Generator",
+      "Generators",
       "Outputs a random noise value"
     );
 
     registry.register_node<StepSequencerNode>(
       NodeType::StepSequencer,
       "Step",
-      "Generator",
-      "Outputs a a sequence of values based on a trigger input"
+      "Generators",
+      "Outputs a sequence of values based on a trigger input"
+    );
+
+    registry.register_node<RandomNode>(
+      NodeType::Random,
+      "Random",
+      "Generators",
+      "Outputs a random value within a specified range"
     );
   }
 } // namespace node_registration

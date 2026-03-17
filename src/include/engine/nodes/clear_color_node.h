@@ -3,6 +3,7 @@
 
 #include "engine/visual_types.h"
 #include "engine/nodes/visual_node.h"
+#include "engine/property_widget.h"
 
 // ===========================================================================
 // CLEAR COLOR NODE
@@ -60,6 +61,23 @@ struct ClearColorNode : VisualNode {
         std::string("Failed to deserialize ClearColorNode params: ") + e.what()
       );
     }
+  }
+
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    ImVec4 im_color{color.x, color.y, color.z, color.w};
+    PropertyWidget::ColorEdit4(
+      "Color",
+      id,
+      im_color,
+      [](Node &n, const ImVec4 v) {
+        auto &cnode = dynamic_cast<ClearColorNode &>(n);
+        cnode.color.x = v.x;
+        cnode.color.y = v.y;
+        cnode.color.z = v.z;
+        cnode.color.w = v.w;
+      },
+      graph, history
+    );
   }
 
 private:

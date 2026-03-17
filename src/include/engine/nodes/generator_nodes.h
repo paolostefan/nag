@@ -5,6 +5,7 @@
 #include <random>
 
 #include "engine/nodes/node.h"
+#include "engine/property_widget.h"
 
 /**
  * Node that outputs a constant float value.
@@ -24,6 +25,33 @@ struct ConstantFloatNode : Node {
         out->update(value);
       }
     }
+  }
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j;
+    j["value"] = value;
+    return j;
+  }
+
+  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+    if (j.contains("value")) value = j["value"];
+    return OperationResult::ok();
+  }
+
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    PropertyWidget::SliderFloat(
+      "Value",
+      id,
+      value,
+      [](Node &n, const float v) { dynamic_cast<ConstantFloatNode &>(n).value = v; },
+      graph, history,
+      0.f, 1.f, "%.3f"
+    );
+  }
+
+  [[nodiscard]] float get_param(const std::string &param_name) const override {
+    if (param_name == "value") return value;
+    return 0.f;
   }
 
   static std::unique_ptr<Node> create(const float _value = 0.f) {
@@ -131,6 +159,41 @@ struct NoiseNode : Node {
     }
   }
 
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    PropertyWidget::SliderFloat(
+      "Frequency",
+      id,
+      frequency,
+      [](Node &n, const float v) { dynamic_cast<NoiseNode &>(n).frequency = v; },
+      graph, history,
+      0.1f, 10.f, "%.2f"
+    );
+    PropertyWidget::SliderFloat(
+      "Amplitude",
+      id,
+      amplitude,
+      [](Node &n, const float v) { dynamic_cast<NoiseNode &>(n).amplitude = v; },
+      graph, history,
+      0.f, 2.f, "%.2f"
+    );
+    PropertyWidget::SliderFloat(
+      "Persistence",
+      id,
+      persistence,
+      [](Node &n, const float v) { dynamic_cast<NoiseNode &>(n).persistence = v; },
+      graph, history,
+      0.f, 1.f, "%.2f"
+    );
+  }
+
+  [[nodiscard]] float get_param(const std::string &param_name) const override {
+    if (param_name == "frequency") return frequency;
+    if (param_name == "amplitude") return amplitude;
+    if (param_name == "octaves") return static_cast<float>(octaves);
+    if (param_name == "persistence") return persistence;
+    return 0.f;
+  }
+
   static std::unique_ptr<NoiseNode> create(const float frequency = 1.f,
                                            const float amplitude = 1.f,
                                            const int octaves = 1,
@@ -236,10 +299,29 @@ struct RandomNode : Node {
     }
   }
 
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    PropertyWidget::SliderFloat(
+      "Min",
+      id,
+      min_value,
+      [](Node &n, const float v) { dynamic_cast<RandomNode &>(n).set_range(v, dynamic_cast<RandomNode &>(n).max_value); },
+      graph, history,
+      0.f, 1.f, "%.2f"
+    );
+    PropertyWidget::SliderFloat(
+      "Max",
+      id,
+      max_value,
+      [](Node &n, const float v) { dynamic_cast<RandomNode &>(n).set_range(dynamic_cast<RandomNode &>(n).min_value, v); },
+      graph, history,
+      0.f, 1.f, "%.2f"
+    );
+  }
+
   static std::unique_ptr<RandomNode> create(
-    const float min_value_,
-    const float max_value_,
-    const int seed_
+    const float min_value_ = 0.f,
+    const float max_value_ = 1.f,
+    const int seed_ = 42
   ) {
     return std::make_unique<RandomNode>(min_value_, max_value_, seed_);
   }

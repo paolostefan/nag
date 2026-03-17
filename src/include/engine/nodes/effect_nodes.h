@@ -184,6 +184,22 @@ struct ChromaticAberrationNode : ShaderNode {
     return OperationResult::ok();
   }
 
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    PropertyWidget::SliderFloat(
+      "Strength",
+      id,
+      strength,
+      [](Node &n, const float v) { dynamic_cast<ChromaticAberrationNode &>(n).strength = v; },
+      graph, history,
+      0.f, 20.f, "%.1f"
+    );
+  }
+
+  [[nodiscard]] float get_param(const std::string &param_name) const override {
+    if (param_name == "strength") return strength;
+    return 0.f;
+  }
+
   [[nodiscard]] static std::unique_ptr<ChromaticAberrationNode> create(
     const float strength = 3.f) {
     auto node = std::make_unique<ChromaticAberrationNode>();
@@ -235,6 +251,22 @@ struct PixelateNode : ShaderNode {
 
     if (j.contains("pixel_size")) pixel_size = j["pixel_size"];
     return OperationResult::ok();
+  }
+
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    PropertyWidget::SliderFloat(
+      "Pixel Size",
+      id,
+      pixel_size,
+      [](Node &n, const float v) { dynamic_cast<PixelateNode &>(n).pixel_size = v; },
+      graph, history,
+      1.f, 64.f, "%.0f"
+    );
+  }
+
+  [[nodiscard]] float get_param(const std::string &param_name) const override {
+    if (param_name == "pixel_size") return pixel_size;
+    return 0.f;
   }
 
   [[nodiscard]] static std::unique_ptr<PixelateNode> create(

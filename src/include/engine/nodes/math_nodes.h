@@ -5,6 +5,7 @@
 #include <cmath>
 
 #include "engine/nodes/node.h"
+#include "engine/property_widget.h"
 
 // ===========================================================================
 // BINARY OPERATORS (2 inputs -> 1 output)
@@ -674,6 +675,49 @@ struct RemapNode : Node {
     }
   }
 
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    PropertyWidget::SliderFloat(
+      "In Min",
+      id,
+      in_min,
+      [](Node &n, const float v) { dynamic_cast<RemapNode &>(n).in_min = v; },
+      graph, history,
+      0.f, 1.f, "%.2f"
+    );
+    PropertyWidget::SliderFloat(
+      "In Max",
+      id,
+      in_max,
+      [](Node &n, const float v) { dynamic_cast<RemapNode &>(n).in_max = v; },
+      graph, history,
+      0.f, 1.f, "%.2f"
+    );
+    PropertyWidget::SliderFloat(
+      "Out Min",
+      id,
+      out_min,
+      [](Node &n, const float v) { dynamic_cast<RemapNode &>(n).out_min = v; },
+      graph, history,
+      0.f, 1.f, "%.2f"
+    );
+    PropertyWidget::SliderFloat(
+      "Out Max",
+      id,
+      out_max,
+      [](Node &n, const float v) { dynamic_cast<RemapNode &>(n).out_max = v; },
+      graph, history,
+      0.f, 1.f, "%.2f"
+    );
+  }
+
+  [[nodiscard]] float get_param(const std::string &param_name) const override {
+    if (param_name == "in_min") return in_min;
+    if (param_name == "in_max") return in_max;
+    if (param_name == "out_min") return out_min;
+    if (param_name == "out_max") return out_max;
+    return 0.f;
+  }
+
   [[nodiscard]] static std::unique_ptr<RemapNode> create(const float in_min = 0.f,
                                                          const float in_max = 1.f,
                                                          const float out_min = 0.f,
@@ -735,6 +779,31 @@ struct ClampNode : Node {
         std::string("Failed to deserialize Clamp params: ") + e.what()
       );
     }
+  }
+
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    PropertyWidget::SliderFloat(
+      "Min",
+      id,
+      min_value,
+      [](Node &n, const float v) { dynamic_cast<ClampNode &>(n).min_value = v; },
+      graph, history,
+      0.f, 1.f, "%.2f"
+    );
+    PropertyWidget::SliderFloat(
+      "Max",
+      id,
+      max_value,
+      [](Node &n, const float v) { dynamic_cast<ClampNode &>(n).max_value = v; },
+      graph, history,
+      0.f, 1.f, "%.2f"
+    );
+  }
+
+  [[nodiscard]] float get_param(const std::string &param_name) const override {
+    if (param_name == "min_value") return min_value;
+    if (param_name == "max_value") return max_value;
+    return 0.f;
   }
 
   [[nodiscard]] static std::unique_ptr<ClampNode> create(const float min_value = 0.f,
@@ -839,6 +908,31 @@ struct SmoothStepNode : Node {
         std::string("Failed to deserialize SmoothStep params: ") + e.what()
       );
     }
+  }
+
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    PropertyWidget::SliderFloat(
+      "Edge0",
+      id,
+      edge0,
+      [](Node &n, const float v) { dynamic_cast<SmoothStepNode &>(n).edge0 = v; },
+      graph, history,
+      0.f, 1.f, "%.2f"
+    );
+    PropertyWidget::SliderFloat(
+      "Edge1",
+      id,
+      edge1,
+      [](Node &n, const float v) { dynamic_cast<SmoothStepNode &>(n).edge1 = v; },
+      graph, history,
+      0.f, 1.f, "%.2f"
+    );
+  }
+
+  [[nodiscard]] float get_param(const std::string &param_name) const override {
+    if (param_name == "edge0") return edge0;
+    if (param_name == "edge1") return edge1;
+    return 0.f;
   }
 
   [[nodiscard]] static std::unique_ptr<SmoothStepNode> create(const float edge0 = 0.f,

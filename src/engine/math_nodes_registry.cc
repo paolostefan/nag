@@ -72,5 +72,65 @@ namespace node_registration {
       "Math",
       "Rounds the input up to the nearest integer"
     );
+    NodeRegistry::instance().register_node<RoundNode>(
+      NodeType::Round,
+      "Round",
+      "Math",
+      "Rounds the input to the nearest integer"
+    );
+    NodeRegistry::instance().register_node<SqrtNode>(
+      NodeType::Sqrt,
+      "Sqrt",
+      "Math",
+      "Computes the square root of the input"
+    );
+    NodeRegistry::instance().register_node<NegateNode>(
+      NodeType::Negate,
+      "Negate",
+      "Math",
+      "Negates the input value"
+    );
+    NodeRegistry::instance().register_node<SinNode>(
+      NodeType::Sin,
+      "Sin",
+      "Math",
+      "Computes the sine of the input"
+    );
+    NodeRegistry::instance().register_node<CosNode>(
+      NodeType::Cos,
+      "Cos",
+      "Math",
+      "Computes the cosine of the input"
+    );
+    NodeRegistry::instance().register_node<TanNode>(
+      NodeType::Tan,
+      "Tan",
+      "Math",
+      "Computes the tangent of the input"
+    );
+    NodeRegistry::instance().register_node<RemapNode>(
+      NodeType::Remap,
+      "Remap",
+      "Math",
+      "Remaps input from one range to another"
+    );
+    NodeRegistry::instance().register_node<ClampNode>(
+      NodeType::Clamp,
+      "Clamp",
+      "Math",
+      "Clamps input to a specified range"
+    );
+    NodeRegistry::instance().register_node<LerpNode>(
+      NodeType::Lerp,
+      "Lerp",
+      "Math",
+      "Linear interpolation between two values"
+    );
+    NodeRegistry::instance().register_node<SmoothStepNode>(
+      NodeType::SmoothStep,
+      "SmoothStep",
+      "Math",
+      "Smooth interpolation with ease in/out"
+    );
   }
 } // namespace node_registration
