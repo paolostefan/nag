@@ -1,9 +1,9 @@
 #include "gtest/gtest.h"
 
-#include "../src/include/engine/nodes/node.h"
-#include "engine/generator_nodes.h"
-#include "../src/include/engine/nodes/math_nodes.h"
-#include "engine/temporal_nodes.h"
+#include "engine/nodes/node.h"
+#include "engine/nodes/generator_nodes.h"
+#include "engine/nodes/math_nodes.h"
+#include "engine/nodes/temporal_nodes.h"
 #include "engine/node_graph.h"
 
 class NodesTest : public testing::Test {
@@ -26,7 +26,7 @@ protected:
 
 TEST_F(NodesTest, MultiplyNode) {
   auto node = MultiplyNode::create();
-  EXPECT_EQ(node->type, Multiply);
+  EXPECT_EQ(node->type, NodeType::Multiply);
   EXPECT_EQ(node->name, "Multiply");
   EXPECT_EQ(node->inputs.size(), 2);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -56,7 +56,7 @@ TEST_F(NodesTest, MultiplyNode) {
 
 TEST_F(NodesTest, DivideNodeDivideByZero) {
   auto node = DivideNode::create();
-  EXPECT_EQ(node->type, Divide);
+  EXPECT_EQ(node->type, NodeType::Divide);
   EXPECT_EQ(node->name, "Divide");
   EXPECT_EQ(node->inputs.size(), 2);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -88,7 +88,7 @@ TEST_F(NodesTest, DivideNodeDivideByZero) {
 TEST_F(NodesTest, RemapNode)
 {
   auto node = RemapNode::create(0,1,0,100);
-  EXPECT_EQ(node->type, Remap);
+  EXPECT_EQ(node->type, NodeType::Remap);
   EXPECT_EQ(node->name, "Remap");
 
   auto const_node = ConstantFloatNode::create(0.5f);
@@ -113,7 +113,7 @@ TEST_F(NodesTest, LFONodeTest) {
     LFONode::WaveShape::Sine,
     0.f,
     .5f);
-  EXPECT_EQ(node->type, LFO);
+  EXPECT_EQ(node->type, NodeType::LFO);
   EXPECT_EQ(node->name, "LFO");
   EXPECT_EQ(node->inputs.size(), 1);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -138,7 +138,7 @@ TEST_F(NodesTest, LFONodeTest) {
 
 TEST_F(NodesTest, ConstantFloatNode) {
   auto node = ConstantFloatNode::create(42.f);
-  EXPECT_EQ(node->type, Constant);
+  EXPECT_EQ(node->type, NodeType::Constant);
   EXPECT_EQ(node->name, "Constant");
   EXPECT_EQ(node->inputs.size(), 0);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -152,7 +152,7 @@ TEST_F(NodesTest, ConstantFloatNode) {
 
 TEST_F(NodesTest, TimeNode) {
   auto node = TimeNode::create();
-  EXPECT_EQ(node->type, Time);
+  EXPECT_EQ(node->type, NodeType::Time);
   EXPECT_EQ(node->name, "Time");
   EXPECT_EQ(node->inputs.size(), 0);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -170,7 +170,7 @@ TEST_F(NodesTest, TimeNode) {
 
 TEST_F(NodesTest, NoiseNode) {
   auto node = NoiseNode::create(1.f, 1.f, 2, 0.5f);
-  EXPECT_EQ(node->type, Noise);
+  EXPECT_EQ(node->type, NodeType::Noise);
   EXPECT_EQ(node->name, "Noise");
   EXPECT_EQ(node->inputs.size(), 1);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -194,7 +194,7 @@ TEST_F(NodesTest, RandomNode) {
   node->set_range(0.f, 10.f);
   node->set_seed(42);
   EXPECT_EQ(node->name, "Random");
-  EXPECT_EQ(node->type, Random);
+  EXPECT_EQ(node->type, NodeType::Random);
 
   auto trigger_node = ConstantFloatNode::create(1.f);
 
@@ -218,7 +218,7 @@ TEST_F(NodesTest, StepSequencerNode) {
   auto node = std::make_unique<StepSequencerNode>();
   node->set_steps({1.f, 2.f, 3.f, 4.f});
   EXPECT_EQ(node->name, "StepSequencer");
-  EXPECT_EQ(node->type, StepSequencer);
+  EXPECT_EQ(node->type, NodeType::StepSequencer);
 
   auto trigger_node = ConstantFloatNode::create(1.f);
 
@@ -244,7 +244,7 @@ TEST_F(NodesTest, StepSequencerNode) {
 
 TEST_F(NodesTest, AddNode) {
   auto node = AddNode::create(3);
-  EXPECT_EQ(node->type, Add);
+  EXPECT_EQ(node->type, NodeType::Add);
   EXPECT_EQ(node->name, "Add");
   EXPECT_EQ(node->inputs.size(), 3);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -274,7 +274,7 @@ TEST_F(NodesTest, SubtractNode) {
   auto node = std::make_unique<SubtractNode>();
   node->add_output("difference");
 
-  EXPECT_EQ(node->type, Subtract);
+  EXPECT_EQ(node->type, NodeType::Subtract);
   EXPECT_EQ(node->name, "Subtract");
 
   auto a = ConstantFloatNode::create(10.f);
@@ -298,7 +298,7 @@ TEST_F(NodesTest, ModuloNode) {
   auto node = std::make_unique<ModuloNode>();
   node->add_output("remainder");
 
-  EXPECT_EQ(node->type, Modulo);
+  EXPECT_EQ(node->type, NodeType::Modulo);
   EXPECT_EQ(node->name, "Modulo");
 
   auto a = ConstantFloatNode::create(7.5f);
@@ -322,7 +322,7 @@ TEST_F(NodesTest, PowerNode) {
   auto node = std::make_unique<PowerNode>();
   node->add_output("result");
 
-  EXPECT_EQ(node->type, Power);
+  EXPECT_EQ(node->type, NodeType::Power);
   EXPECT_EQ(node->name, "Power");
 
   auto base = ConstantFloatNode::create(2.f);
@@ -346,7 +346,7 @@ TEST_F(NodesTest, MinNode) {
   auto node = MinNode::create(2);
   node->add_output("min");
 
-  EXPECT_EQ(node->type, Min);
+  EXPECT_EQ(node->type, NodeType::Min);
   EXPECT_EQ(node->name, "Min");
 
   auto a = ConstantFloatNode::create(5.f);
@@ -370,7 +370,7 @@ TEST_F(NodesTest, MaxNode) {
   auto node = MaxNode::create(2);
   node->add_output("max");
 
-  EXPECT_EQ(node->type, Max);
+  EXPECT_EQ(node->type, NodeType::Max);
   EXPECT_EQ(node->name, "Max");
 
   auto a = ConstantFloatNode::create(5.f);
@@ -399,7 +399,7 @@ TEST_F(NodesTest, AbsNode) {
   node->add_input("in");
   node->add_output("out");
 
-  EXPECT_EQ(node->type, Abs);
+  EXPECT_EQ(node->type, NodeType::Abs);
   EXPECT_EQ(node->name, "Abs");
 
   auto input = ConstantFloatNode::create(-5.5f);
@@ -420,7 +420,7 @@ TEST_F(NodesTest, FloorNode) {
   node->add_input("in");
   node->add_output("out");
 
-  EXPECT_EQ(node->type, Floor);
+  EXPECT_EQ(node->type, NodeType::Floor);
   EXPECT_EQ(node->name, "Floor");
 
   auto input = ConstantFloatNode::create(3.7f);
@@ -441,7 +441,7 @@ TEST_F(NodesTest, CeilNode) {
   node->add_input("in");
   node->add_output("out");
 
-  EXPECT_EQ(node->type, Ceil);
+  EXPECT_EQ(node->type, NodeType::Ceil);
   EXPECT_EQ(node->name, "Ceil");
 
   auto input = ConstantFloatNode::create(3.2f);
@@ -462,7 +462,7 @@ TEST_F(NodesTest, RoundNode) {
   node->add_input("in");
   node->add_output("out");
 
-  EXPECT_EQ(node->type, Round);
+  EXPECT_EQ(node->type, NodeType::Round);
   EXPECT_EQ(node->name, "Round");
 
   auto input = ConstantFloatNode::create(3.6f);
@@ -483,7 +483,7 @@ TEST_F(NodesTest, SqrtNode) {
   node->add_input("in");
   node->add_output("out");
 
-  EXPECT_EQ(node->type, Sqrt);
+  EXPECT_EQ(node->type, NodeType::Sqrt);
   EXPECT_EQ(node->name, "Sqrt");
 
   auto input = ConstantFloatNode::create(16.f);
@@ -523,7 +523,7 @@ TEST_F(NodesTest, NegateNode) {
   node->add_input("in");
   node->add_output("out");
 
-  EXPECT_EQ(node->type, Negate);
+  EXPECT_EQ(node->type, NodeType::Negate);
   EXPECT_EQ(node->name, "Negate");
 
   auto input = ConstantFloatNode::create(5.f);
@@ -541,7 +541,7 @@ TEST_F(NodesTest, NegateNode) {
 
 TEST_F(NodesTest, SinNode) {
   auto node = SinNode::create();
-  EXPECT_EQ(node->type, Sin);
+  EXPECT_EQ(node->type, NodeType::Sin);
   EXPECT_EQ(node->name, "Sin");
   EXPECT_EQ(node->inputs.size(), 1);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -561,7 +561,7 @@ TEST_F(NodesTest, SinNode) {
 
 TEST_F(NodesTest, CosNode) {
   auto node = CosNode::create();
-  EXPECT_EQ(node->type, Cos);
+  EXPECT_EQ(node->type, NodeType::Cos);
   EXPECT_EQ(node->name, "Cos");
   EXPECT_EQ(node->inputs.size(), 1);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -581,7 +581,7 @@ TEST_F(NodesTest, CosNode) {
 
 TEST_F(NodesTest, TanNode) {
   auto node = TanNode::create();
-  EXPECT_EQ(node->type, Tan);
+  EXPECT_EQ(node->type, NodeType::Tan);
   EXPECT_EQ(node->name, "Tan");
   EXPECT_EQ(node->inputs.size(), 1);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -605,7 +605,7 @@ TEST_F(NodesTest, TanNode) {
 
 TEST_F(NodesTest, ClampNode) {
   auto node = ClampNode::create(0.f, 10.f);
-  EXPECT_EQ(node->type, Clamp);
+  EXPECT_EQ(node->type, NodeType::Clamp);
   EXPECT_EQ(node->name, "Clamp");
   EXPECT_EQ(node->inputs.size(), 1);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -625,7 +625,7 @@ TEST_F(NodesTest, ClampNode) {
 
 TEST_F(NodesTest, LerpNode) {
   auto node = LerpNode::create();
-  EXPECT_EQ(node->type, Lerp);
+  EXPECT_EQ(node->type, NodeType::Lerp);
   EXPECT_EQ(node->name, "Lerp");
   EXPECT_EQ(node->inputs.size(), 3);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -653,7 +653,7 @@ TEST_F(NodesTest, LerpNode) {
 
 TEST_F(NodesTest, SmoothStepNode) {
   auto node = SmoothStepNode::create(0.f, 1.f);
-  EXPECT_EQ(node->type, SmoothStep);
+  EXPECT_EQ(node->type, NodeType::SmoothStep);
   EXPECT_EQ(node->name, "SmoothStep");
   EXPECT_EQ(node->inputs.size(), 1);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -678,7 +678,7 @@ TEST_F(NodesTest, SmoothStepNode) {
 
 TEST_F(NodesTest, EnvelopeNode) {
   auto node = EnvelopeNode::create(0.1f, 0.1f, 0.7f, 0.2f);
-  EXPECT_EQ(node->type, Envelope);
+  EXPECT_EQ(node->type, NodeType::Envelope);
   EXPECT_EQ(node->name, "Envelope");
   EXPECT_EQ(node->inputs.size(), 2);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -703,7 +703,7 @@ TEST_F(NodesTest, EnvelopeNode) {
 
 TEST_F(NodesTest, DelayNode) {
   auto node = DelayNode::create(0.5f, 60.f);
-  EXPECT_EQ(node->type, Delay);
+  EXPECT_EQ(node->type, NodeType::Delay);
   EXPECT_EQ(node->name, "Delay");
   EXPECT_EQ(node->inputs.size(), 2);
   EXPECT_EQ(node->outputs.size(), 1);
@@ -729,7 +729,7 @@ TEST_F(NodesTest, DelayNode) {
 
 TEST_F(NodesTest, SmootherNode) {
   auto node = SmootherNode::create(0.1f);
-  EXPECT_EQ(node->type, Smoother);
+  EXPECT_EQ(node->type, NodeType::Smoother);
   EXPECT_EQ(node->name, "Smoother");
   EXPECT_EQ(node->inputs.size(), 2);
   EXPECT_EQ(node->outputs.size(), 1);

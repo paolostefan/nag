@@ -1,21 +1,39 @@
 #include <gtest/gtest.h>
 #include <fstream>
 #include <filesystem>
+#include <SDL.h>
 
 #include "engine/node_graph.h"
-#include "engine/temporal_nodes.h"
-#include "engine/generator_nodes.h"
-#include "../src/include/engine/nodes/math_nodes.h"
-#include "../src/include/engine/nodes/visual_nodes.h"
+#include "engine/nodes/temporal_nodes.h"
+#include "engine/nodes/generator_nodes.h"
+#include "engine/nodes/math_nodes.h"
+#include "engine/nodes/clear_color_node.h"
+#include "engine/nodes/gradient_node.h"
+#include "engine/nodes/circle_node.h"
+#include "engine/nodes/rectangle2dnode.h"
+#include "engine/nodes/composite_node.h"
 #include "engine/serialization/json_graph_serializer.h"
 
 namespace fs = std::filesystem;
 
 class SerializationTest : public testing::Test {
 protected:
+  SDL_Window *window{nullptr};
+  SDL_GLContext gl_context{nullptr};
+  std::string test_file_path_;
+
   void SetUp() override {
     test_file_path_ = "test_graph.json";
     register_all_builtin_nodes();
+
+    SDL_Init(SDL_INIT_VIDEO); // Needed for shader compilation in visual nodes
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+
+    // Hidden window with minimal size for OpenGL context
+    window = SDL_CreateWindow("Test", 0, 0, 1, 1, SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
+    gl_context = SDL_GL_CreateContext(window);
+    glewInit();
   }
 
   void TearDown() override {
@@ -23,16 +41,27 @@ protected:
     if (fs::exists(test_file_path_)) {
       fs::remove(test_file_path_);
     }
-  }
 
-  std::string test_file_path_;
+    if (gl_context) {
+      SDL_GL_DeleteContext(gl_context);
+    }
+    if (window) {
+      SDL_DestroyWindow(window);
+    }
+    SDL_Quit();
+  }
 };
+
+TEST_F(SerializationTest, RenderTargetInitializes) {
+  RenderTarget rt;
+  EXPECT_TRUE(rt.initialize(256, 256, false));
+}
 
 // ============================================================================
 // Test: Basic Save and Load
 // ============================================================================
 TEST_F(SerializationTest, SaveAndLoadEmptyGraph) {
-  NodeGraph graph;
+  const NodeGraph graph;
   const JsonGraphSerializer serializer;
 
   // Save empty graph
@@ -248,8 +277,12 @@ TEST_F(SerializationTest, SaveAndLoadClearColorNode) {
   auto clear_node = ClearColorNode::create(Vec4(0.2f, 0.5f, 0.8f, 1.f));
   clear_node->name = "Background";
 
-  // Initialize con dimensioni specifiche
-  ASSERT_TRUE(clear_node->initialize(640, 480));
+  bool init_result;
+
+  // Initialize with specific dimensions to test render target serialization
+  ASSERT_NO_FATAL_FAILURE(init_result = clear_node->initialize(640, 480));
+
+  ASSERT_TRUE(init_result) << "Failed to initialize ClearColorNode";
 
   graph.add_node(std::move(clear_node));
 
@@ -392,7 +425,7 @@ TEST_F(SerializationTest, SaveAndLoadRectangleNode) {
   rect->rotation = 0.785f; // 45 degrees
   rect->corner_radius = 0.05f;
 
-  ASSERT_TRUE(rect->initialize());
+  ASSERT_TRUE(rect->initialize(300, 300));
   graph.add_node(std::move(rect));
 
   // Save and load
@@ -527,6 +560,6 @@ TEST_F(SerializationTest, MultiInputNode) {
 
   ASSERT_NE(deserialized, nullptr);
 
-  ASSERT_EQ(deserialized->type, Add);
+  ASSERT_EQ(deserialized->type, NodeType::Add);
   ASSERT_EQ(deserialized->inputs.size(), 3);
 }
