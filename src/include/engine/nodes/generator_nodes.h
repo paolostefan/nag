@@ -33,6 +33,10 @@ struct ConstantFloatNode : Node {
   }
 };
 
+/**
+ * @struct TimeNode
+ * @brief Node that outputs the elapsed time in seconds since the graph started.
+ */
 struct TimeNode : Node {
   float time{0.f};
 

@@ -1,7 +1,7 @@
 #ifndef NAG_ENGINE_CIRCLE_NODE_H
 #define NAG_ENGINE_CIRCLE_NODE_H
 
-#include "editor/property_widget.h"
+#include "engine/property_widget.h"
 #include "engine/nodes/shader_node.h"
 #include "engine/visual_types.h"
 #include "shaders/circle_frag.h"

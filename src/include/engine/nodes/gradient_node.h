@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "editor/property_widget.h"
+#include "engine/property_widget.h"
 #include "nlohmann/json.hpp"
 
 #include "engine/nodes/shader_node.h"

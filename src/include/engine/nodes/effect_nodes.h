@@ -2,7 +2,7 @@
 #define NAG_ENGINE_EFFECT_NODES_H
 
 #include "engine/nodes/shader_node.h"
-#include "editor/property_widget.h"
+#include "engine/property_widget.h"
 #include "shaders/blur_frag.h"
 #include "shaders/chromatic_aberration_frag.h"
 #include "shaders/pixelate_frag.h"
@@ -93,7 +93,8 @@ struct BlurNode : ShaderNode {
         dynamic_cast<BlurNode &>(n).radius = v;
       },
       graph, history,
-      /*min=*/0.f, /*max=*/64.f,
+      /*min=*/0.f,
+      /*max=*/64.f,
       /*format=*/"%.1f",
       /*disabled=*/get_input("radius")->connected
     );

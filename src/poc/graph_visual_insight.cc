@@ -15,8 +15,10 @@
 #include "engine/nodes/math_nodes.h"
 #include "engine/node_registry.h"
 #include "engine/shader_quad_helper.h"
-#include "engine/temporal_nodes.h"
-#include "engine/nodes/visual_nodes.h"
+#include "engine/nodes/clear_color_node.h"
+#include "engine/nodes/composite_node.h"
+#include "engine/nodes/gradient_node.h"
+#include "engine/nodes/temporal_nodes.h"
 
 
 GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC",
@@ -24,7 +26,7 @@ GraphVisualInsight::GraphVisualInsight() : UIWindow("Graph insight POC",
                                            GraphEditor() {
   // Init stuff
   ShaderQuadHelper::instance().initialize();
-  build_default_graph();
+  GraphVisualInsight::build_default_graph();
 
   // ===============
 
