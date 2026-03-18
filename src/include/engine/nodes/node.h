@@ -68,11 +68,14 @@ enum class NodeType:uint8_t {
   ClearColor,
   Gradient,
   Circle,
+  Ellipse,
   Rectangle2D,
+  Polygon,
   Composite,
   Blur,
   ChromaticAberration,
   Pixelate,
+  Transform,
 
   // Sink
   Output,

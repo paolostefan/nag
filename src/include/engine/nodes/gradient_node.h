@@ -47,8 +47,7 @@ struct GradientNode : ShaderNode {
   [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
     try {
       // Deserialize base class first
-      auto result = VisualNode::deserialize_params(j);
-      if (!result) {
+      if (auto result = VisualNode::deserialize_params(j); !result) {
         return result;
       }
 

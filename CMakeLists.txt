@@ -155,7 +155,7 @@ file(GLOB ENGINE_SRCS src/engine/*.cc src/engine/nodes/*.h src/fx/*.cc)
 
 add_library(nag_engine_lib
     ${ENGINE_SRCS}
-    src/engine/effects_node_registry.cc
+    src/engine/fx_node_registry.cc
     src/engine/generator_nodes_registry.cc
     src/engine/math_nodes_registry.cc
     src/engine/node_graph.cc
