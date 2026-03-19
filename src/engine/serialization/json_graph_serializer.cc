@@ -9,6 +9,7 @@
 #include "nlohmann/json.hpp"
 
 #include "engine/node_registry.h"
+#include "engine/nodes/node_type_names.h"
 
 using json = nlohmann::json;
 
@@ -213,7 +214,7 @@ OperationResult JsonGraphSerializer::load(
 json JsonGraphSerializer::serialize_node(const Node *node) {
   json j;
   j["id"] = node->id;
-  j["type"] = node->type;
+  j["type"] = node_type_to_string(node->type);
   j["name"] = node->name;
   j["position"] = {node->position.x, node->position.y};
 
@@ -225,7 +226,18 @@ json JsonGraphSerializer::serialize_node(const Node *node) {
 std::unique_ptr<Node> JsonGraphSerializer::deserialize_node(const json &j) {
   // Extract basic fields
   int old_id = j.value("id", 0);
-  const auto type = static_cast<NodeType>(j.value("type", 0));
+  // Deserialize type by name for stability across enum reorderings.
+  // Backward-compat: if the field is still an integer (graph saved before this
+  // change), fall back to the old numeric cast so existing files keep working.
+  NodeType type = NodeType::Default;
+  if (j.contains("type")) {
+    if (j["type"].is_string()) {
+      type = node_type_from_string(j["type"].get<std::string>());
+    } else if (j["type"].is_number_integer()) {
+      spdlog::warn("Node {}: 'type' is numeric (old format), casting directly", old_id);
+      type = static_cast<NodeType>(j["type"].get<int>());
+    }
+  }
   const std::string name = j.value("name", "<unnamed>");
 
   ImVec2 position{0.f, 0.f};

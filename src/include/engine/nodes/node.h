@@ -17,6 +17,15 @@ enum PinDirection:uint8_t {
   Output
 };
 
+/**
+ * IMPORTANT — serialization contract:
+ *   - Values must remain contiguous and start at 0. Never assign explicit integers.
+ *   - Never reorder or remove existing entries; only append new types before Count.
+ *   - Count must always be the last entry; it is used as the array size sentinel in
+ *     kNodeTypeNames (see engine/node_type_names.h) and enforced by a static_assert.
+ *   - When adding a new NodeType, also add the matching string to kNodeTypeNames
+ *     at the same position; the static_assert will catch any mismatch at compile time.
+ */
 enum class NodeType:uint8_t {
   Default,
 
@@ -84,6 +93,9 @@ enum class NodeType:uint8_t {
 
   // Sink
   Output,
+
+  /// @brief Sentinel — must be the last entry. Used as the kNodeTypeNames array size.
+  Count,
 };
 
 struct Pin {

@@ -169,8 +169,8 @@ struct SDFShapeNode : ShaderNode {
 
 private:
   void update_from_inputs() override {
-    auto read = [&](const char *name, float &dst) {
-      if (const Pin *p = get_input(name); p && p->connected) {
+    auto read = [&](const char *pin_name, float &dst) {
+      if (const Pin *p = get_input(pin_name); p && p->connected) {
         if (const auto *s = dynamic_cast<Stream<float> *>(p->stream.get())) {
           dst = s->value;
         }
