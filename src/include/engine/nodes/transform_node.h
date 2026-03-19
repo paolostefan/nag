@@ -3,23 +3,21 @@
 
 #include "engine/property_widget.h"
 #include "engine/nodes/shader_node.h"
-#include "engine/visual_types.h"
 #include "shaders/transform_frag.h"
 
 /**
  * @class TransformNode
  * @brief Applies 2D transform (translate, scale, rotate) to an input texture.
  *
- * The transform is applied in UV space around the center (0.5, 0.5).
- * Fragments that map outside [0,1] after the inverse transform are
- * rendered transparent.
+ * The transform is computed in UV space around the center (0.5, 0.5).
+ * Fragments mapping outside [0,1] after the inverse transform are transparent.
  *
  * Inputs:
- *   texture     (Texture*) — source image
- *   translate_x (float)    — horizontal offset in normalized UV space
- *   translate_y (float)    — vertical   offset in normalized UV space
- *   scale       (float)    — uniform scale factor (1.0 = original size)
- *   rotation    (float)    — rotation in radians
+ *   texture      (Texture*) — source image
+ *   translate_x  (float)    — horizontal offset in normalized UV space
+ *   translate_y  (float)    — vertical offset in normalized UV space
+ *   scale        (float)    — uniform scale factor (1.0 = original size)
+ *   rotation     (float)    — rotation in radians
  *
  * Output: Texture*
  */
@@ -44,9 +42,14 @@ struct TransformNode : ShaderNode {
     shader->set_uniform("u_rotation",    rotation);
   }
 
-  void render() override {
-    update_from_inputs();
-    ShaderNode::render();
+  // ── get_param — bridge for bind_float_inputs() ────────────────────────────
+
+  [[nodiscard]] float get_param(const std::string &param_name) const override {
+    if (param_name == "translate_x") return translate_x;
+    if (param_name == "translate_y") return translate_y;
+    if (param_name == "scale")       return scale;
+    if (param_name == "rotation")    return rotation;
+    return 0.f;
   }
 
   // ── Serialization ─────────────────────────────────────────────────────────
@@ -66,8 +69,8 @@ struct TransformNode : ShaderNode {
 
       if (j.contains("translate_x")) translate_x = j["translate_x"];
       if (j.contains("translate_y")) translate_y = j["translate_y"];
-      if (j.contains("scale"))       scale       = j["scale"];
-      if (j.contains("rotation"))    rotation    = j["rotation"];
+      if (j.contains("scale"))       scale        = j["scale"];
+      if (j.contains("rotation"))    rotation     = j["rotation"];
 
       return OperationResult::ok();
     } catch (const std::exception &e) {
@@ -79,35 +82,37 @@ struct TransformNode : ShaderNode {
   // ── Properties panel ──────────────────────────────────────────────────────
 
   void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    // All parameters are float pins — they show as disabled sliders when
-    // connected, active DragFloats when not. No extra GUI params needed.
     PropertyWidget::DragFloat("Translate X", id,
       translate_x,
       [](Node &n, const float v) { dynamic_cast<TransformNode &>(n).translate_x = v; },
       graph, history,
       /*speed=*/0.005f, /*min=*/-1.f, /*max=*/1.f,
-      /*disabled=*/!inputs.empty() && inputs[1].connected);
+      /*format=*/"%.3f",
+      /*disabled=*/get_input("translate_x")->connected);
 
     PropertyWidget::DragFloat("Translate Y", id,
       translate_y,
       [](Node &n, const float v) { dynamic_cast<TransformNode &>(n).translate_y = v; },
       graph, history,
       /*speed=*/0.005f, /*min=*/-1.f, /*max=*/1.f,
-      /*disabled=*/!inputs.empty() && inputs[2].connected);
+      /*format=*/"%.3f",
+      /*disabled=*/get_input("translate_y")->connected);
 
     PropertyWidget::DragFloat("Scale", id,
       scale,
       [](Node &n, const float v) { dynamic_cast<TransformNode &>(n).scale = v; },
       graph, history,
       /*speed=*/0.01f, /*min=*/0.01f, /*max=*/10.f,
-      /*disabled=*/!inputs.empty() && inputs[3].connected);
+      /*format=*/"%.3f",
+      /*disabled=*/get_input("scale")->connected);
 
     PropertyWidget::DragFloat("Rotation", id,
       rotation,
       [](Node &n, const float v) { dynamic_cast<TransformNode &>(n).rotation = v; },
       graph, history,
       /*speed=*/0.01f, /*min=*/-3.14159f, /*max=*/3.14159f,
-      /*disabled=*/!inputs.empty() && inputs[4].connected);
+      /*format=*/"%.3f",
+      /*disabled=*/get_input("rotation")->connected);
   }
 
   // ── Factory ───────────────────────────────────────────────────────────────
@@ -125,10 +130,10 @@ struct TransformNode : ShaderNode {
     node->rotation    = rotation;
 
     node->add_typed_input<Texture *>("texture");
-    node->add_input("translate_x");
-    node->add_input("translate_y");
-    node->add_input("scale");
-    node->add_input("rotation");
+    node->add_typed_input<float>("translate_x");
+    node->add_typed_input<float>("translate_y");
+    node->add_typed_input<float>("scale");
+    node->add_typed_input<float>("rotation");
 
     node->add_typed_output<Texture *>("texture");
     return node;
@@ -136,13 +141,19 @@ struct TransformNode : ShaderNode {
 
 private:
   void update_from_inputs() override {
-    if (inputs.size() < 5) return;
+    auto read = [&](const char *pin_name, float &dst) {
+      if (const Pin *p = get_input(pin_name); p && p->connected) {
+        if (const auto *s = dynamic_cast<Stream<float> *>(p->stream.get())) {
+          dst = s->value;
+        }
+      }
+    };
 
     // inputs[0] is Texture* — handled by bind_texture_inputs() in ShaderNode::render()
-    if (const auto *s = dynamic_cast<Stream<float> *>(inputs[1].stream.get())) translate_x = s->value;
-    if (const auto *s = dynamic_cast<Stream<float> *>(inputs[2].stream.get())) translate_y = s->value;
-    if (const auto *s = dynamic_cast<Stream<float> *>(inputs[3].stream.get())) scale       = s->value;
-    if (const auto *s = dynamic_cast<Stream<float> *>(inputs[4].stream.get())) rotation    = s->value;
+    read("translate_x", translate_x);
+    read("translate_y", translate_y);
+    read("scale",       scale);
+    read("rotation",    rotation);
   }
 };
 

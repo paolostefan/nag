@@ -8,6 +8,7 @@
 #include "engine/nodes/rectangle2dnode.h"
 #include "engine/nodes/transform_node.h"
 #include "engine/node_registry.h"
+#include "engine/nodes/sdf_shape_node.h"
 
 namespace node_registration {
   void register_visual_nodes() {
@@ -57,6 +58,13 @@ namespace node_registration {
       "Rectangle",
       "Visual",
       "Renders a 2D rectangle with optional rounded corners"
+    );
+
+    registry.register_node<SDFShapeNode>(
+      NodeType::SDFShape,
+      "SDF Shape",
+      "Visual",
+      "Renders a shape defined by a signed distance function (SDF) shader"
     );
 
     // ── Compositing ───────────────────────────────────────────────────────────

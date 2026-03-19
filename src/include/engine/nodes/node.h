@@ -71,10 +71,15 @@ enum class NodeType:uint8_t {
   Ellipse,
   Rectangle2D,
   Polygon,
-  Composite,
+
+  // FX nodes
   Blur,
   ChromaticAberration,
+  ColorCorrection,
+  Composite,
+  Displace,
   Pixelate,
+  SDFShape,
   Transform,
 
   // Sink

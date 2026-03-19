@@ -14,7 +14,7 @@ enum class NodeType : uint8_t;
 
 namespace node_registration {
 
-  void register_effect_nodes();
+  void register_fx_nodes();
 
   void register_generator_nodes();
 
@@ -23,8 +23,7 @@ namespace node_registration {
   void register_temporal_nodes();
 
   void register_visual_nodes();
-}
-
+} // namespace node_registration
 
 /**
  * @brief Metadata for a node type.
@@ -56,14 +55,14 @@ public:
   static NodeRegistry &instance();
 
   /**
- * @brief Register a node type using its static create() method.
- *
- * @tparam NodeClass The node class (must have static create() method)
- * @param type Node type enum value
- * @param display_name Human-readable name
- * @param category Category for UI grouping
- * @param description Short description
- */
+   * @brief Register a node type using its static create() method.
+   *
+   * @tparam NodeClass The node class (must have static create() method)
+   * @param type Node type enum value
+   * @param display_name Human-readable name
+   * @param category Category for UI grouping
+   * @param description Short description
+   */
   template<typename NodeClass>
   void register_node(
     NodeType type,

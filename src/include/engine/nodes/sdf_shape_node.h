@@ -1,48 +1,61 @@
-#ifndef NAG_ENGINE_POLYGON_NODE_H
-#define NAG_ENGINE_POLYGON_NODE_H
+#ifndef NAG_ENGINE_SDF_SHAPE_NODE_H
+#define NAG_ENGINE_SDF_SHAPE_NODE_H
 
-#include "engine/property_widget.h"
 #include "engine/nodes/shader_node.h"
+#include "engine/property_widget.h"
 #include "engine/visual_types.h"
-#include "shaders/polygon_frag.h"
+#include "shaders/sdf_shape_frag.h"
 
 /**
- * @class PolygonNode
- * @brief Renders a regular n-gon to texture via SDF fragment shader.
+ * @class SDFShapeNode
+ * @brief Renders a circle, box, or ring via a unified SDF fragment shader.
+ *
+ * All shapes share the same pins; shape-specific parameters (aspect ratio for
+ * box, ring thickness) are GUI-only because they have no meaningful analogue
+ * across all three shapes.
  *
  * Inputs:
- *   pos_x     (float)  — centre X in normalised [0,1] UV space
- *   pos_y     (float)  — centre Y in normalised [0,1] UV space
- *   radius    (float)  — circumradius (fraction of screen height)
- *   rotation  (float)  — rotation in radians
+ *   pos_x    (float)  — centre X in normalised [0,1] UV space
+ *   pos_y    (float)  — centre Y in normalised [0,1] UV space
+ *   radius   (float)  — circumradius / half-extent (fraction of screen height)
+ *   rotation (float)  — rotation in radians
  *
  * Output: Texture*
- *
- * @note n_sides is GUI-only — fractional values produce undefined SDF geometry.
  */
-struct PolygonNode : ShaderNode {
+struct SDFShapeNode : ShaderNode {
+  enum class Shape { Circle = 0, Box = 1, Ring = 2 };
+
   Vec2  position{0.5f, 0.5f};
   float radius{0.2f};
   float rotation{0.f};
-  int   n_sides{6};
+  Shape shape{Shape::Circle};
+  float aspect{1.f};           // box only: width/height ratio
+  float ring_thickness{0.2f};  // ring only: [0, 1]
   Vec4  color{1.f, 1.f, 1.f, 1.f};
   float edge_smoothness{0.01f};
 
-  PolygonNode() {
-    type = NodeType::Polygon;
-    name = "Polygon";
+  SDFShapeNode() {
+    type = NodeType::SDFShape;
+    name = "SDF Shape";
   }
 
-  [[nodiscard]] const char *shader_name()     const override { return "polygon"; }
-  [[nodiscard]] const char *frag_shader_src() const override { return kpolygon_frag; }
+  [[nodiscard]] const char *shader_name()     const override { return "sdf_shape"; }
+  [[nodiscard]] const char *frag_shader_src() const override { return ksdf_shape_frag; }
 
   void bind_params() override {
     shader->set_uniform("u_position",        position.x, position.y);
     shader->set_uniform("u_radius",          radius);
     shader->set_uniform("u_rotation",        rotation);
-    shader->set_uniform("u_n_sides",         static_cast<float>(n_sides));
+    shader->set_uniform("u_shape",           static_cast<float>(shape));
+    shader->set_uniform("u_aspect",          aspect);
+    shader->set_uniform("u_ring_thickness",  ring_thickness);
     shader->set_uniform("u_color",           color.x, color.y, color.z, color.w);
     shader->set_uniform("u_edge_smoothness", edge_smoothness);
+  }
+
+  void render() override {
+    update_from_inputs();
+    ShaderNode::render();
   }
 
   // ── get_param — bridge for bind_float_inputs() ────────────────────────────
@@ -62,7 +75,9 @@ struct PolygonNode : ShaderNode {
     j["position"]        = {position.x, position.y};
     j["radius"]          = radius;
     j["rotation"]        = rotation;
-    j["n_sides"]         = n_sides;
+    j["shape"]           = static_cast<int>(shape);
+    j["aspect"]          = aspect;
+    j["ring_thickness"]  = ring_thickness;
     j["color"]           = {color.x, color.y, color.z, color.w};
     j["edge_smoothness"] = edge_smoothness;
     return j;
@@ -76,9 +91,11 @@ struct PolygonNode : ShaderNode {
         position.x = j["position"][0];
         position.y = j["position"][1];
       }
-      if (j.contains("radius"))          radius          = j["radius"];
-      if (j.contains("rotation"))        rotation        = j["rotation"];
-      if (j.contains("n_sides"))         n_sides         = j["n_sides"];
+      if (j.contains("radius"))          radius         = j["radius"];
+      if (j.contains("rotation"))        rotation       = j["rotation"];
+      if (j.contains("shape"))           shape          = static_cast<Shape>(j["shape"].get<int>());
+      if (j.contains("aspect"))          aspect         = j["aspect"];
+      if (j.contains("ring_thickness"))  ring_thickness = j["ring_thickness"];
       if (j.contains("color") && j["color"].is_array() && j["color"].size() >= 4) {
         color.x = j["color"][0];
         color.y = j["color"][1];
@@ -90,44 +107,54 @@ struct PolygonNode : ShaderNode {
       return OperationResult::ok();
     } catch (const std::exception &e) {
       return OperationResult::error(
-        std::string("Failed to deserialize PolygonNode params: ") + e.what());
+        std::string("Failed to deserialize SDFShapeNode params: ") + e.what());
     }
   }
 
   // ── Properties panel ──────────────────────────────────────────────────────
 
   void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    // Shape selector
+    constexpr const char *kShapes[] = {"Circle", "Box", "Ring"};
+    int shape_idx = static_cast<int>(shape);
+    if (ImGui::Combo("Shape", &shape_idx, kShapes, 3)) {
+      shape = static_cast<Shape>(shape_idx);
+    }
+
+    // Shape-specific parameters
+    if (shape == Shape::Box) {
+      ImGui::DragFloat("Aspect ratio", &aspect, 0.01f, 0.1f, 10.f, "%.2f");
+    }
+    if (shape == Shape::Ring) {
+      ImGui::DragFloat("Ring thickness", &ring_thickness, 0.005f, 0.01f, 1.f, "%.3f");
+    }
+
     auto *color_ = reinterpret_cast<ImVec4 *>(&color);
     PropertyWidget::ColorEdit4("Color", id,
       *color_,
-      [](Node &n, const ImVec4 &v) { dynamic_cast<PolygonNode &>(n).color = v; },
+      [](Node &n, const ImVec4 &v) { dynamic_cast<SDFShapeNode &>(n).color = v; },
       graph, history);
-
-    // n_sides: int slider, intentionally not a pin (see class note).
-    // Wrapped manually in undo/redo via SetNodeParamCommand if needed.
-    ImGui::SliderInt("Sides", &n_sides, 3, 12);
 
     PropertyWidget::SliderFloat("Edge smoothness", id,
       edge_smoothness,
-      [](Node &n, const float v) { dynamic_cast<PolygonNode &>(n).edge_smoothness = v; },
+      [](Node &n, const float v) { dynamic_cast<SDFShapeNode &>(n).edge_smoothness = v; },
       graph, history,
-      /*min=*/0.f, /*max=*/1.f,
-      /*format=*/"%.3f");
+      /*min=*/0.f, /*max=*/1.f, /*format=*/"%.3f");
   }
 
   // ── Factory ───────────────────────────────────────────────────────────────
 
-  static std::unique_ptr<PolygonNode> create(
+  static std::unique_ptr<SDFShapeNode> create(
       const Vec2  &position        = {0.5f, 0.5f},
       const float  radius          = 0.2f,
-      const int    n_sides         = 6,
+      const Shape  shape           = Shape::Circle,
       const Vec4  &color           = Vec4::white(),
       const float  edge_smoothness = 0.01f)
   {
-    auto node             = std::make_unique<PolygonNode>();
+    auto node             = std::make_unique<SDFShapeNode>();
     node->position        = position;
     node->radius          = radius;
-    node->n_sides         = n_sides;
+    node->shape           = shape;
     node->color           = color;
     node->edge_smoothness = edge_smoothness;
 
@@ -142,8 +169,8 @@ struct PolygonNode : ShaderNode {
 
 private:
   void update_from_inputs() override {
-    auto read = [&](const char *pin_name, float &dst) {
-      if (const Pin *p = get_input(pin_name); p && p->connected) {
+    auto read = [&](const char *name, float &dst) {
+      if (const Pin *p = get_input(name); p && p->connected) {
         if (const auto *s = dynamic_cast<Stream<float> *>(p->stream.get())) {
           dst = s->value;
         }
@@ -157,4 +184,4 @@ private:
   }
 };
 
-#endif  // NAG_ENGINE_POLYGON_NODE_H
+#endif  // NAG_ENGINE_SDF_SHAPE_NODE_H

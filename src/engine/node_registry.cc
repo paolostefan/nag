@@ -2,7 +2,7 @@
 
 #include "spdlog/spdlog.h"
 
-#include "../include/engine/nodes/node.h"
+#include "engine/nodes/node.h"
 
 NodeRegistry &NodeRegistry::instance() {
   static NodeRegistry instance;
@@ -52,7 +52,7 @@ void register_all_builtin_nodes() {
 
   spdlog::info("Registering built-in nodes...");
 
-  node_registration::register_effect_nodes();
+  node_registration::register_fx_nodes();
   node_registration::register_generator_nodes();
   node_registration::register_math_nodes();
   node_registration::register_temporal_nodes();
