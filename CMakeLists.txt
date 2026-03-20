@@ -122,6 +122,15 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(iconfont_cppheaders)
 #Message(STATUS "iconfont_cppheaders source dir: ${iconfont_cppheaders_SOURCE_DIR}")
 
+# stb
+FetchContent_Declare(
+    stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG master
+    EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(stb)
+
 # ============================================================================
 # END DEPENDENCIES
 # ============================================================================
@@ -172,6 +181,7 @@ target_include_directories(nag_engine_lib PUBLIC
     src/include
     ${CMAKE_CURRENT_BINARY_DIR}
     ${OPENMPT_INCLUDE_DIRS}
+    ${stb_SOURCE_DIR}
 )
 
 target_link_libraries(nag_engine_lib PUBLIC
@@ -209,6 +219,7 @@ add_library(nag_editor_lib
     src/editor/toast_manager.cc
     src/editor/ui_window.cc
     src/editor/graph_editor.cc
+    src/engine/stb_impl.cc
 )
 
 target_include_directories(nag_editor_lib PUBLIC
