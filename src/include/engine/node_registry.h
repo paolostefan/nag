@@ -8,6 +8,8 @@
 
 #include "spdlog/spdlog.h"
 
+#include "engine/nodes/node_type_names.h"
+
 // Forward declarations
 struct Node;
 enum class NodeType : uint8_t;
@@ -59,14 +61,12 @@ public:
    *
    * @tparam NodeClass The node class (must have static create() method)
    * @param type Node type enum value
-   * @param display_name Human-readable name
    * @param category Category for UI grouping
    * @param description Short description
    */
   template<typename NodeClass>
   void register_node(
     NodeType type,
-    const std::string &display_name,
     const std::string &category,
     const std::string &description) {
     // compile-time check that NodeClass is derived from Node
@@ -84,6 +84,8 @@ public:
     auto create_fn = +[]() -> std::unique_ptr<Node> {
       return NodeClass::create();
     };
+
+    const auto display_name = std::string(node_type_to_string(type));
 
     registry_[type] = {
       type,

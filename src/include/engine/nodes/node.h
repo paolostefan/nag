@@ -80,6 +80,8 @@ enum class NodeType:uint8_t {
   Ellipse,
   Rectangle2D,
   Polygon,
+  TextureLoader,
+  Tile,
 
   // FX nodes
   Blur,

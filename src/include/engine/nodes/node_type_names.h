@@ -36,7 +36,7 @@ inline constexpr std::array<std::string_view,
   "Time",
   "Noise",
   "Random",
-  "StepSequencer",
+  "Step Sequencer",
 
   // Unary math operators
   "Abs",
@@ -67,7 +67,7 @@ inline constexpr std::array<std::string_view,
   "Remap",
   "Clamp",
   "Lerp",
-  "SmoothStep",
+  "Smooth Step",
 
   // Temporal modifiers
   "LFO",
@@ -76,17 +76,19 @@ inline constexpr std::array<std::string_view,
   "Smoother",
 
   // Visual nodes
-  "ClearColor",
+  "Clear Color",
   "Gradient",
   "Circle",
   "Ellipse",
-  "Rectangle2D",
+  "Rectangle 2D",
   "Polygon",
+  "Texture Loader",
+  "Tile",
 
   // FX nodes
   "Blur",
-  "ChromaticAberration",
-  "ColorCorrection",
+  "Chromatic Aberration",
+  "Color Correction",
   "Composite",
   "Displace",
   "Pixelate",

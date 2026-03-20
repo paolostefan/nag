@@ -137,6 +137,7 @@ FetchContent_MakeAvailable(stb)
 
 # Nag Engine
 
+# Begin shader embedding
 # Collect all shaders to embed them as resources in the executable
 file(GLOB_RECURSE SHADER_FILES src/shaders/*.vert src/shaders/*.frag src/shaders/*.geom)
 set(GENERATED_SHADER_HEADERS "")
@@ -159,6 +160,7 @@ foreach (SHADER_FILE ${SHADER_FILES})
 
     list(APPEND GENERATED_SHADER_HEADERS ${OUTPUT_HEADER})
 endforeach()
+# End shader embedding
 
 file(GLOB ENGINE_SRCS src/engine/*.cc src/engine/nodes/*.h src/fx/*.cc)
 
@@ -177,9 +179,12 @@ add_library(nag_engine_lib
     ${GENERATED_SHADER_HEADERS}
     src/engine/property_widget.cc
 )
+
 target_include_directories(nag_engine_lib PUBLIC
     src/include
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${iconfont_cppheaders_SOURCE_DIR}/
+    ${imgui_filedialog_SOURCE_DIR}/
     ${OPENMPT_INCLUDE_DIRS}
     ${stb_SOURCE_DIR}
 )
@@ -226,8 +231,6 @@ target_include_directories(nag_editor_lib PUBLIC
     src/include
     src/_3rd_party/ImGuizmo
     src/_3rd_party/imnodes
-    ${iconfont_cppheaders_SOURCE_DIR}/
-    ${imgui_filedialog_SOURCE_DIR}/
 )
 
 target_link_libraries(nag_editor_lib PUBLIC

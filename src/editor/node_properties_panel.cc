@@ -4,6 +4,7 @@
 #include "imnodes.h"
 
 #include "engine/node_graph.h"
+#include "engine/nodes/texture_loader_node.h"
 
 void NodePropertiesPanel::render(NodeGraph &graph, CommandHistory &history) {
   // -------------------------------------------------------------------------
@@ -35,8 +36,7 @@ void NodePropertiesPanel::render(NodeGraph &graph, CommandHistory &history) {
     ImGui::TextDisabled("Multiple nodes selected.");
   } else {
     // Exactly one node selected.
-    Node *node = graph.find_node(selected_id);
-    if (!node) {
+    if (Node *node = graph.find_node(selected_id); !node) {
       // Should not happen in a consistent graph, but guard defensively.
       ImGui::TextDisabled("(node not found)");
     } else {
@@ -49,6 +49,12 @@ void NodePropertiesPanel::render(NodeGraph &graph, CommandHistory &history) {
       // Delegate all parameter widgets to the node itself.
       // draw_properties() is a no-op by default; concrete nodes override it.
       node->draw_properties(graph, history);
+
+      // TextureLoaderNode: pump the file dialog every frame so it renders
+      // correctly regardless of which ImGui window currently has focus.
+      if (auto *tl = dynamic_cast<TextureLoaderNode *>(node)) {
+        tl->display_file_dialog();
+      }
     }
   }
 
