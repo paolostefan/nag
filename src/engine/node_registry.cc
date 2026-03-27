@@ -26,7 +26,12 @@ const NodeTypeInfo *NodeRegistry::get_type_info(const NodeType type) const {
 
 std::unordered_map<std::string, std::vector<NodeType> >
 NodeRegistry::get_nodes_by_category() const {
-  std::unordered_map<std::string, std::vector<NodeType> > result;
+
+  static std::unordered_map<std::string, std::vector<NodeType> > result;
+
+  if (!result.empty()) {
+    return result;
+  }
 
   for (const auto &[type, info]: registry_) {
     result[info.category].push_back(type);
