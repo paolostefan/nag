@@ -6,12 +6,10 @@
 #include "GL/glew.h"
 #include "ImGuiFileDialog.h"
 #include "imgui.h"
-#include "spdlog/spdlog.h"
 #include "IconsFontAwesome6.h"
 #include "stb_image.h"
 
-#include "engine/nodes/node.h"
-#include "engine/render_target.h"
+#include "engine/nodes/visual_node.h"
 
 /**
  * @class TextureLoaderNode
@@ -32,16 +30,14 @@
  *
  * Output: Texture*
  */
-struct TextureLoaderNode : Node {
+struct TextureLoaderNode : VisualNode {
   std::string file_path;
 
   TextureLoaderNode() {
     type = NodeType::TextureLoader;
     name = "Texture Loader";
-  }
 
-  ~TextureLoaderNode() override {
-    free_texture();
+    VisualNode::initialize(1,1); // dummy 1x1 texture to start with; will be replaced on load
   }
 
   // ── Node interface ────────────────────────────────────────────────────────
@@ -55,11 +51,18 @@ struct TextureLoaderNode : Node {
     // Always push current texture pointer into the output stream.
     if (!outputs.empty()) {
       if (auto *s = dynamic_cast<Stream<Texture *> *>(outputs[0].stream.get())) {
-        s->update(output_texture_.is_valid() ? &output_texture_ : nullptr);
+        s->update(output_texture.is_valid() ? &output_texture : nullptr);
       }
     }
 
     mark_inputs_consumed();
+  }
+
+  // ── VisualNode overrides ──────────────────────────────────────────────────
+
+  void render() override {
+    // No rendering needed; this node just loads a texture and outputs it.
+    spdlog::info("TextureLoaderNode::render()");
   }
 
   // ── File dialog helpers ───────────────────────────────────────────────────
@@ -72,8 +75,10 @@ struct TextureLoaderNode : Node {
     IGFD::FileDialogConfig cfg;
     cfg.path = file_path.empty() ? "." : file_path.substr(0, file_path.find_last_of("/\\"));
     cfg.flags = ImGuiFileDialogFlags_Modal;
-    ImGuiFileDialog::Instance()->OpenDialog(
-      dialog_key(), "Load Texture", kImageFilter, cfg);
+    ImGuiFileDialog::Instance()->OpenDialog(dialog_key(),
+                                            "Load Texture",
+                                            kImageFilter,
+                                            cfg);
   }
 
   /**
@@ -86,8 +91,9 @@ struct TextureLoaderNode : Node {
   bool display_file_dialog() {
     constexpr ImVec2 kDialogSize{600.f, 400.f};
 
-    if (!ImGuiFileDialog::Instance()->Display(
-      dialog_key(), ImGuiWindowFlags_NoCollapse, kDialogSize)) {
+    if (!ImGuiFileDialog::Instance()->Display(dialog_key(),
+                                              ImGuiWindowFlags_NoCollapse,
+                                              kDialogSize)) {
       return false; // dialog not open or not yet confirmed
     }
 
@@ -146,8 +152,8 @@ struct TextureLoaderNode : Node {
     }
 
     // Texture info
-    if (output_texture_.is_valid()) {
-      ImGui::TextDisabled("%d x %d", output_texture_.width, output_texture_.height);
+    if (output_texture.is_valid()) {
+      ImGui::TextDisabled("%d x %d", output_texture.width, output_texture.height);
     }
 
     // Error message if last load failed
@@ -185,10 +191,9 @@ struct TextureLoaderNode : Node {
   }
 
 private:
-  static constexpr const char *kImageFilter = "Image files{.png,.jpg,.jpeg,.bmp,.tga}";
+  static constexpr auto *kImageFilter = "Image files{.png,.jpg,.jpeg,.bmp,.tga}";
 
-  Texture output_texture_;
-  GLuint gl_texture_{0};
+  // GLuint gl_texture_{0};
   bool path_dirty_{false};
   std::string last_error_;
 
@@ -198,31 +203,37 @@ private:
     return "texture_loader_dialog_" + std::to_string(id);
   }
 
+  /**
+   * @brief Loads the image from disk and uploads it to OpenGL.
+   * If a texture already exists, it is deleted first.
+   * On failure, last_error_ is set with a descriptive message.
+   */
   void reload_texture() {
-    free_texture();
-    last_error_.clear();
-
     if (file_path.empty()) return;
+
+    render_target->free_texture();
+    last_error_.clear();
 
     // stb_image: flip vertically to match OpenGL UV convention (origin = bottom-left)
     stbi_set_flip_vertically_on_load(true);
 
     int width{0}, height{0}, channels{0};
-    unsigned char *data = stbi_load(file_path.c_str(), &width, &height, &channels, 4);
-
+    unsigned char *data = stbi_load(file_path.c_str(),
+                                    &width,
+                                    &height,
+                                    &channels,
+                                    4);
     if (!data) {
       last_error_ = std::string("stb_image: ") + stbi_failure_reason();
-      spdlog::error("TextureLoaderNode: failed to load '{}': {}", file_path, last_error_);
+      spdlog::error("TextureLoaderNode: failed to load '{}': {}",
+                    file_path, last_error_);
       return;
     }
 
+    render_target->resize(width, height);
+
     // Upload to OpenGL
-    glGenTextures(1, &gl_texture_);
-    glBindTexture(GL_TEXTURE_2D, gl_texture_);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_2D, render_target->get_texture());
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
                  width, height, 0,
                  GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -231,16 +242,11 @@ private:
 
     stbi_image_free(data);
 
-    output_texture_ = Texture{gl_texture_, width, height};
-    spdlog::info("TextureLoaderNode: loaded '{}' ({}x{}, {} ch)", file_path, width, height, channels);
-  }
+    output_texture.texture_id = render_target->get_texture();
+    output_texture.width = width;
+    output_texture.height = height;
 
-  void free_texture() {
-    if (gl_texture_ != 0) {
-      glDeleteTextures(1, &gl_texture_);
-      gl_texture_ = 0;
-    }
-    output_texture_ = Texture{};
+    spdlog::info("TextureLoaderNode: loaded '{}' ({}x{}, {} ch)", file_path, width, height, channels);
   }
 };
 
