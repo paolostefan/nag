@@ -3,6 +3,7 @@
 
 #include "GL/glew.h"
 #include "SDL.h"
+
 #include "engine/render_target.h"
 #include "engine/shader_manager.h"
 
@@ -64,8 +65,8 @@ public:
               SDL_GLContext gl_context,
               SDL_Window *return_to) const;
 
-  [[nodiscard]] bool is_open() const { return window_ != nullptr; }
-  [[nodiscard]] bool is_paused() const { return paused_; }
+  [[nodiscard]] constexpr bool is_open() const { return window_ != nullptr; }
+  [[nodiscard]] constexpr bool is_paused() const { return paused_; }
   void toggle_pause() { paused_ = !paused_; }
 
   /**
