@@ -149,7 +149,6 @@ struct GradientNode : ShaderNode {
     );
   }
 
-protected:
   void update_from_inputs() override {
     // TODO: Add input connections for dynamic control
   }
