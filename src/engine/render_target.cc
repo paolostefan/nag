@@ -2,7 +2,9 @@
 
 #include "spdlog/spdlog.h"
 
-bool RenderTarget::initialize(const int width, const int height, const bool with_depth_buffer) {
+bool RenderTarget::initialize(const int width,
+                              const int height,
+                              const bool with_depth_buffer) {
   if (fbo_ != 0) {
     cleanup();
   }
@@ -56,11 +58,16 @@ bool RenderTarget::initialize(const int width, const int height, const bool with
   return true;
 }
 
-void RenderTarget::cleanup() {
+void RenderTarget::free_texture() {
   if (texture_ != 0) {
     glDeleteTextures(1, &texture_);
     texture_ = 0;
   }
+}
+
+void RenderTarget::cleanup() {
+  free_texture();
+
   if (fbo_ != 0) {
     glDeleteFramebuffers(1, &fbo_);
     fbo_ = 0;

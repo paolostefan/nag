@@ -3,6 +3,13 @@
 
 #include "GL/glew.h"
 
+/**
+ * @class RenderTarget
+ * @brief Manages an OpenGL framebuffer object (FBO) with a color texture attachment
+ *        and an optional depth buffer.
+ *
+ * Provides methods to initialize, bind, clear, and resize the render target.
+ */
 class RenderTarget {
 public:
   RenderTarget() = default;
@@ -19,6 +26,8 @@ public:
    * @return true if successful
    */
   bool initialize(int width, int height, bool with_depth_buffer = false);
+
+  void free_texture();
 
   /**
    * Bind this FBO for rendering.
