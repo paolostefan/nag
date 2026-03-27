@@ -47,6 +47,7 @@ void UIWindow::main_event_loop() {
     }
 
     // New imgui frame
+    SDL_GL_MakeCurrent(window, gl_context);
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();

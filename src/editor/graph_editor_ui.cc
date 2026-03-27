@@ -38,6 +38,7 @@ void GraphEditorUI::main_event_loop() {
   bool running = true;
   SDL_Event event;
 
+  // ReSharper disable once CppDFAConstantConditions
   while (running) {
     while (SDL_PollEvent(&event)) {
       ImGui_ImplSDL2_ProcessEvent(&event);
@@ -64,6 +65,7 @@ void GraphEditorUI::main_event_loop() {
     if (!running) break;
 
     // ── ImGui frame (main window) ──────────────────────────────────────────
+    SDL_GL_MakeCurrent(window, gl_context);
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame();
     ImGui::NewFrame();
@@ -99,6 +101,7 @@ void GraphEditorUI::main_event_loop() {
 
 
 void GraphEditorUI::save_graph(const std::string &path) {
+  // ReSharper disable once CppUseStructuredBinding
   if (const auto result = serializer.save(graph, path)) {
     status_message = ICON_FA_CHECK "  Graph saved to " + path;
     spdlog::info("Graph saved to {}", path);
@@ -462,30 +465,37 @@ void GraphEditorUI::render_context_menu() {
     // Get registry categories
     const auto categories = NodeRegistry::instance().get_nodes_by_category();
 
+    // @todo use just a single array of structs for both order and icons, to avoid parallel arrays and string comparisons
     // View order
-    // @todo use integer constants
-    static constexpr const char *const kCategoryOrder[5] = {
+    static constexpr const char *const kCategoryOrder[] = {
       "Visual", "Effects", "Math", "Temporal", "Generators"
     };
 
-    // Category icons
-    // @todo dont use a lambda for this trivial task
-    auto category_icon = [](const std::string &cat) -> const char * {
-      if (cat == "Visual") return ICON_FA_PAINTBRUSH "  ";
-      if (cat == "Effects") return ICON_FA_WAND_MAGIC_SPARKLES "  ";
-      if (cat == "Math") return ICON_FA_CALCULATOR "  ";
-      if (cat == "Temporal") return ICON_FA_CLOCK "  ";
-      if (cat == "Generators") return ICON_FA_BOLT "  ";
-      return ICON_FA_CIRCLE_NODES "  ";
+    static constexpr const char *const kCategoryIcons[] = {
+      ICON_FA_PAINTBRUSH "  ",
+      ICON_FA_WAND_MAGIC_SPARKLES "  ",
+      ICON_FA_CALCULATOR "  ",
+      ICON_FA_CLOCK "  ",
+      ICON_FA_BOLT "  ",
     };
+
+    // Category icons
 
     // Show categories in the predefined order (and additional ones, if any, afterward)
     auto render_category = [&](const std::string &category) {
       const auto it = categories.find(category);
       if (it == categories.end()) return;
 
+      auto cat_icon = ICON_FA_CIRCLE_NODES "  ";
+      for (int i = 0; i < std::size(kCategoryOrder); ++i) {
+        if (kCategoryOrder[i] == category) {
+          cat_icon = kCategoryIcons[i];
+          break;
+        }
+      }
+
       const std::string label =
-          std::string(category_icon(category)) + category;
+          std::string(cat_icon) + category;
 
       if (!ImGui::BeginMenu(label.c_str())) return;
 

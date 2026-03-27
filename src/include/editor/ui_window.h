@@ -6,6 +6,12 @@
 #include "imgui.h"
 #include "SDL.h"
 
+/**
+ * @brief Base class for an SDL window with an ImGui UI.
+ *
+ * Subclass and implement render_ui() to create a custom UI. The main event loop
+ * and SDL/ImGui initialization are handled by this base class.
+ */
 class UIWindow {
 public:
   virtual ~UIWindow() = default;
