@@ -94,6 +94,7 @@ inline constexpr std::array<std::string_view,
   "Pixelate",
   "SDFShape",
   "Transform",
+  "Vintage CRT",
 
   // Sink
   "Output",

@@ -2,6 +2,7 @@
 #include "engine/nodes/color_correction_node.h"
 #include "engine/nodes/displace_node.h"
 #include "engine/nodes/effect_nodes.h"
+#include "engine/nodes/vintage_crt_node.h"
 
 namespace node_registration {
   void register_fx_nodes() {
@@ -35,6 +36,12 @@ namespace node_registration {
       NodeType::Pixelate,
       "Effects",
       "Mosaic / pixelation effect"
+    );
+
+    registry.register_node<VintageCRTNode>(
+      NodeType::VintageCRT,
+      "Effects",
+      "Vintage TV / CRT effect with scanlines and chromatic aberration"
     );
   }
 } // namespace node_registration
