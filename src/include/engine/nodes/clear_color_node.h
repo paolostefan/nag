@@ -29,7 +29,7 @@ struct ClearColorNode : VisualNode {
     update_from_inputs();
 
     render_target->bind();
-    glClearColor(color.x, color.y, color.z, color.w);
+    glClearColor(color.r(), color.g(), color.b(), color.a());
     glClear(GL_COLOR_BUFFER_BIT);
     RenderTarget::unbind();
   }
@@ -43,8 +43,7 @@ struct ClearColorNode : VisualNode {
   [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
     try {
       // Deserialize base class first
-      auto result = VisualNode::deserialize_params(j);
-      if (!result) {
+      if (auto result = VisualNode::deserialize_params(j); !result) {
         return result;
       }
 
@@ -64,7 +63,7 @@ struct ClearColorNode : VisualNode {
   }
 
   void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    ImVec4 im_color{color.x, color.y, color.z, color.w};
+    static ImVec4 im_color{color.x, color.y, color.z, color.w};
     PropertyWidget::ColorEdit4(
       "Color",
       id,
