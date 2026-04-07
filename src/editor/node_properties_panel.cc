@@ -31,9 +31,9 @@ void NodePropertiesPanel::render(NodeGraph &graph, CommandHistory &history) {
   ImGui::PushID("NodePropertiesPanel");
 
   if (selected_count == 0) {
-    ImGui::TextDisabled("No node selected.");
+    ImGui::TextDisabled("No node selected");
   } else if (selected_count > 1) {
-    ImGui::TextDisabled("Multiple nodes selected.");
+    ImGui::TextDisabled("Multiple nodes selected");
   } else {
     // Exactly one node selected.
     if (Node *node = graph.find_node(selected_id); !node) {
