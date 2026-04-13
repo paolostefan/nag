@@ -14,7 +14,8 @@
 #include "engine/shader_quad_helper.h"
 
 
-GraphEditorUI::GraphEditorUI() : UIWindow("Graph Editor", 1024, 768) {
+GraphEditorUI::GraphEditorUI(
+  std::string title, const int width, const int height) : UIWindow(std::move(title), width, height) {
   // Init graphics helpers
   ShaderQuadHelper::instance().initialize();
 
@@ -22,7 +23,7 @@ GraphEditorUI::GraphEditorUI() : UIWindow("Graph Editor", 1024, 768) {
   ImNodes::CreateContext();
   editor_context = ImNodes::EditorContextCreate();
 
-  // Configure ImNodes from example code
+  // Configure ImNodes
   ImNodes::PushAttributeFlag(ImNodesAttributeFlags_EnableLinkDetachWithDragClick);
 
   ImNodesIO &io = ImNodes::GetIO();
@@ -62,7 +63,9 @@ void GraphEditorUI::main_event_loop() {
       }
     }
 
-    if (!running) break;
+    if (!running) {
+      break;
+    }
 
     // ── ImGui frame (main window) ──────────────────────────────────────────
     SDL_GL_MakeCurrent(window, gl_context);
@@ -158,14 +161,16 @@ void GraphEditorUI::delete_selected_links() {
 // render_ui
 // ============================================================================
 
-void GraphEditorUI::render_ui() {
-  if (ImGui::Begin("##NodeEditor", nullptr, ImGuiWindowFlags_MenuBar
-                                            | ImGuiWindowFlags_NoDecoration
-                                            | ImGuiWindowFlags_NoCollapse
-                                            | ImGuiWindowFlags_NoResize
-                                            | ImGuiWindowFlags_NoMove
-                                            | ImGuiWindowFlags_NoTitleBar)) {
-    render_menu_bar();
+void GraphEditorUI::render_node_editor(const bool with_menu) {
+  if (ImGui::Begin("Graph##GraphEditorWin", nullptr,
+                   ImGuiWindowFlags_MenuBar
+                   | ImGuiWindowFlags_NoDecoration
+                   | ImGuiWindowFlags_NoCollapse
+                   | ImGuiWindowFlags_NoResize
+                   | ImGuiWindowFlags_NoMove)) {
+    if (with_menu) {
+      render_menu_bar();
+    }
 
     ImNodes::EditorContextSet(editor_context);
     ImNodes::BeginNodeEditor();
@@ -311,6 +316,10 @@ void GraphEditorUI::render_ui() {
     }
   }
   ImGui::End(); // Node editor
+}
+
+void GraphEditorUI::render_ui() {
+  render_node_editor(true);
 
   if (ImGui::Begin("Node properties")) {
     node_properties_panel_.render(graph, command_history);

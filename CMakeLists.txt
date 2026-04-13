@@ -221,6 +221,8 @@ add_library(nag_editor_lib
     src/editor/graph_editor_ui.cc
     src/editor/node_properties_panel.cc
     src/editor/preview_window.cc
+    src/editor/scene.cc
+    src/editor/scene_library.cc
     src/editor/toast_manager.cc
     src/editor/ui_window.cc
     src/editor/graph_editor.cc
@@ -246,6 +248,13 @@ add_executable(editor
     src/include/editor/scrolling_buffer.h
 )
 target_link_libraries(editor PRIVATE nag_editor_lib)
+
+# Scene Editor
+add_executable(scene_editor
+    src/editor/scene_editor_main.cc
+    src/editor/scene_editor_ui.cc
+)
+target_link_libraries(scene_editor PRIVATE nag_editor_lib)
 
 # Proofs of concept
 add_subdirectory(src/poc)

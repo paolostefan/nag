@@ -23,11 +23,7 @@ int UIWindow::run() {
 
 void UIWindow::main_event_loop() {
   bool running = true;
-
   SDL_Event event;
-
-  // style_purple(ImGui::GetStyle());
-  // style_win11dark(ImGui::GetStyle());
 
   // ReSharper disable once CppDFAConstantConditions
   while (running) {
@@ -53,26 +49,25 @@ void UIWindow::main_event_loop() {
     ImGui::NewFrame();
 
     // Dockspace
-    const ImGuiID dockspace_id = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(),
-                                                              ImGuiDockNodeFlags_PassthruCentralNode);
-
+    const ImGuiID dockspace_id = ImGui::DockSpaceOverViewport(
+      0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
     ImGui::SetNextWindowDockID(dockspace_id, ImGuiCond_FirstUseEver);
 
     render_ui();
 
     // Render UI
     ImGui::Render();
-    glViewport(0, 0, static_cast<int>(io->DisplaySize.x), static_cast<int>(io->DisplaySize.y));
+    glViewport(0, 0,
+               static_cast<int>(io->DisplaySize.x),
+               static_cast<int>(io->DisplaySize.y));
     glClearColor(.1f, .1f, .1f, 1.f);
     glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
     SDL_GL_SwapWindow(window);
   }
 }
 
 bool UIWindow::initialize() {
-
   // SDL must be initialized before creating the OpenGL context, which is required for GLEW initialization.
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
     spdlog::critical("SDL_Init failed: {}", SDL_GetError());

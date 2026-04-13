@@ -22,7 +22,7 @@
  */
 class GraphEditorUI : public UIWindow, public GraphEditor {
 public:
-  GraphEditorUI();
+  explicit GraphEditorUI(std::string title = "Graph Editor", int width = 1024, int height = 768);
 
   ~GraphEditorUI() override = default;
 
@@ -31,19 +31,24 @@ protected:
 
   void render_ui() override;
 
-private:
   // ── Rendering ─────────────────────────────────────────────────────────────
 
   /**
    * @brief Renders the menu bar with File, Edit, and View menus.
    */
-  void render_menu_bar();
+  virtual void render_menu_bar();
 
   /**
    * @brief Renders context menus (add node, delete selection).
    */
-  void render_context_menu();
+  virtual void render_context_menu();
 
+  /**
+   * @brief Renders the main node editor area using ImNodes.
+   */
+  void render_node_editor(bool with_menu);
+
+private:
   /**
    * @brief Renders a visual preview of a visual node in the editor.
    *
@@ -80,6 +85,7 @@ private:
    * @brief Deletes selected links.
    */
   void delete_selected_links();
+
 
   // ── Graph State ───────────────────────────────────────────────────────────
 
