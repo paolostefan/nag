@@ -102,7 +102,7 @@ struct AddNode : MultiInputNode {
     if (!outputs.empty()) {
       auto *const out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
       if (!out) {
-        throw std::runtime_error("Invalid output pin");
+        return;
       }
 
       float sum = 0.f;
@@ -524,7 +524,7 @@ struct SinNode : Node {
     auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
 
     if (!in || !out) {
-      throw std::runtime_error("invalid connections");
+      return;
     }
 
     out->update(std::sin(in->value));
