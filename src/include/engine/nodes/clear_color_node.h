@@ -15,6 +15,7 @@
  */
 struct ClearColorNode : VisualNode {
   Color color{0.f, 0.f, 0.f, 1.f};
+  bool enabled{true};
 
   ClearColorNode() {
     type = NodeType::ClearColor;
@@ -22,6 +23,7 @@ struct ClearColorNode : VisualNode {
   }
 
   void render() override {
+    static Color transparent = Color::transparent();
     if (!render_target || !render_target->is_valid()) {
       return;
     }
@@ -29,7 +31,10 @@ struct ClearColorNode : VisualNode {
     update_from_inputs();
 
     render_target->bind();
-    glClearColor(color.r(), color.g(), color.b(), color.a());
+
+    const Color *const clear_color = enabled ? &color : &transparent;
+
+    glClearColor(clear_color->r(), clear_color->g(), clear_color->b(), clear_color->a());
     glClear(GL_COLOR_BUFFER_BIT);
     RenderTarget::unbind();
   }
@@ -70,10 +75,7 @@ struct ClearColorNode : VisualNode {
       im_color,
       [](Node &n, const ImVec4 v) {
         auto &cnode = dynamic_cast<ClearColorNode &>(n);
-        cnode.color.x = v.x;
-        cnode.color.y = v.y;
-        cnode.color.z = v.z;
-        cnode.color.w = v.w;
+        cnode.color = v;
       },
       graph, history
     );
@@ -92,6 +94,15 @@ private:
         }
       }
     }
+
+    if (inputs.size() >= 5) {
+      // Update the 'enabled' field from inputs[4] if connected
+      if (inputs[4].connected) {
+        if (const auto *stream = dynamic_cast<Stream<bool> *>(inputs[4].stream.get())) {
+          enabled = stream->value;
+        }
+      }
+    }
   }
 
 public:
@@ -106,6 +117,8 @@ public:
     node->add_input("g");
     node->add_input("b");
     node->add_input("a");
+    node->add_typed_input<bool>("enabled");
+
     node->add_typed_output<Texture *>("texture");
 
     return node;
