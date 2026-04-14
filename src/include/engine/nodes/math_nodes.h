@@ -305,6 +305,39 @@ struct MaxNode : MultiInputNode {
   }
 };
 
+/**
+ * Compares two input streams and writes the result of "a > b" to the output stream as a boolean.
+ */
+struct CompareNode : MultiInputNode {
+  explicit CompareNode() : MultiInputNode(2) {
+    type = NodeType::Compare;
+    name = "Compare";
+  }
+
+  void evaluate() override {
+    if (inputs.size() < 2 || outputs.empty()) {
+      return;
+    }
+
+    const auto *in_a = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
+    const auto *in_b = dynamic_cast<Stream<float> *>(inputs[1].stream.get());
+    auto *out = dynamic_cast<Stream<bool> *>(outputs[0].stream.get());
+
+    if (!in_a || !in_b || !out) {
+      return;
+    }
+
+    out->update(in_a->value > in_b->value);
+    mark_inputs_consumed();
+  }
+
+  [[nodiscard]] static std::unique_ptr<CompareNode> create() {
+    auto node = std::make_unique<CompareNode>();
+    node->add_typed_output<bool>("a>b");
+    return node;
+  }
+};
+
 // ===========================================================================
 // UNARY OPERATORS (1 input -> 1 output)
 // ===========================================================================

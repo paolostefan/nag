@@ -23,7 +23,7 @@ enum PinDirection:uint8_t {
  *   - Never reorder or remove existing entries; only append new types before Count.
  *   - Count must always be the last entry; it is used as the array size sentinel in
  *     kNodeTypeNames (see engine/node_type_names.h) and enforced by a static_assert.
- *   - When adding a new NodeType, also add the matching string to kNodeTypeNames
+ *   - When adding a new NodeType, also add the matching string to \ref kNodeTypeNames
  *     at the same position; the static_assert will catch any mismatch at compile time.
  */
 enum class NodeType:uint8_t {
@@ -55,6 +55,7 @@ enum class NodeType:uint8_t {
   Divide,
   Modulo,
   Power,
+  Compare,
 
   // N-ary math operators
   Add,
@@ -269,7 +270,7 @@ struct Node {
    * Note that the returned pointer may be invalidated if the node's inputs are modified
    * (e.g. by add_input).
    */
-  Pin *get_input(const std::string &input_name) {
+  constexpr Pin *get_input(const std::string &input_name) noexcept {
     for (auto &pin: inputs) {
       if (pin.name == input_name) {
         return &pin;

@@ -57,6 +57,7 @@ inline constexpr std::array<std::string_view,
   "Divide",
   "Modulo",
   "Power",
+  "Compare",
 
   // N-ary math operators
   "Add",

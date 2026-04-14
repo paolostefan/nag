@@ -3,6 +3,18 @@
 
 namespace node_registration {
   void register_math_nodes() {
+    // AddNode
+    NodeRegistry::instance().register_node<AddNode>(
+      NodeType::Add,
+      "Math",
+      "Adds two or more inputs"
+    );
+    // SubtractNode
+    NodeRegistry::instance().register_node<SubtractNode>(
+      NodeType::Subtract,
+      "Math",
+      "Subtracts two inputs"
+    );
     // MultiplyNode
     NodeRegistry::instance().register_node<MultiplyNode>(
       NodeType::Multiply,
@@ -20,37 +32,37 @@ namespace node_registration {
       "Math",
       "Selects the larger input"
     );
-    NodeRegistry::instance().register_node<MinNode>(
-      NodeType::Min,
-      "Math",
-      "Selects the smaller input"
-    );
-    // AddNode
-    NodeRegistry::instance().register_node<AddNode>(
-      NodeType::Add,
-      "Math",
-      "Adds two or more inputs"
-    );
-    NodeRegistry::instance().register_node<SubtractNode>(
-      NodeType::Subtract,
-      "Math",
-      "Subtracts two inputs"
-    );
+    // ModuloNode
     NodeRegistry::instance().register_node<ModuloNode>(
       NodeType::Modulo,
       "Math",
       "Calculates the modulo of two inputs"
     );
+    // PowerNode
     NodeRegistry::instance().register_node<PowerNode>(
       NodeType::Power,
       "Math",
       "Raises the first input to the power of the second input"
     );
+    // MinNode
+    NodeRegistry::instance().register_node<MinNode>(
+      NodeType::Min,
+      "Math",
+      "Selects the smaller input"
+    );
+    // CompareNode
+    NodeRegistry::instance().register_node<CompareNode>(
+      NodeType::Compare,
+      "Math",
+      "Compares two inputs and outputs true if the first is greater, otherwise false"
+    );
+    // AbsNode
     NodeRegistry::instance().register_node<AbsNode>(
       NodeType::Abs,
       "Math",
       "Calculates the absolute value of the input"
     );
+    // FloorNode
     NodeRegistry::instance().register_node<FloorNode>(
       NodeType::Floor,
       "Math",
