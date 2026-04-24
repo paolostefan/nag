@@ -35,6 +35,8 @@ protected:
 
   void render_menu_bar() override;
 
+  void display_dialogs() override;
+
 private:
   void render_graph_library_panel();
 
@@ -52,12 +54,14 @@ private:
 
   void load_graph_from_library(const std::string &graph_id);
 
+  void render_folder_tree(const std::vector<std::unique_ptr<GraphFolder>> &folders);
+
   std::unique_ptr<Scene> scene_;
   std::unique_ptr<SceneLibrary> scene_library_;
 
   std::string current_scene_path_;
   std::string status_message_;
-  float status_message_time_{0.f};
+  double status_message_time_{0.f};
 
   int selected_segment_{-1};
   int expanded_folders_[64]{};

@@ -31,6 +31,8 @@ protected:
 
   void render_ui() override;
 
+  void print_status_message() const;
+
   // ── Rendering ─────────────────────────────────────────────────────────────
 
   /**
@@ -47,6 +49,8 @@ protected:
    * @brief Renders the main node editor area using ImNodes.
    */
   void render_node_editor(bool with_menu);
+
+  void display_dialogs() override;
 
 private:
   /**
@@ -115,8 +119,8 @@ private:
   float status_message_time{0.f};
 
   static constexpr float kStatusMessageDuration{3.f}; // seconds
-  static constexpr auto kSaveDialogKey{"SaveGraphDlg"};
-  static constexpr auto kLoadDialogKey{"LoadGraphDlg"};
+  static constexpr auto kSaveGraphDialogKey{"SaveGraphDlg"};
+  static constexpr auto kLoadGraphDialogKey{"LoadGraphDlg"};
   static constexpr auto kFileFilter{"JSON files{.json},All files{.*}"};
 
   std::atomic<bool> is_time_flowing{true};

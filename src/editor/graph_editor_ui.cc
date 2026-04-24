@@ -172,6 +172,8 @@ void GraphEditorUI::render_node_editor(const bool with_menu) {
       render_menu_bar();
     }
 
+    display_dialogs();
+
     ImNodes::EditorContextSet(editor_context);
     ImNodes::BeginNodeEditor();
 
@@ -327,9 +329,23 @@ void GraphEditorUI::render_ui() {
   ImGui::End(); // Node properties
 }
 
-// ============================================================================
-// render_menu_bar
-// ============================================================================
+void GraphEditorUI::print_status_message() const {
+  // ── Status Message (fade out after kStatusMessageDuration) ─────────────────
+  const float elapsed = static_cast<float>(ImGui::GetTime()) - status_message_time;
+  if (!status_message.empty() && elapsed < kStatusMessageDuration) {
+    // Alpha: 100% for 2s, then 1s fade out
+    constexpr float fade_start = kStatusMessageDuration - 1.f;
+    const float alpha = elapsed > fade_start
+                          ? 1.f - (elapsed - fade_start)
+                          : 1.f;
+
+    ImGui::SameLine(0.f, 30.f);
+    ImGui::PushStyleColor(ImGuiCol_Text,
+                          ImVec4(0.6f, 1.f, 0.6f, alpha));
+    ImGui::TextUnformatted(status_message.c_str());
+    ImGui::PopStyleColor();
+  }
+}
 
 void GraphEditorUI::render_menu_bar() {
   if (!ImGui::BeginMenuBar()) return;
@@ -342,7 +358,7 @@ void GraphEditorUI::render_menu_bar() {
       cfg.fileName = "graph.json";
       cfg.flags = ImGuiFileDialogFlags_ConfirmOverwrite;
       ImGuiFileDialog::Instance()->OpenDialog(
-        kSaveDialogKey, "Save Graph", kFileFilter, cfg
+        kSaveGraphDialogKey, "Save Graph", kFileFilter, cfg
       );
     }
 
@@ -350,7 +366,7 @@ void GraphEditorUI::render_menu_bar() {
       IGFD::FileDialogConfig cfg;
       cfg.path = ".";
       ImGuiFileDialog::Instance()->OpenDialog(
-        kLoadDialogKey, "Load Graph", kFileFilter, cfg
+        kLoadGraphDialogKey, "Load Graph", kFileFilter, cfg
       );
     }
 
@@ -411,29 +427,17 @@ void GraphEditorUI::render_menu_bar() {
     ImGui::EndMenu();
   }
 
-
-  // ── Status Message (fade out after kStatusMessageDuration) ─────────────────
-  const float elapsed = static_cast<float>(ImGui::GetTime()) - status_message_time;
-  if (!status_message.empty() && elapsed < kStatusMessageDuration) {
-    // Alpha: 100% for 2s, then 1s fade out
-    constexpr float fade_start = kStatusMessageDuration - 1.f;
-    const float alpha = elapsed > fade_start
-                          ? 1.f - (elapsed - fade_start)
-                          : 1.f;
-
-    ImGui::SameLine(0.f, 30.f);
-    ImGui::PushStyleColor(ImGuiCol_Text,
-                          ImVec4(0.6f, 1.f, 0.6f, alpha));
-    ImGui::TextUnformatted(status_message.c_str());
-    ImGui::PopStyleColor();
-  }
+  print_status_message();
 
   ImGui::EndMenuBar();
+}
+
+void GraphEditorUI::display_dialogs() {
 
   // ── File Dialog: Save ──────────────────────────────────────────────────────
-  constexpr ImVec2 dialog_size{600.f, 400.f};
+  constexpr ImVec2 kDialogSize{600.f, 400.f};
   if (ImGuiFileDialog::Instance()->Display(
-    kSaveDialogKey, ImGuiWindowFlags_NoCollapse, dialog_size)) {
+    kSaveGraphDialogKey, ImGuiWindowFlags_NoCollapse, kDialogSize)) {
     if (ImGuiFileDialog::Instance()->IsOk()) {
       save_graph(ImGuiFileDialog::Instance()->GetFilePathName());
     }
@@ -442,7 +446,7 @@ void GraphEditorUI::render_menu_bar() {
 
   // ── File Dialog: Load ──────────────────────────────────────────────────────
   if (ImGuiFileDialog::Instance()->Display(
-    kLoadDialogKey, ImGuiWindowFlags_NoCollapse, dialog_size)) {
+    kLoadGraphDialogKey, ImGuiWindowFlags_NoCollapse, kDialogSize)) {
     if (ImGuiFileDialog::Instance()->IsOk()) {
       const auto path = ImGuiFileDialog::Instance()->GetFilePathName();
       if (auto result = load_graph(path); !result) {

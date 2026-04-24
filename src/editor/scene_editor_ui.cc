@@ -23,13 +23,89 @@ void SceneEditorUI::render_ui() {
   render_graph_library_panel();
   render_timeline();
 
-
   if (!status_message_.empty() && ImGui::GetTime() - status_message_time_ < kStatusMessageDuration) {
     ImGui::Begin("Status");
     ImGui::Text("%s", status_message_.c_str());
     ImGui::End();
   } else {
     status_message_.clear();
+  }
+}
+
+void SceneEditorUI::display_dialogs() {
+
+  GraphEditorUI::display_dialogs();
+
+  constexpr ImVec2 kDialogSize{600.f, 400.f};
+
+  // ── File Dialog: Open scene ──────────────────────────────────────────────
+  if (ImGuiFileDialog::Instance()->Display(
+    kOpenSceneDialogKey, ImGuiWindowFlags_NoCollapse, kDialogSize)) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
+      spdlog::warn("Not implemented yet");
+    }
+    ImGuiFileDialog::Instance()->Close();
+  }
+
+  // ── File Dialog: Save scene ──────────────────────────────────────────────
+  if (ImGuiFileDialog::Instance()->Display(
+    kSaveSceneDialogKey, ImGuiWindowFlags_NoCollapse, kDialogSize)) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
+      current_scene_path_ = ImGuiFileDialog::Instance()->GetFilePathName();
+      save_scene();
+    }
+    ImGuiFileDialog::Instance()->Close();
+  }
+}
+
+void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFolder> > &folders) {
+  for (auto &folder: folders) {
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+    if (const bool has_children = !folder->children.empty(); !has_children && folder->graphs.empty()) {
+      flags |= ImGuiTreeNodeFlags_Leaf;
+    }
+
+    const bool opened = ImGui::TreeNodeEx(folder->id.c_str(), flags, "%s", folder->name.c_str());
+
+    if (ImGui::BeginPopupContextItem()) {
+      if (ImGui::MenuItem("Add Subfolder")) {
+        scene_->add_folder(folder->id, "New Subfolder");
+      }
+      if (ImGui::MenuItem("Add Graph Here")) {
+        scene_->add_graph(folder->id, "New Graph", graph);
+      }
+      if (ImGui::MenuItem("Delete Folder")) {
+        scene_->remove_folder(folder->id);
+        ImGui::EndPopup();
+        if (opened)
+          ImGui::TreePop();
+        continue;
+      }
+      ImGui::EndPopup();
+    }
+
+    if (opened) {
+      for (auto &graph_ref: folder->graphs) {
+        ImGuiTreeNodeFlags graph_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_SpanAvailWidth;
+        if (ImGui::TreeNodeEx(graph_ref.id.c_str(), graph_flags, "%s", graph_ref.name.c_str())) {
+          if (ImGui::IsItemClicked()) {
+            load_graph_from_library(graph_ref.id);
+          }
+          if (ImGui::BeginPopupContextItem()) {
+            if (ImGui::MenuItem("Rename")) {
+            }
+            if (ImGui::MenuItem("Delete")) {
+              scene_->remove_graph(graph_ref.id);
+            }
+            ImGui::EndPopup();
+          }
+          ImGui::TreePop();
+        }
+      }
+
+      render_folder_tree(folder->children);
+      ImGui::TreePop();
+    }
   }
 }
 
@@ -78,7 +154,7 @@ void SceneEditorUI::render_graph_library_panel() {
   }
   ImGui::SameLine();
   if (ImGui::Button("+ Graph")) {
-    GraphFolder *folder = nullptr;
+    const GraphFolder *folder = nullptr;
     if (!scene_->root_folders.empty()) {
       folder = scene_->root_folders[0].get();
     }
@@ -88,58 +164,6 @@ void SceneEditorUI::render_graph_library_panel() {
   }
 
   ImGui::Separator();
-
-  std::function<void(std::vector<std::unique_ptr<GraphFolder> > &)> render_folder_tree;
-  render_folder_tree = [this, &render_folder_tree](std::vector<std::unique_ptr<GraphFolder> > &folders) {
-    for (auto &folder: folders) {
-      ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-      if (const bool has_children = !folder->children.empty(); !has_children && folder->graphs.empty()) {
-        flags |= ImGuiTreeNodeFlags_Leaf;
-      }
-
-      const bool opened = ImGui::TreeNodeEx(folder->id.c_str(), flags, "%s", folder->name.c_str());
-
-      if (ImGui::BeginPopupContextItem()) {
-        if (ImGui::MenuItem("Add Subfolder")) {
-          scene_->add_folder(folder->id, "New Subfolder");
-        }
-        if (ImGui::MenuItem("Add Graph Here")) {
-          scene_->add_graph(folder->id, "New Graph", graph);
-        }
-        if (ImGui::MenuItem("Delete Folder")) {
-          scene_->remove_folder(folder->id);
-          ImGui::EndPopup();
-          if (opened)
-            ImGui::TreePop();
-          continue;
-        }
-        ImGui::EndPopup();
-      }
-
-      if (opened) {
-        for (auto &graph_ref: folder->graphs) {
-          ImGuiTreeNodeFlags graph_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_SpanAvailWidth;
-          if (ImGui::TreeNodeEx(graph_ref.id.c_str(), graph_flags, "%s", graph_ref.name.c_str())) {
-            if (ImGui::IsItemClicked()) {
-              load_graph_from_library(graph_ref.id);
-            }
-            if (ImGui::BeginPopupContextItem()) {
-              if (ImGui::MenuItem("Rename")) {
-              }
-              if (ImGui::MenuItem("Delete")) {
-                scene_->remove_graph(graph_ref.id);
-              }
-              ImGui::EndPopup();
-            }
-            ImGui::TreePop();
-          }
-        }
-
-        render_folder_tree(folder->children);
-        ImGui::TreePop();
-      }
-    }
-  };
 
   render_folder_tree(scene_->root_folders);
 
@@ -181,7 +205,7 @@ void SceneEditorUI::render_timeline() {
   ImGui::End();
 }
 
-void SceneEditorUI::Get(int index, int **start, int **end, int *type, unsigned int *color) {
+void SceneEditorUI::Get(const int index, int **start, int **end, int *type, unsigned int *color) {
   if (index < 0 || index >= static_cast<int>(scene_->timeline.size())) {
     return;
   }
@@ -198,17 +222,17 @@ void SceneEditorUI::Get(int index, int **start, int **end, int *type, unsigned i
 }
 
 void SceneEditorUI::Add(int type) {
-  TimelineSegment segment(0, 100, "");
+  const TimelineSegment segment(0, 100, "");
   scene_->add_timeline_segment(segment);
 }
 
-void SceneEditorUI::Del(int index) {
+void SceneEditorUI::Del(const int index) {
   if (index >= 0 && index < static_cast<int>(scene_->timeline.size())) {
     scene_->remove_timeline_segment(static_cast<size_t>(index));
   }
 }
 
-void SceneEditorUI::Duplicate(int index) {
+void SceneEditorUI::Duplicate(const int index) {
   if (index >= 0 && index < static_cast<int>(scene_->timeline.size())) {
     const TimelineSegment &original = scene_->timeline[static_cast<size_t>(index)];
     TimelineSegment copy = original;
@@ -240,10 +264,10 @@ void SceneEditorUI::save_scene() {
     return;
   }
 
-  if (scene_library_->save_scene(*scene_, current_scene_path_)) {
+  if (SceneLibrary::save_scene(*scene_, current_scene_path_)) {
     scene_->pristine = true;
     status_message_ = "Scene saved";
-    status_message_time_ = ImGui::GetTime();
+    status_message_time_ = static_cast<float>(ImGui::GetTime());
   }
 }
 
@@ -258,12 +282,13 @@ void SceneEditorUI::save_current_graph() {
     scene_->add_folder(std::nullopt, "Default");
   }
 
-  auto &folder = scene_->root_folders[0];
-  auto graph_ref = scene_->add_graph(folder->id, "Graph " + std::to_string(folder->graphs.size()), graph);
+  const auto &folder = scene_->root_folders[0];
 
-  if (graph_ref && scene_library_->save_graph(graph, *graph_ref)) {
+  if (const auto graph_ref =
+        scene_->add_graph(folder->id, "Graph " + std::to_string(folder->graphs.size()), graph);
+    graph_ref && scene_library_->save_graph(graph, *graph_ref)) {
     status_message_ = "Graph saved: " + graph_ref->name;
-    status_message_time_ = ImGui::GetTime();
+    status_message_time_ = static_cast<float>(ImGui::GetTime());
   }
 }
 
@@ -274,11 +299,11 @@ void SceneEditorUI::load_graph_from_library(const std::string &graph_id) {
     return;
   }
 
-  auto loaded_graph = scene_library_->load_graph(*graph_ref);
+  auto loaded_graph = SceneLibrary::load_graph(*graph_ref);
   if (loaded_graph) {
     graph = std::move(*loaded_graph);
     node_pos_refresh = true;
     status_message_ = "Loaded: " + graph_ref->name;
-    status_message_time_ = ImGui::GetTime();
+    status_message_time_ = static_cast<float>(ImGui::GetTime());
   }
 }

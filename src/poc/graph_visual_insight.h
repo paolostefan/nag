@@ -93,8 +93,8 @@ private:
   float status_message_time{0.f};
 
   static constexpr float kStatusMessageDuration{3.f}; // seconds
-  static constexpr auto kSaveDialogKey{"SaveGraphDlg"};
-  static constexpr auto kLoadDialogKey{"LoadGraphDlg"};
+  static constexpr auto kSaveGraphDialogKey{"SaveGraphDlg"};
+  static constexpr auto kLoadGraphDialogKey{"LoadGraphDlg"};
   static constexpr auto kFileFilter{"JSON files{.json},All files{.*}"};
 };
 

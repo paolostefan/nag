@@ -290,7 +290,7 @@ void GraphVisualInsight::render_menu_bar() {
       cfg.fileName = "graph.json";
       cfg.flags = ImGuiFileDialogFlags_ConfirmOverwrite;
       ImGuiFileDialog::Instance()->OpenDialog(
-        kSaveDialogKey, "Save Graph", kFileFilter, cfg
+        kSaveGraphDialogKey, "Save Graph", kFileFilter, cfg
       );
     }
 
@@ -298,7 +298,7 @@ void GraphVisualInsight::render_menu_bar() {
       IGFD::FileDialogConfig cfg;
       cfg.path = ".";
       ImGuiFileDialog::Instance()->OpenDialog(
-        kLoadDialogKey, "Load Graph", kFileFilter, cfg
+        kLoadGraphDialogKey, "Load Graph", kFileFilter, cfg
       );
     }
 
@@ -382,7 +382,7 @@ void GraphVisualInsight::render_menu_bar() {
   // ── File Dialog: Save ──────────────────────────────────────────────────────
   constexpr ImVec2 dialog_size{600.f, 400.f};
   if (ImGuiFileDialog::Instance()->Display(
-    kSaveDialogKey, ImGuiWindowFlags_NoCollapse, dialog_size)) {
+    kSaveGraphDialogKey, ImGuiWindowFlags_NoCollapse, dialog_size)) {
     if (ImGuiFileDialog::Instance()->IsOk()) {
       save_graph(ImGuiFileDialog::Instance()->GetFilePathName());
     }
@@ -391,7 +391,7 @@ void GraphVisualInsight::render_menu_bar() {
 
   // ── File Dialog: Load ──────────────────────────────────────────────────────
   if (ImGuiFileDialog::Instance()->Display(
-    kLoadDialogKey, ImGuiWindowFlags_NoCollapse, dialog_size)) {
+    kLoadGraphDialogKey, ImGuiWindowFlags_NoCollapse, dialog_size)) {
     if (ImGuiFileDialog::Instance()->IsOk()) {
       const auto path = ImGuiFileDialog::Instance()->GetFilePathName();
       if (auto result = load_graph(path); !result) {
