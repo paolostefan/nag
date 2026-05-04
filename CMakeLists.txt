@@ -39,16 +39,24 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(imgui)
 
+## ImGui requirement
+
+find_package(Freetype REQUIRED)
+
 add_library(imgui STATIC
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_demo.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
     ${imgui_SOURCE_DIR}/imgui_tables.cpp
     ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/misc/freetype/imgui_freetype.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
 )
-target_link_libraries(imgui PUBLIC SDL2::SDL2 OpenGL::GL)
+
+set(IMGUI_ENABLE_FREETYPE ON)
+
+target_link_libraries(imgui PUBLIC SDL2::SDL2 OpenGL::GL Freetype::Freetype)
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR}/)
 
 add_library(imgui::imgui ALIAS imgui)

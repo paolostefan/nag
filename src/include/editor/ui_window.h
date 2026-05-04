@@ -34,6 +34,8 @@ protected:
   /// @brief Render any of the active ImGuiFileDialog instances.
   virtual void display_dialogs() {}
 
+  static constexpr float kUIFontSize = 12.f;
+
   SDL_Window *window{nullptr};
   SDL_GLContext gl_context{};
 

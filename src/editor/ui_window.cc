@@ -1,13 +1,15 @@
 #include "editor/ui_window.h"
 
-#include "amiga-topaz.h"
-#include "fa-solid-900.h"
-#include "IconsFontAwesome6.h"
-#include "implot.h"
+#include "misc/freetype/imgui_freetype.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "backends/imgui_impl_sdl2.h"
+#include "IconsFontAwesome6.h"
+#include "implot.h"
 #include "GL/glew.h"
 #include "spdlog/spdlog.h"
+
+#include "font/fa-solid-900.h"
+#include "font/figtree.h"
 
 UIWindow::UIWindow(std::string title, const int width, const int height)
   : title(std::move(title)), start_width(width), start_height(height) {
@@ -115,24 +117,28 @@ bool UIWindow::initialize() {
   io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   // Load default font
+  ImFontConfig default_config;
+  // These are for pixel-perfect fonts like Hooge
+  // default_config.OversampleH = default_config.OversampleV = 1;
+  // default_config.PixelSnapH = default_config.PixelSnapV = true;
+  default_config.FontDataOwnedByAtlas = false; // We don't want ImGui to free the font data
+  default_config.FontLoaderFlags = ImGuiFreeTypeBuilderFlags_ForceAutoHint | ImGuiFreeTypeBuilderFlags_LoadColor;
 
-  //io->Fonts->AddFontDefault();
-
-  io->Fonts->AddFontFromMemoryTTF(amiga_topaz_otf, amiga_topaz_otf_len, 13.f);
-
+  io->Fonts->AddFontFromMemoryTTF(figtree_ttf, figtree_ttf_len, kUIFontSize, &default_config);
 
   // Load Font Awesome 6
-  static constexpr ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
   ImFontConfig icons_config;
   icons_config.MergeMode = true;
   icons_config.PixelSnapH = true;
-  icons_config.GlyphMaxAdvanceX = 13.f; // Use if you want to make the icon monospaced
+  icons_config.GlyphMaxAdvanceX = kUIFontSize; // Use if you want to make the icon monospaced
   icons_config.FontDataOwnedByAtlas = false; // We don't want ImGui to free the font data
+
+  static constexpr ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
 
   io->Fonts->AddFontFromMemoryTTF(
     font_awesome_6_free_solid_900_otf,
     font_awesome_6_free_solid_900_otf_len,
-    13.f,
+    kUIFontSize,
     &icons_config,
     icons_ranges);
   // End of font loading stuff
@@ -151,6 +157,8 @@ void UIWindow::shutdown() {
   ImGui_ImplSDL2_Shutdown();
 
   ImPlot::DestroyContext();
+
+  ImGui::DestroyContext();
 
   SDL_GL_DeleteContext(gl_context);
   SDL_DestroyWindow(window);

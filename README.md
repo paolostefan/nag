@@ -49,6 +49,7 @@ The following packages are required under APT-based GNU/Linux distros (like Ubun
 
 - libasound2-dev
 - libglew-dev
+- libfreetype-dev
 - libmpg123-dev
 - libopenmpt-dev
 - pkg-config
