@@ -1,5 +1,6 @@
 #include "editor/ui_window.h"
 
+#include "amiga-topaz.h"
 #include "fa-solid-900.h"
 #include "IconsFontAwesome6.h"
 #include "implot.h"
@@ -113,8 +114,14 @@ bool UIWindow::initialize() {
   io = &ImGui::GetIO();
   io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
+  // Load default font
+
+  //io->Fonts->AddFontDefault();
+
+  io->Fonts->AddFontFromMemoryTTF(amiga_topaz_otf, amiga_topaz_otf_len, 13.f);
+
+
   // Load Font Awesome 6
-  io->Fonts->AddFontDefault();
   static constexpr ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
   ImFontConfig icons_config;
   icons_config.MergeMode = true;
@@ -144,7 +151,6 @@ void UIWindow::shutdown() {
   ImGui_ImplSDL2_Shutdown();
 
   ImPlot::DestroyContext();
-  ImGui::DestroyContext();
 
   SDL_GL_DeleteContext(gl_context);
   SDL_DestroyWindow(window);

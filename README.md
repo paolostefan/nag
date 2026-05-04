@@ -66,11 +66,18 @@ These dependencies are automatically downloaded using the [FetchContent](https:/
 
 ## The project name
 
-Nag Champa Agarbathi (नागचम्पा अगरबत्ती) literally means "the incense of the sacred Champaca tree" or "the incense of the Champaca flower."
+Nag Champa Agarbathi (नागचम्पा अगरबत्ती) literally means "the incense of the sacred Champaca tree" or "the incense of the
+Champaca flower."
 
-They're my favorite incense sticks, with "Nag" meaning "snake" and "Champa" referring to the fragrant Champaka flower (the plumeria or Champaca tree) found in India and Nepal.
-"Agarbathi" is the Hindi word for the incense sticks themselves, which are made from a blend of Champaka flower, sandalwood, and other natural resins.
-This Indian incense is known for its unique, rich, earthy, and slightly sweet aroma and is used for meditation, relaxation, and to create a calming, spiritually uplifting atmosphere.
+They're my favorite incense sticks, with "Nag" meaning "snake" and "Champa" referring to the fragrant Champaka flower
+(the plumeria or Champaca tree) found in India and Nepal.
+"Agarbathi" is the Hindi word for the incense sticks themselves, which are made from a blend of Champaka flower,
+sandalwood, and other natural resins.
 
-I had this in mind when I chose the name of this project, and I thought it was a good name.
-Right after writing this, I learned the English word "nag" has a completely different meaning, and I loved this pun even more.
+I had this in mind when I chose the name of this project, and I thought it was a good name. But, right after writing 
+the above, I learned that the English word "nag" has a completely different meaning, and I loved this pun even more.
+
+## Credits
+
+The FontStruction “Amiga Topaz” (https://fontstruct.com/fontstructions/show/675155) by Patrick H. Lauke is licensed under a Creative Commons Attribution license (http://creativecommons.org/licenses/by/3.0/).
+[ancestry]
