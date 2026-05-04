@@ -72,6 +72,17 @@ private:
   static constexpr auto kOpenSceneDialogKey{"OpenSceneDialogKey"};
 
   ImNodesEditorContext *editor_context_{nullptr};
+
+  std::atomic<bool> is_renaming_{false};
+  enum {
+    RenameTargetNone,
+    RenameTargetScene,
+    RenameTargetFolder,
+    RenameTargetGraph
+  } rename_target_{RenameTargetNone};
+
+  const char *rename_target_id_{nullptr};
+
 };
 
 #endif // NAG_EDITOR_SCENE_EDITOR_UI_H

@@ -1,6 +1,8 @@
 #include "editor/scene_editor_ui.h"
 
 #include <functional>
+#include <IconsFontAwesome6.h>
+#include <imgui_internal.h>
 
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
@@ -33,7 +35,6 @@ void SceneEditorUI::render_ui() {
 }
 
 void SceneEditorUI::display_dialogs() {
-
   GraphEditorUI::display_dialogs();
 
   constexpr ImVec2 kDialogSize{600.f, 400.f};
@@ -68,13 +69,22 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
     const bool opened = ImGui::TreeNodeEx(folder->id.c_str(), flags, "%s", folder->name.c_str());
 
     if (ImGui::BeginPopupContextItem()) {
-      if (ImGui::MenuItem("Add Subfolder")) {
-        scene_->add_folder(folder->id, "New Subfolder");
+      if (ImGui::MenuItem(ICON_FA_FOLDER_PLUS "  Add Subfolder")) {
+        [[maybe_unused]] auto *subfolder = scene_->add_folder(folder->id, "New Subfolder");
       }
-      if (ImGui::MenuItem("Add Graph Here")) {
-        scene_->add_graph(folder->id, "New Graph", graph);
+      if (ImGui::MenuItem(ICON_FA_DIAGRAM_PROJECT "  Add Graph Here")) {
+        [[maybe_unused]] auto *subgraph = scene_->add_graph(folder->id, "New Graph", graph);
       }
-      if (ImGui::MenuItem("Delete Folder")) {
+
+      if (ImGui::MenuItem(ICON_FA_I_CURSOR "  Rename")) {
+        rename_target_ = RenameTargetFolder;
+        rename_target_id_ = folder->id.c_str();
+        is_renaming_.store(true, std::memory_order_release);
+      }
+
+      ImGui::Separator();
+
+      if (ImGui::MenuItem(ICON_FA_TRASH "  Delete Folder")) {
         scene_->remove_folder(folder->id);
         ImGui::EndPopup();
         if (opened)
@@ -86,15 +96,22 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
 
     if (opened) {
       for (auto &graph_ref: folder->graphs) {
-        ImGuiTreeNodeFlags graph_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_SpanAvailWidth;
-        if (ImGui::TreeNodeEx(graph_ref.id.c_str(), graph_flags, "%s", graph_ref.name.c_str())) {
+        constexpr ImGuiTreeNodeFlags kGraphFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_SpanAvailWidth;
+        if (ImGui::TreeNodeEx(graph_ref.id.c_str(), kGraphFlags, "%s", graph_ref.name.c_str())) {
           if (ImGui::IsItemClicked()) {
             load_graph_from_library(graph_ref.id);
           }
+
           if (ImGui::BeginPopupContextItem()) {
-            if (ImGui::MenuItem("Rename")) {
+            if (ImGui::MenuItem(ICON_FA_I_CURSOR "  Rename")) {
+              rename_target_ = RenameTargetGraph;
+              rename_target_id_ = graph_ref.id.c_str();
+              is_renaming_.store(true, std::memory_order_release);
             }
-            if (ImGui::MenuItem("Delete")) {
+
+            ImGui::Separator();
+
+            if (ImGui::MenuItem(ICON_FA_TRASH "  Delete")) {
               scene_->remove_graph(graph_ref.id);
             }
             ImGui::EndPopup();
@@ -105,8 +122,8 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
 
       render_folder_tree(folder->children);
       ImGui::TreePop();
-    }
-  }
+    } // if opened
+  } // for each folder
 }
 
 void SceneEditorUI::render_menu_bar() {
@@ -149,11 +166,13 @@ void SceneEditorUI::render_menu_bar() {
 void SceneEditorUI::render_graph_library_panel() {
   ImGui::Begin("Graph Library");
 
-  if (ImGui::Button("+ Folder")) {
+  if (ImGui::Button(ICON_FA_FOLDER_PLUS " Folder")) {
     [[maybe_unused]] auto *folder = scene_->add_folder(std::nullopt, "New Folder");
   }
+
   ImGui::SameLine();
-  if (ImGui::Button("+ Graph")) {
+
+  if (ImGui::Button(ICON_FA_DIAGRAM_PROJECT " Graph")) {
     const GraphFolder *folder = nullptr;
     if (!scene_->root_folders.empty()) {
       folder = scene_->root_folders[0].get();
@@ -168,6 +187,68 @@ void SceneEditorUI::render_graph_library_panel() {
   render_folder_tree(scene_->root_folders);
 
   ImGui::End();
+
+  if (is_renaming_.load(std::memory_order_acquire)) {
+    ImGui::OpenPopup("RenamePopup");
+  }
+
+  if (ImGui::BeginPopup("RenamePopup")) {
+
+    static char name_buffer[256];
+
+    // Focus the text input when the popup opens
+    if (ImGui::IsWindowAppearing()) {
+      ImGui::SetKeyboardFocusHere();
+      // Pre-fill the buffer with the current name
+      switch (rename_target_) {
+        case RenameTargetScene:
+          strncpy(name_buffer, scene_->name.c_str(), sizeof(name_buffer));
+          break;
+        case RenameTargetFolder: {
+          if (const auto *folder = scene_->find_folder(rename_target_id_)) {
+            strncpy(name_buffer, folder->name.c_str(), sizeof(name_buffer));
+          }
+          break;
+        }
+        case RenameTargetGraph: {
+          if (const auto *graph = scene_->find_graph(rename_target_id_)) {
+            strncpy(name_buffer, graph->name.c_str(), sizeof(name_buffer));
+          }
+          break;
+        }
+        default:
+          name_buffer[0] = '\0';
+          break;
+      }
+    }
+
+    ImGui::InputText("##renameNewName", name_buffer, sizeof(name_buffer));
+
+    ImGui::SameLine();
+
+    ImGui::BeginDisabled(strlen(name_buffer) == 0);
+    if (ImGui::Button("OK")) {
+      const std::string new_name(name_buffer);
+      switch (rename_target_) {
+        case RenameTargetScene:
+          scene_->name = new_name;
+          break;
+        case RenameTargetFolder:
+          scene_->rename_folder(rename_target_id_, new_name);
+          break;
+        case RenameTargetGraph:
+          scene_->rename_graph(rename_target_id_, new_name);
+          break;
+        default:
+          break;
+      }
+      ImGui::CloseCurrentPopup();
+      is_renaming_.store(false, std::memory_order_release);
+    }
+    ImGui::EndDisabled();
+
+    ImGui::EndPopup();
+  }
 }
 
 void SceneEditorUI::render_timeline() {

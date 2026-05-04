@@ -53,6 +53,7 @@ struct TimelineSegment {
 
 class Scene {
 public:
+  // Format version for compatibility checks during loading
   static constexpr auto kFormatVersion = "1.0";
 
   std::string name{"Untitled Scene"};
@@ -78,8 +79,14 @@ public:
 
   [[nodiscard]] const GraphReference *find_graph(const std::string &graph_id) const;
 
+  // TODO: stop using std::optional, use C-style empty string
   [[nodiscard]] GraphFolder *add_folder(const std::optional<std::string> &parent_id,
                                         const std::string &name);
+
+  /// @brief Rename a folder in the library. Does not affect the graph file or timeline segments.
+  /// @return true if the folder was found and renamed, false otherwise.
+  bool rename_folder(const std::string &folder_id, const std::string &new_name);
+
 
   bool remove_folder(const std::string &folder_id);
 
@@ -91,6 +98,8 @@ public:
 
   bool move_graph(const std::string &graph_id, const std::string &target_folder_id);
 
+  /// @brief Rename a graph in the library. Does not affect the graph file or timeline segments.
+  /// @return true if the graph was found and renamed, false otherwise.
   bool rename_graph(const std::string &graph_id, const std::string &new_name);
 
   void add_timeline_segment(const TimelineSegment &segment);

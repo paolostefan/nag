@@ -78,6 +78,19 @@ GraphFolder *Scene::add_folder(const std::optional<std::string> &parent_id, cons
   return parent->children.back().get();
 }
 
+bool Scene::rename_folder(const std::string &folder_id, const std::string &new_name) {
+
+  GraphFolder *const folder = find_folder(folder_id);
+  if (!folder) {
+    spdlog::error("Folder not found: {}", folder_id);
+    return false;
+  }
+
+  folder->name = new_name;
+  pristine = false;
+  return true;
+}
+
 bool Scene::remove_folder(const std::string &folder_id) {
   std::function<bool(std::vector<std::unique_ptr<GraphFolder>> &, const std::string &)> remove_from_vector;
   remove_from_vector = [&remove_from_vector](std::vector<std::unique_ptr<GraphFolder>> &folders,

@@ -59,7 +59,7 @@ void ToastManager::render()
     const ImVec4 border_color = get_color_for_type(toast.type, toast.fade_progress);
 
     // Apply alpha to text color
-    const ImVec4 text_color = ImVec4(1.f, 1.f, 1.f, toast.fade_progress);
+    const auto text_color = ImVec4(1.f, 1.f, 1.f, toast.fade_progress);
 
     // Push styles
     ImGui::PushStyleColor(ImGuiCol_WindowBg, bg_color);
@@ -109,28 +109,28 @@ void ToastManager::render()
 
 void ToastManager::clear()
 {
-  std::lock_guard<std::mutex> lock(toasts_mutex);
+  std::lock_guard lock(toasts_mutex);
   toasts.clear();
 }
 
-ImVec4 ToastManager::get_color_for_type(ToastType type, float alpha) const
+ImVec4 ToastManager::get_color_for_type(const ToastType type, const float alpha)
 {
   switch (type)
   {
   case ToastType::INFO:
-    return ImVec4(0.2f, 0.6f, 0.9f, alpha); // Blue
+    return {0.2f, 0.6f, 0.9f, alpha}; // Blue
   case ToastType::SUCCESS:
-    return ImVec4(0.2f, 0.8f, 0.4f, alpha); // Green
+    return {0.2f, 0.8f, 0.4f, alpha}; // Green
   case ToastType::WARNING:
-    return ImVec4(0.9f, 0.7f, 0.2f, alpha); // Orange
+    return {0.9f, 0.7f, 0.2f, alpha}; // Orange
   case ToastType::ERROR:
-    return ImVec4(0.9f, 0.3f, 0.3f, alpha); // Red
+    return {0.9f, 0.3f, 0.3f, alpha}; // Red
   default:
-    return ImVec4(0.5f, 0.5f, 0.5f, alpha); // Gray
+    return {0.5f, 0.5f, 0.5f, alpha}; // Gray
   }
 }
 
-const char *ToastManager::get_icon_for_type(ToastType type) const
+const char *ToastManager::get_icon_for_type(const ToastType type)
 {
   switch (type)
   {

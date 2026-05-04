@@ -130,7 +130,8 @@ bool UIWindow::initialize() {
   ImFontConfig icons_config;
   icons_config.MergeMode = true;
   icons_config.PixelSnapH = true;
-  icons_config.GlyphMaxAdvanceX = kUIFontSize; // Use if you want to make the icon monospaced
+  icons_config.GlyphMinAdvanceX = kUIFontSize; // make icons monospaced to align properly in menus, toolbars, etc.
+  icons_config.GlyphMaxAdvanceX = kUIFontSize;
   icons_config.FontDataOwnedByAtlas = false; // We don't want ImGui to free the font data
 
   static constexpr ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
