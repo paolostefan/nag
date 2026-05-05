@@ -12,11 +12,9 @@
 #include "engine/nodes/generator_nodes.h"
 
 SceneEditorUI::SceneEditorUI() : GraphEditorUI("Scene Editor", 1280, 800) {
-  scene_ = std::make_unique<Scene>("New Scene");
   scene_library_ = std::make_unique<SceneLibrary>("./scenes");
 
-  scene_->add_folder(std::nullopt, "Effects");
-  scene_->add_folder(std::nullopt, "Generators");
+  new_scene();
 }
 
 void SceneEditorUI::render_ui() {
@@ -25,6 +23,7 @@ void SceneEditorUI::render_ui() {
   render_graph_library_panel();
   render_timeline();
 
+  // todo: the status bar should have its own dedicated area instead of being a floating window
   if (!status_message_.empty() && ImGui::GetTime() - status_message_time_ < kStatusMessageDuration) {
     ImGui::Begin("Status");
     ImGui::Text("%s", status_message_.c_str());
@@ -43,7 +42,22 @@ void SceneEditorUI::display_dialogs() {
   if (ImGuiFileDialog::Instance()->Display(
     kOpenSceneDialogKey, ImGuiWindowFlags_NoCollapse, kDialogSize)) {
     if (ImGuiFileDialog::Instance()->IsOk()) {
-      spdlog::warn("Not implemented yet");
+      const auto scene_path = ImGuiFileDialog::Instance()->GetFilePathName();
+      scene_ = SceneLibrary::load_scene(scene_path);
+      if (scene_) {
+        current_scene_path_ = scene_path;
+        reset_graph();
+        status_message_ = "Scene loaded: " + scene_->name;
+        status_message_time_ = static_cast<float>(ImGui::GetTime());
+      }
+      else {
+        spdlog::error("Failed to load scene: {}", scene_path);
+        status_message_ = "Failed to load scene";
+        status_message_time_ = static_cast<float>(ImGui::GetTime());
+
+        // Resort to a new scene to avoid leaving the editor in a broken state
+        new_scene();
+      }
     }
     ImGuiFileDialog::Instance()->Close();
   }
@@ -132,28 +146,30 @@ void SceneEditorUI::render_menu_bar() {
       if (ImGui::MenuItem("New Scene", "Ctrl+N")) {
         new_scene();
       }
-      if (ImGui::MenuItem("Open Scene...", "Ctrl+O")) {
+      if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "  Open Scene...", "Ctrl+O")) {
         open_scene();
       }
       ImGui::Separator();
-      if (ImGui::MenuItem("Save Scene", "Ctrl+S")) {
+      if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK "  Save Scene", "Ctrl+S")) {
         save_scene();
       }
-      if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S")) {
+      if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK "  Save Scene As...", "Ctrl+Shift+S")) {
         save_scene_as();
       }
+
       ImGui::Separator();
-      if (ImGui::MenuItem("Save Current Graph", "Ctrl+G")) {
+
+      if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK "  Save Current Graph", "Ctrl+G")) {
         save_current_graph();
       }
       ImGui::EndMenu();
     }
     if (ImGui::BeginMenu("Edit")) {
-      if (ImGui::MenuItem("Undo", "Ctrl+Z")) {
+      if (ImGui::MenuItem(ICON_FA_ARROW_ROTATE_LEFT "  Undo", "Ctrl+Z")) {
         command_history.undo(graph);
         node_pos_refresh = true;
       }
-      if (ImGui::MenuItem("Redo", "Ctrl+Y")) {
+      if (ImGui::MenuItem(ICON_FA_ARROW_ROTATE_RIGHT "  Redo", "Ctrl+Y")) {
         command_history.redo(graph);
         node_pos_refresh = true;
       }
@@ -164,27 +180,27 @@ void SceneEditorUI::render_menu_bar() {
 }
 
 void SceneEditorUI::render_graph_library_panel() {
-  ImGui::Begin("Graph Library");
-
-  if (ImGui::Button(ICON_FA_FOLDER_PLUS " Folder")) {
-    [[maybe_unused]] auto *folder = scene_->add_folder(std::nullopt, "New Folder");
-  }
-
-  ImGui::SameLine();
-
-  if (ImGui::Button(ICON_FA_DIAGRAM_PROJECT " Graph")) {
-    const GraphFolder *folder = nullptr;
-    if (!scene_->root_folders.empty()) {
-      folder = scene_->root_folders[0].get();
+  if(ImGui::Begin("Graph Library")) {
+    if (ImGui::Button(ICON_FA_FOLDER_PLUS "  New folder")) {
+      [[maybe_unused]] auto *folder = scene_->add_folder(std::nullopt, "New Folder");
     }
-    if (folder) {
-      [[maybe_unused]] auto *ref = scene_->add_graph(folder->id, "New Graph", graph);
+
+    ImGui::SameLine();
+
+    if (ImGui::Button(ICON_FA_DIAGRAM_PROJECT "  New graph")) {
+      const GraphFolder *folder = nullptr;
+      if (!scene_->root_folders.empty()) {
+        folder = scene_->root_folders[0].get();
+      }
+      if (folder) {
+        [[maybe_unused]] auto *ref = scene_->add_graph(folder->id, "New Graph", graph);
+      }
     }
+
+    ImGui::Separator();
+
+    render_folder_tree(scene_->root_folders);
   }
-
-  ImGui::Separator();
-
-  render_folder_tree(scene_->root_folders);
 
   ImGui::End();
 
@@ -325,8 +341,6 @@ void SceneEditorUI::Duplicate(const int index) {
 
 void SceneEditorUI::new_scene() {
   scene_ = std::make_unique<Scene>("New Scene");
-  scene_->add_folder(std::nullopt, "Effects");
-  scene_->add_folder(std::nullopt, "Generators");
   current_scene_path_.clear();
   reset_graph();
   status_message_ = "New scene created";
@@ -380,8 +394,7 @@ void SceneEditorUI::load_graph_from_library(const std::string &graph_id) {
     return;
   }
 
-  auto loaded_graph = SceneLibrary::load_graph(*graph_ref);
-  if (loaded_graph) {
+  if (const auto loaded_graph = scene_library_->load_graph(*graph_ref)) {
     graph = std::move(*loaded_graph);
     node_pos_refresh = true;
     status_message_ = "Loaded: " + graph_ref->name;

@@ -44,6 +44,8 @@ private:
 
   void new_scene();
 
+  bool load_scene(const std::string &path);
+
   static void open_scene();
 
   void save_scene();
@@ -56,7 +58,10 @@ private:
 
   void render_folder_tree(const std::vector<std::unique_ptr<GraphFolder>> &folders);
 
+
   std::unique_ptr<Scene> scene_;
+
+  /// The scene library manages loading/saving scenes and graphs, and provides a list of available graphs for the library panel
   std::unique_ptr<SceneLibrary> scene_library_;
 
   std::string current_scene_path_;
@@ -73,7 +78,10 @@ private:
 
   ImNodesEditorContext *editor_context_{nullptr};
 
+  /// Used to prevent multiple rename popups from opening simultaneously
   std::atomic<bool> is_renaming_{false};
+
+  /// Tracks what type of item is currently being renamed (scene, folder, or graph)
   enum {
     RenameTargetNone,
     RenameTargetScene,
@@ -81,6 +89,7 @@ private:
     RenameTargetGraph
   } rename_target_{RenameTargetNone};
 
+  /// Stores the ID of the item being renamed (folder ID or graph ID)
   const char *rename_target_id_{nullptr};
 
 };

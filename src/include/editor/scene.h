@@ -81,7 +81,7 @@ public:
 
   // TODO: stop using std::optional, use C-style empty string
   [[nodiscard]] GraphFolder *add_folder(const std::optional<std::string> &parent_id,
-                                        const std::string &name);
+                                        const std::string &folder_name);
 
   /// @brief Rename a folder in the library. Does not affect the graph file or timeline segments.
   /// @return true if the folder was found and renamed, false otherwise.

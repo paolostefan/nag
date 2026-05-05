@@ -70,12 +70,39 @@ bool SceneLibrary::save_graph(const NodeGraph &graph, const GraphReference &refe
   return true;
 }
 
-std::unique_ptr<NodeGraph> SceneLibrary::load_graph(const GraphReference &reference) {
-  return load_graph(reference.id);
-}
+std::unique_ptr<NodeGraph> SceneLibrary::load_graph(const std::string &graph_id) {
+  std::function<std::optional<std::filesystem::path>(const std::filesystem::path &)> find_graph_file;
+  find_graph_file = [&find_graph_file, &graph_id](const std::filesystem::path &dir) -> std::optional<std::filesystem::path> {
+    for (const auto &entry : std::filesystem::directory_iterator(dir)) {
+      if (entry.is_directory()) {
+        if (auto result = find_graph_file(entry.path())) {
+          return result;
+        }
+      } else if (entry.path().filename() == graph_id + ".nag") {
+        return entry.path();
+      }
+    }
+    return std::nullopt;
+  };
 
-std::unique_ptr<NodeGraph> SceneLibrary::load_graph(const std::string & /* graph_id */) {
-  return nullptr;
+  const auto graph_path_opt = find_graph_file(scenes_directory_);
+  if (!graph_path_opt.has_value()) {
+    spdlog::error("Graph file not found for ID: {}", graph_id);
+    return nullptr;
+  }
+
+  const auto &graph_path = *graph_path_opt;
+
+  NodeGraph graph;
+
+  const auto [success, error_message] = serializer_.load(graph, graph_path.string());
+  if (!success) {
+    spdlog::error("Failed to load graph: {}", error_message);
+    return nullptr;
+  }
+
+  spdlog::info("Loaded graph from: {}", graph_path.string());
+  return std::make_unique<NodeGraph>(std::move(graph));
 }
 
 bool SceneLibrary::delete_graph(const GraphReference &reference) const {

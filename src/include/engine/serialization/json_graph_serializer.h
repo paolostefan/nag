@@ -21,6 +21,13 @@ public:
   [[nodiscard]] OperationResult save(const NodeGraph &graph,
                                      const std::string &path) const override;
 
+  /**
+   * @brief Load a graph from a JSON file.
+   *
+   * @param graph Graph to load into (will be cleared before loading)
+   * @param path Path to load from
+   * @return OperationResult indicating success or failure, with error message on failure
+   */
   [[nodiscard]] OperationResult load(NodeGraph &graph,
                                      const std::string &path) const override;
 
