@@ -152,6 +152,30 @@ bool UIWindow::initialize() {
   return true;
 }
 
+void UIWindow::print_status_message() {
+  // ── Status Message (fade out after kStatusMessageDuration) ─────────────────
+
+  if(!status_message.empty()) {
+    if (const float elapsed = static_cast<float>(ImGui::GetTime()) - status_message_time; elapsed < kStatusMessageDuration) {
+      // Alpha: 100% for up to 1s from the end, then 1s fade out
+      constexpr float fade_start = kStatusMessageDuration - 1.f;
+      const float alpha = elapsed > fade_start
+                            ? 1.f - (elapsed - fade_start)
+                            : 1.f;
+
+      ImGui::SameLine(0.f, 30.f);
+      ImGui::PushStyleColor(ImGuiCol_Text,
+                            ImVec4(0.6f, 1.f, 0.6f, alpha));
+      ImGui::TextUnformatted(status_message.c_str());
+      ImGui::PopStyleColor();
+    }
+    else {
+      // Clear message after duration
+      status_message.clear();
+    }
+  }
+}
+
 void UIWindow::shutdown() {
   // Cleanup
   ImGui_ImplOpenGL3_Shutdown();

@@ -1,15 +1,11 @@
 #include "editor/scene_editor_ui.h"
 
-#include <functional>
 #include <IconsFontAwesome6.h>
-#include <imgui_internal.h>
 
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
 #include "imnodes.h"
 #include "spdlog/spdlog.h"
-
-#include "engine/nodes/generator_nodes.h"
 
 SceneEditorUI::SceneEditorUI() : GraphEditorUI("Scene Editor", 1280, 800) {
   scene_library_ = std::make_unique<SceneLibrary>("./scenes");
@@ -22,15 +18,6 @@ void SceneEditorUI::render_ui() {
 
   render_graph_library_panel();
   render_timeline();
-
-  // todo: the status bar should have its own dedicated area instead of being a floating window
-  if (!status_message_.empty() && ImGui::GetTime() - status_message_time_ < kStatusMessageDuration) {
-    ImGui::Begin("Status");
-    ImGui::Text("%s", status_message_.c_str());
-    ImGui::End();
-  } else {
-    status_message_.clear();
-  }
 }
 
 void SceneEditorUI::display_dialogs() {
@@ -47,13 +34,10 @@ void SceneEditorUI::display_dialogs() {
       if (scene_) {
         current_scene_path_ = scene_path;
         reset_graph();
-        status_message_ = "Scene loaded: " + scene_->name;
-        status_message_time_ = static_cast<float>(ImGui::GetTime());
-      }
-      else {
+        set_status_message("Scene loaded: " + scene_->name);
+      } else {
         spdlog::error("Failed to load scene: {}", scene_path);
-        status_message_ = "Failed to load scene";
-        status_message_time_ = static_cast<float>(ImGui::GetTime());
+        set_status_message( "Failed to load scene");
 
         // Resort to a new scene to avoid leaving the editor in a broken state
         new_scene();
@@ -164,6 +148,7 @@ void SceneEditorUI::render_menu_bar() {
       }
       ImGui::EndMenu();
     }
+
     if (ImGui::BeginMenu("Edit")) {
       if (ImGui::MenuItem(ICON_FA_ARROW_ROTATE_LEFT "  Undo", "Ctrl+Z")) {
         command_history.undo(graph);
@@ -175,12 +160,30 @@ void SceneEditorUI::render_menu_bar() {
       }
       ImGui::EndMenu();
     }
+
+    if (ImGui::BeginMenu("View")) {
+      // Toggle preview window.
+      if (ImGui::MenuItem(ICON_FA_DISPLAY "  Preview Window",
+                          nullptr,
+                          preview_window.is_open())) {
+        if (preview_window.is_open()) {
+          preview_window.close();
+        } else {
+          preview_window.open(window, gl_context);
+        }
+      }
+      ImGui::EndMenu();
+    }
+
+    // Print the status message right after the menus, in the menubar.
+    print_status_message();
+
     ImGui::EndMenuBar();
   }
 }
 
 void SceneEditorUI::render_graph_library_panel() {
-  if(ImGui::Begin("Graph Library")) {
+  if (ImGui::Begin("Graph Library")) {
     if (ImGui::Button(ICON_FA_FOLDER_PLUS "  New folder")) {
       [[maybe_unused]] auto *folder = scene_->add_folder(std::nullopt, "New Folder");
     }
@@ -209,7 +212,6 @@ void SceneEditorUI::render_graph_library_panel() {
   }
 
   if (ImGui::BeginPopup("RenamePopup")) {
-
     static char name_buffer[256];
 
     // Focus the text input when the popup opens
@@ -343,8 +345,7 @@ void SceneEditorUI::new_scene() {
   scene_ = std::make_unique<Scene>("New Scene");
   current_scene_path_.clear();
   reset_graph();
-  status_message_ = "New scene created";
-  status_message_time_ = ImGui::GetTime();
+  set_status_message( "New scene created");
 }
 
 void SceneEditorUI::open_scene() {
@@ -361,8 +362,7 @@ void SceneEditorUI::save_scene() {
 
   if (SceneLibrary::save_scene(*scene_, current_scene_path_)) {
     scene_->pristine = true;
-    status_message_ = "Scene saved";
-    status_message_time_ = static_cast<float>(ImGui::GetTime());
+    set_status_message( "Scene saved");
   }
 }
 
@@ -382,8 +382,7 @@ void SceneEditorUI::save_current_graph() {
   if (const auto graph_ref =
         scene_->add_graph(folder->id, "Graph " + std::to_string(folder->graphs.size()), graph);
     graph_ref && scene_library_->save_graph(graph, *graph_ref)) {
-    status_message_ = "Graph saved: " + graph_ref->name;
-    status_message_time_ = static_cast<float>(ImGui::GetTime());
+    set_status_message( "Graph saved: " + graph_ref->name);
   }
 }
 
@@ -397,7 +396,6 @@ void SceneEditorUI::load_graph_from_library(const std::string &graph_id) {
   if (const auto loaded_graph = scene_library_->load_graph(*graph_ref)) {
     graph = std::move(*loaded_graph);
     node_pos_refresh = true;
-    status_message_ = "Loaded: " + graph_ref->name;
-    status_message_time_ = static_cast<float>(ImGui::GetTime());
+    set_status_message( "Loaded: " + graph_ref->name);
   }
 }

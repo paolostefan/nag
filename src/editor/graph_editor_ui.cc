@@ -106,14 +106,12 @@ void GraphEditorUI::main_event_loop() {
 void GraphEditorUI::save_graph(const std::string &path) {
   // ReSharper disable once CppUseStructuredBinding
   if (const auto result = serializer.save(graph, path)) {
-    status_message = ICON_FA_CHECK "  Graph saved to " + path;
+    set_status_message(ICON_FA_CHECK "  Graph saved to " + path);
     spdlog::info("Graph saved to {}", path);
   } else {
-    status_message = ICON_FA_TRIANGLE_EXCLAMATION "  Save failed: " + result.error_message;
+    set_status_message(ICON_FA_TRIANGLE_EXCLAMATION "  Save failed: " + result.error_message);
     spdlog::error("Graph save failed: {}", result.error_message);
   }
-
-  status_message_time = static_cast<float>(ImGui::GetTime());
 }
 
 // ============================================================================
@@ -309,10 +307,9 @@ void GraphEditorUI::render_node_editor(const bool with_menu) {
         }
 
         if (node_no + link_no > 0) {
-          status_message = ICON_FA_TRASH "  Deleted " + std::to_string(node_no) +
-                           (node_no == 1 ? " node" : " nodes") + " and " + std::to_string(link_no) +
-                           (link_no == 1 ? " link" : " links");
-          status_message_time = static_cast<float>(ImGui::GetTime());
+          set_status_message(ICON_FA_TRASH "  Deleted " + std::to_string(node_no) +
+                             (node_no == 1 ? " node" : " nodes") + " and " + std::to_string(link_no) +
+                             (link_no == 1 ? " link" : " links"));
         }
       }
     }
@@ -327,24 +324,6 @@ void GraphEditorUI::render_ui() {
     node_properties_panel_.render(graph, command_history);
   }
   ImGui::End(); // Node properties
-}
-
-void GraphEditorUI::print_status_message() const {
-  // ── Status Message (fade out after kStatusMessageDuration) ─────────────────
-  const float elapsed = static_cast<float>(ImGui::GetTime()) - status_message_time;
-  if (!status_message.empty() && elapsed < kStatusMessageDuration) {
-    // Alpha: 100% for 2s, then 1s fade out
-    constexpr float fade_start = kStatusMessageDuration - 1.f;
-    const float alpha = elapsed > fade_start
-                          ? 1.f - (elapsed - fade_start)
-                          : 1.f;
-
-    ImGui::SameLine(0.f, 30.f);
-    ImGui::PushStyleColor(ImGuiCol_Text,
-                          ImVec4(0.6f, 1.f, 0.6f, alpha));
-    ImGui::TextUnformatted(status_message.c_str());
-    ImGui::PopStyleColor();
-  }
 }
 
 void GraphEditorUI::render_menu_bar() {
@@ -375,8 +354,7 @@ void GraphEditorUI::render_menu_bar() {
     if (ImGui::MenuItem(ICON_FA_ROTATE_LEFT "  Reset to Default")) {
       reset_graph();
       build_default_graph();
-      status_message = ICON_FA_CHECK "  Graph reset to default";
-      status_message_time = static_cast<float>(ImGui::GetTime());
+      set_status_message(ICON_FA_CHECK "  Graph reset to default");
     }
 
     ImGui::EndMenu();
@@ -433,7 +411,6 @@ void GraphEditorUI::render_menu_bar() {
 }
 
 void GraphEditorUI::display_dialogs() {
-
   // ── File Dialog: Save ──────────────────────────────────────────────────────
   constexpr ImVec2 kDialogSize{600.f, 400.f};
   if (ImGuiFileDialog::Instance()->Display(
@@ -450,12 +427,10 @@ void GraphEditorUI::display_dialogs() {
     if (ImGuiFileDialog::Instance()->IsOk()) {
       const auto path = ImGuiFileDialog::Instance()->GetFilePathName();
       if (auto result = load_graph(path); !result) {
-        status_message = ICON_FA_TRIANGLE_EXCLAMATION "  Load failed: " +
-                         result.error_message;
-        status_message_time = static_cast<float>(ImGui::GetTime());
+        set_status_message(ICON_FA_TRIANGLE_EXCLAMATION "  Load failed: " +
+                           result.error_message);
       } else {
-        status_message = ICON_FA_CHECK "  Graph loaded from " + path;
-        status_message_time = static_cast<float>(ImGui::GetTime());
+        set_status_message(ICON_FA_CHECK "  Graph loaded from " + path);
         spdlog::info("Graph loaded from {}", path);
       }
     }
@@ -556,8 +531,7 @@ void GraphEditorUI::render_context_menu() {
 
       if (ImGui::MenuItem(label.c_str(), "Del")) {
         delete_selected_nodes();
-        status_message = "Deleted " + std::to_string(num_nodes) + (num_nodes == 1 ? " node" : " nodes");
-        status_message_time = static_cast<float>(ImGui::GetTime());
+        set_status_message("Deleted " + std::to_string(num_nodes) + (num_nodes == 1 ? " node" : " nodes"));
       }
     }
 
@@ -568,8 +542,7 @@ void GraphEditorUI::render_context_menu() {
 
       if (ImGui::MenuItem(label.c_str(), "Del")) {
         delete_selected_links();
-        status_message = "Deleted " + std::to_string(num_links) + (num_links == 1 ? " link" : " links");
-        status_message_time = static_cast<float>(ImGui::GetTime());
+        set_status_message("Deleted " + std::to_string(num_links) + (num_links == 1 ? " link" : " links"));
       }
     }
 

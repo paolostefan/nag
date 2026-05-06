@@ -32,18 +32,38 @@ protected:
   virtual void render_ui() = 0;
 
   /// @brief Render any of the active ImGuiFileDialog instances.
-  virtual void display_dialogs() {}
+  virtual void display_dialogs() {
+  }
 
+  void set_status_message(std::string message) noexcept {
+    status_message = std::move(message);
+    status_message_time = static_cast<float>(ImGui::GetTime());
+  }
+
+  void print_status_message();
+
+  /// Font size for the UI. Adjust as needed for different screen DPIs.
   static constexpr float kUIFontSize = 12.f;
+
+  /// Duration to show status messages before fading out (in seconds).
+  static constexpr float kStatusMessageDuration{3.f};
 
   SDL_Window *window{nullptr};
   SDL_GLContext gl_context{};
 
   ImGuiIO *io{nullptr};
 
+  // Initial window parameters
   std::string title{};
   int start_width{0};
   int start_height{0};
+
+  /// @brief General purpose feedback message.
+  /// Empty string means no message to show.
+  std::string status_message;
+
+  /// Timestamp (ImGui time) when status_message was set.
+  float status_message_time{0.f};
 };
 
 

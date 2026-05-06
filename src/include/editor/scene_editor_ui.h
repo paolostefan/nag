@@ -58,15 +58,14 @@ private:
 
   void render_folder_tree(const std::vector<std::unique_ptr<GraphFolder>> &folders);
 
-
+  /// @brief The currently loaded scene.
+  /// The editor operates on this scene, and it can be replaced when loading a new scene or creating a new one.
   std::unique_ptr<Scene> scene_;
 
-  /// The scene library manages loading/saving scenes and graphs, and provides a list of available graphs for the library panel
+  /// The scene library manages loading/saving scenes and graphs, and provides a list of available graphs for the library panel.
   std::unique_ptr<SceneLibrary> scene_library_;
 
   std::string current_scene_path_;
-  std::string status_message_;
-  double status_message_time_{0.f};
 
   int selected_segment_{-1};
   int expanded_folders_[64]{};

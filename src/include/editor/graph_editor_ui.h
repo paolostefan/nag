@@ -31,8 +31,6 @@ protected:
 
   void render_ui() override;
 
-  void print_status_message() const;
-
   // ── Rendering ─────────────────────────────────────────────────────────────
 
   /**
@@ -51,6 +49,11 @@ protected:
   void render_node_editor(bool with_menu);
 
   void display_dialogs() override;
+
+  /**
+   * @brief Preview window for displaying visual node outputs.
+   */
+  PreviewWindow preview_window;
 
 private:
   /**
@@ -90,14 +93,6 @@ private:
    */
   void delete_selected_links();
 
-
-  // ── Graph State ───────────────────────────────────────────────────────────
-
-  /**
-   * @brief Preview window for displaying visual node outputs.
-   */
-  PreviewWindow preview_window;
-
   // ── ImNodes State ─────────────────────────────────────────────────────────
   ImNodesEditorContext *editor_context{nullptr};
 
@@ -108,17 +103,6 @@ private:
    */
   NodePropertiesPanel node_properties_panel_;
 
-  /**
-   * @brief Feedback message shown after save/load operations.
-   *
-   * Empty string means no message to show.
-   */
-  std::string status_message;
-
-  /** Timestamp (ImGui time) when status_message was set. */
-  float status_message_time{0.f};
-
-  static constexpr float kStatusMessageDuration{3.f}; // seconds
   static constexpr auto kSaveGraphDialogKey{"SaveGraphDlg"};
   static constexpr auto kLoadGraphDialogKey{"LoadGraphDlg"};
   static constexpr auto kFileFilter{"JSON files{.json},All files{.*}"};
