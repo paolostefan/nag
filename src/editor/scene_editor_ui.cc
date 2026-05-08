@@ -350,7 +350,7 @@ void SceneEditorUI::new_scene() {
 
 void SceneEditorUI::open_scene() {
   IGFD::FileDialogConfig cfg;
-  cfg.path = ".";
+  cfg.path = "./scenes/";
   ImGuiFileDialog::Instance()->OpenDialog(kOpenSceneDialogKey, "Open Scene", ".nagscene", cfg);
 }
 
@@ -374,7 +374,7 @@ void SceneEditorUI::save_scene_as() {
 
 void SceneEditorUI::save_current_graph() {
   if (scene_->root_folders.empty()) {
-    scene_->add_folder(std::nullopt, "Default");
+    [[maybe_unused]] auto *folder = scene_->add_folder(std::nullopt, "Default");
   }
 
   const auto &folder = scene_->root_folders[0];
