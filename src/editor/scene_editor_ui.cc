@@ -396,6 +396,22 @@ void SceneEditorUI::load_graph_from_library(const std::string &graph_id) {
   if (const auto loaded_graph = scene_library_->load_graph(*graph_ref)) {
     graph = std::move(*loaded_graph);
     node_pos_refresh = true;
+
+    // Find time and output nodes in the loaded graph
+    time_node = nullptr;
+    output_node = nullptr;
+    for (const auto &node: graph.nodes) {
+      if (auto *t = dynamic_cast<TimeNode *>(node.get())) {
+        time_node = t;
+      }
+      if (auto *o = dynamic_cast<OutputNode *>(node.get())) {
+        output_node = o;
+      }
+    }
+    if (!output_node) {
+      spdlog::warn("Graph '{}' has no output node", graph_ref->name);
+    }
+
     set_status_message( "Loaded: " + graph_ref->name);
   }
 }
