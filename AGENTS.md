@@ -4,8 +4,6 @@
 
 Nag is a visual node graph-based demo engine written in C++20. It allows creating real-time visual effects through a node graph editor, with support for audio playback via OpenMPT and mpg123.
 
-The name comes from "Nag Champa" - the Indian incense known for its rich, earthy aroma.
-
 ## Tech Stack
 
 - **Language**: C++20
