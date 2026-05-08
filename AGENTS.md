@@ -74,10 +74,26 @@ A unified editor combining node graph editing with timeline-based scene organiza
 
 ### Node Graph Architecture
 - `NodeRegistry` handles node type registration and creation
-- `NodeGraph` manages nodes and links (connections)
-- `Node` base class with virtual `process()` method
-- Pins (inputs/outputs) defined per node type
+- `NodeGraph` manages nodes (`std::vector<std::unique_ptr<Node>>`) and links (connections)
+- `Node` base class with virtual `evaluate()` method
+- `NodeType` enum (must append-only before `Count`, never reorder — enforced by static_assert on `kNodeTypeNames`)
+- `MultiInputNode` extends Node with dynamic alphabet-labelled inputs (a–z)
 - JSON serialization via `JsonGraphSerializer`
+
+### Pins & Streams
+- **`Pin`**: has `id`, `direction` (Input/Output), `name`, `data_type` (`const std::type_info*`), and `stream` (`std::shared_ptr<StreamBase>`). Input pins also track `last_seen_version` for change detection.
+- **`Stream<T>`** (extends `StreamBase`): templated data carrier holding `T value{}` and a `uint64_t version` counter incremented on every `update()`.
+- **Linking**: `NodeGraph::add_link()` shares the output pin's `Stream<T>` `shared_ptr` with the input pin. Both pins then point to the exact same stream instance — enabling fan-out.
+- **Unlinking**: `NodeGraph::remove_link()` sets the input pin's `stream` back to `nullptr`.
+- **Type safety**: `Pin::try_get_value<T>()` checks `type_info` at runtime before casting. Nodes use `dynamic_cast<Stream<T>*>` on `pin.stream.get()` in `evaluate()`.
+- **Data types**: `Stream<float>` (generators, math), `Stream<bool>` (CompareNode), `Stream<Texture*>` (visual pipeline — VisualNode renders to FBO and outputs Texture*).
+
+### Graph Evaluation
+- Uses Kahn's algorithm (topological sort) in `NodeGraph::evaluate()`.
+- Nodes are processed in dependency order; each node's `evaluate()` reads from input streams and writes to output streams.
+- `needs_evaluation()` checks if any input stream's `version` differs from the pin's `last_seen_version` (skips re-processing unchanged data).
+- `OutputNode` is the sink: reads `Stream<Texture*>` input, stores the `Texture*` for preview rendering.
+- `TimeNode` is the source: outputs a `Stream<float>` driven by external time updates.
 
 ### Editor Architecture
 - `GraphEditor` = node graph logic (mixin)
