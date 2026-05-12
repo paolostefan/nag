@@ -1,0 +1,268 @@
+#ifndef NAG_ENGINE_PARTICLE_RENDERER_NODE_H
+#define NAG_ENGINE_PARTICLE_RENDERER_NODE_H
+
+#include <algorithm>
+#include <memory>
+
+#include "GL/glew.h"
+
+#include "engine/nodes/visual_node.h"
+#include "engine/particles2d.h"
+#include "engine/property_widget.h"
+#include "engine/shader_manager.h"
+#include "engine/shader_quad_helper.h"
+#include "shaders/fullscreen_quad_vert.h"
+#include "shaders/particle_bg_frag.h"
+#include "shaders/particle_renderer_frag.h"
+#include "shaders/particle_renderer_vert.h"
+
+struct ParticleRendererNode : VisualNode {
+  float color_jitter{0.f};
+  float alpha_jitter{0.f};
+  float size_min{2.f};
+  float size_max{6.f};
+  float size_scatter{0.f};
+  float global_scale{1.f};
+  float emitter_x{0.5f};
+  float emitter_y{0.5f};
+
+  GLuint vao_{0};
+  GLuint vbo_{0};
+  std::shared_ptr<ShaderProgram> particle_shader_;
+  std::shared_ptr<ShaderProgram> bg_shader_;
+
+  struct Vertex {
+    float x, y;
+    float r, g, b, a;
+    float size;
+  };
+
+  ParticleRendererNode() {
+    type = NodeType::ParticleRenderer;
+    name = "Particle Renderer";
+  }
+
+  ~ParticleRendererNode() override {
+    if (vao_)
+      glDeleteVertexArrays(1, &vao_);
+    if (vbo_)
+      glDeleteBuffers(1, &vbo_);
+  }
+
+  bool initialize(const int width, const int height) override {
+    if (!VisualNode::initialize(width, height)) return false;
+
+    glGenVertexArrays(1, &vao_);
+    glGenBuffers(1, &vbo_);
+
+    glBindVertexArray(vao_);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), nullptr);
+    glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<const void *>(offsetof(Vertex, r)));
+    glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<const void *>(offsetof(Vertex, size)));
+    glEnableVertexAttribArray(2);
+
+    glBindVertexArray(0);
+
+    particle_shader_ = ShaderManager::instance().load_from_source(
+      "particle_renderer", kparticle_renderer_vert, kparticle_renderer_frag
+    );
+
+    bg_shader_ = ShaderManager::instance().load_from_source(
+      "particle_bg", kfullscreen_quad_vert, kparticle_bg_frag
+    );
+
+    return particle_shader_ && particle_shader_->is_valid() &&
+           bg_shader_ && bg_shader_->is_valid();
+  }
+
+  void render() override {
+    if (!render_target || !render_target->is_valid()) return;
+
+    render_target->clear(0.f, 0.f, 0.f, 0.f);
+
+    render_background();
+    render_particles();
+
+    RenderTarget::unbind();
+  }
+
+  [[nodiscard]] nlohmann::json serialize_params() const override {
+    nlohmann::json j = VisualNode::serialize_params();
+    j["color_jitter"] = color_jitter;
+    j["alpha_jitter"] = alpha_jitter;
+    j["size_min"] = size_min;
+    j["size_max"] = size_max;
+    j["size_scatter"] = size_scatter;
+    j["global_scale"] = global_scale;
+    j["emitter_x"] = emitter_x;
+    j["emitter_y"] = emitter_y;
+    return j;
+  }
+
+  OperationResult deserialize_params(const nlohmann::json &j) override {
+    if (const auto result = VisualNode::deserialize_params(j); !result) return result;
+    if (j.contains("color_jitter")) color_jitter = j["color_jitter"];
+    if (j.contains("alpha_jitter")) alpha_jitter = j["alpha_jitter"];
+    if (j.contains("size_min")) size_min = j["size_min"];
+    if (j.contains("size_max")) size_max = j["size_max"];
+    if (j.contains("size_scatter")) size_scatter = j["size_scatter"];
+    if (j.contains("global_scale")) global_scale = j["global_scale"];
+    if (j.contains("emitter_x")) emitter_x = j["emitter_x"];
+    if (j.contains("emitter_y")) emitter_y = j["emitter_y"];
+    return OperationResult::ok();
+  }
+
+  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
+    PropertyWidget::SliderFloat(
+      "Color Jitter", id, color_jitter,
+      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).color_jitter = v; },
+      graph, history, 0.f, 1.f, "%.2f"
+    );
+    PropertyWidget::SliderFloat(
+      "Alpha Jitter", id, alpha_jitter,
+      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).alpha_jitter = v; },
+      graph, history, 0.f, 1.f, "%.2f"
+    );
+    PropertyWidget::SliderFloat(
+      "Size Min", id, size_min,
+      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).size_min = v; },
+      graph, history, 0.5f, 50.f, "%.1f"
+    );
+    PropertyWidget::SliderFloat(
+      "Size Max", id, size_max,
+      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).size_max = v; },
+      graph, history, 0.5f, 50.f, "%.1f"
+    );
+    PropertyWidget::SliderFloat(
+      "Size Scatter", id, size_scatter,
+      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).size_scatter = v; },
+      graph, history, 0.f, 20.f, "%.1f"
+    );
+    PropertyWidget::SliderFloat(
+      "Global Scale", id, global_scale,
+      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).global_scale = v; },
+      graph, history, 0.01f, 10.f, "%.2f"
+    );
+    PropertyWidget::SliderFloat(
+      "Emitter X", id, emitter_x,
+      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).emitter_x = v; },
+      graph, history, 0.f, 1.f, "%.2f"
+    );
+    PropertyWidget::SliderFloat(
+      "Emitter Y", id, emitter_y,
+      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).emitter_y = v; },
+      graph, history, 0.f, 1.f, "%.2f"
+    );
+  }
+
+  static std::unique_ptr<Node> create() {
+    auto node = std::make_unique<ParticleRendererNode>();
+    node->add_typed_input<Particles2D>("particles");
+    node->add_typed_input<Texture *>("texture");
+    node->add_typed_output<Texture *>("texture");
+    return node;
+  }
+
+private:
+  static unsigned int hash_int(const int i) {
+    unsigned h = static_cast<unsigned>(i) * 0x9e3779b9u;
+    h = (h ^ (h >> 16)) * 0x85ebca6bu;
+    h ^= (h >> 13);
+    return h;
+  }
+
+  static float hash_float(const int i) {
+    return static_cast<float>(hash_int(i)) / 4294967296.0f;
+  }
+
+  void render_background() const {
+    if (inputs.size() < 2) return;
+    const auto *ts = dynamic_cast<Stream<Texture *> *>(inputs[1].stream.get());
+    if (!ts || !ts->value || !ts->value->is_valid()) return;
+
+    glDisable(GL_BLEND);
+    bg_shader_->use();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, ts->value->texture_id);
+    bg_shader_->set_uniform("u_texture", 0);
+
+    ShaderQuadHelper::instance().render();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    ShaderProgram::unuse();
+  }
+
+  void render_particles() const {
+    if (inputs.empty()) return;
+    const auto *ps = dynamic_cast<Stream<Particles2D> *>(inputs[0].stream.get());
+    if (!ps || ps->value.particles.empty()) return;
+
+    const auto &particles = ps->value.particles;
+    const size_t count = particles.size();
+
+    if (vbo_ == 0) return;
+
+    // Build vertex data on CPU
+    auto vertices = std::make_unique<Vertex[]>(count);
+
+    const float ox = emitter_x * render_target->get_fwidth();
+    const float oy = emitter_y * render_target->get_fheight();
+
+    for (size_t i = 0; i < count; ++i) {
+      const auto &p = particles[i];
+      const float life_t = p.max_life > 0.f ? p.life / p.max_life : 0.f;
+
+      Vertex &v = vertices[i];
+      v.x = p.x + ox;
+      v.y = p.y + oy;
+
+      const float rj = (hash_float(static_cast<int>(i * 5 + 0)) - 0.5f) * 2.f * color_jitter;
+      const float gj = (hash_float(static_cast<int>(i * 5 + 1)) - 0.5f) * 2.f * color_jitter;
+      const float bj = (hash_float(static_cast<int>(i * 5 + 2)) - 0.5f) * 2.f * color_jitter;
+      v.r = std::clamp(1.f + rj, 0.f, 1.f);
+      v.g = std::clamp(1.f + gj, 0.f, 1.f);
+      v.b = std::clamp(1.f + bj, 0.f, 1.f);
+
+      const float aj = (hash_float(static_cast<int>(i * 5 + 3)) - 0.5f) * 2.f * alpha_jitter;
+      v.a = std::clamp(life_t + aj, 0.f, 1.f);
+
+      const float base_size = size_min + (size_max - size_min) * life_t;
+      const float sj = (hash_float(static_cast<int>(i * 5 + 4)) - 0.5f) * 2.f * size_scatter;
+      v.size = std::max(1.f, base_size + sj);
+    }
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_PROGRAM_POINT_SIZE);
+
+    glBindVertexArray(vao_);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(count * sizeof(Vertex)),
+                 vertices.get(), GL_STREAM_DRAW);
+
+    particle_shader_->use();
+    particle_shader_->set_uniform("uResolution",
+                                  render_target->get_fwidth(),
+                                  render_target->get_fheight());
+    particle_shader_->set_uniform("uGlobalScale", global_scale);
+
+    glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(count));
+
+    ShaderProgram::unuse();
+    glBindVertexArray(0);
+    glDisable(GL_PROGRAM_POINT_SIZE);
+    glDisable(GL_BLEND);
+  }
+};
+
+#endif // NAG_ENGINE_PARTICLE_RENDERER_NODE_H

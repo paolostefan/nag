@@ -35,6 +35,7 @@ enum class NodeType:uint8_t {
   Noise,
   Random,
   StepSequencer,
+  ParticleEmitter,
 
   // Unary math operators
   Abs,
@@ -74,6 +75,7 @@ enum class NodeType:uint8_t {
   Delay,
   Smoother,
 
+
   // Visual nodes
   ClearColor,
   Gradient,
@@ -83,6 +85,7 @@ enum class NodeType:uint8_t {
   Polygon,
   TextureLoader,
   Tile,
+  ParticleRenderer,
 
   // FX nodes
   Blur,

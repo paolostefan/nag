@@ -37,6 +37,7 @@ inline constexpr std::array<std::string_view,
   "Noise",
   "Random",
   "Step Sequencer",
+  "Particle Emitter",
 
   // Unary math operators
   "Abs",
@@ -76,6 +77,7 @@ inline constexpr std::array<std::string_view,
   "Delay",
   "Smoother",
 
+
   // Visual nodes
   "Clear Color",
   "Gradient",
@@ -85,6 +87,7 @@ inline constexpr std::array<std::string_view,
   "Polygon",
   "Texture Loader",
   "Tile",
+  "Particle Renderer",
 
   // FX nodes
   "Blur",

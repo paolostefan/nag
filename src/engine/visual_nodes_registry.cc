@@ -11,6 +11,7 @@
 #include "engine/nodes/sdf_shape_node.h"
 #include "engine/nodes/texture_loader_node.h"
 #include "engine/nodes/tile_node.h"
+#include "engine/nodes/particle_renderer_node.h"
 
 namespace node_registration {
   void register_visual_nodes() {
@@ -86,6 +87,12 @@ namespace node_registration {
       NodeType::Tile,
       "Visual",
       "Tiles a texture"
+    );
+
+    registry.register_node<ParticleRendererNode>(
+      NodeType::ParticleRenderer,
+      "Visual",
+      "Renders a 2D particle system"
     );
 
     // ── Output ────────────────────────────────────────────────────────────────

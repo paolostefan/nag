@@ -17,7 +17,7 @@ SceneLibrary::SceneLibrary(std::filesystem::path scenes_directory)
 
 bool SceneLibrary::save_scene(const Scene &scene, const std::filesystem::path &path) {
   try {
-    json j = scene;
+    const json j = scene;
     std::ofstream file(path);
     if (!file.is_open()) {
       spdlog::error("Failed to open scene file for writing: {}", path.string());

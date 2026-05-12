@@ -1,4 +1,5 @@
 #include "../include/engine/nodes/generator_nodes.h"
+#include "engine/nodes/particle_emitter_node.h"
 #include "engine/node_registry.h"
 
 namespace node_registration {
@@ -33,6 +34,12 @@ namespace node_registration {
       NodeType::Random,
       "Generators",
       "Outputs a random value within a specified range"
+    );
+
+    registry.register_node<ParticleEmitterNode>(
+      NodeType::ParticleEmitter,
+      "Generators",
+      "Emits 2D particles at a given rate with configurable speed and lifetime"
     );
   }
 } // namespace node_registration

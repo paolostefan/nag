@@ -11,6 +11,7 @@
 #include "spdlog/spdlog.h"
 
 #include "engine/node_registry.h"
+#include "engine/nodes/particle_emitter_node.h"
 #include "engine/shader_quad_helper.h"
 
 
@@ -193,6 +194,13 @@ void GraphEditorUI::render_node_editor(const bool with_menu) {
 
         if (flowing) {
           tn->step(ImGui::GetIO().DeltaTime);
+          graph.evaluate();
+        }
+      } else if (auto *pe = dynamic_cast<ParticleEmitterNode *>(node.get())) {
+        ImGui::Text("%s [%zu]", node->name.c_str(), pe->particle_count());
+
+        if (flowing) {
+          pe->step(ImGui::GetIO().DeltaTime);
           graph.evaluate();
         }
       } else {
