@@ -106,13 +106,27 @@ A unified editor combining node graph editing with timeline-based scene organiza
 - Context menus via `ImGui::BeginPopup()`
 - Property panels as docked windows
 
+### Shader Embedding
+
+GLSL shaders live in `src/shaders/` as individual `.vert`/`.frag`/`.geom` files.
+CMake (toplevel `CMakeLists.txt:148-171`) embeds every shader file into a C++ header at configure time:
+
+1. `file(GLOB_RECURSE ...)` collects all shader files.
+2. For each file, `cmake/embed_shader.cmake` generates a header in `cmake-build-debug/shaders/` named `<filename>_<ext>.h`.
+3. The generated header defines `inline constexpr char k<filename>_<ext>[]` containing the shader source as a raw string.
+4. Include via `#include "shaders/<filename>_<ext>.h"` and reference as `k<filename>_<ext>`.
+
+Example: `src/shaders/particle_renderer.vert` → generated `shaders/particle_renderer_vert.h` → `kparticle_renderer_vert`.
+
+To add new shaders, drop `.vert`/`.frag`/`.geom` files in `src/shaders/` and reconfigure CMake.
+
 ## Building
 
 ```bash
 mkdir cmake-build-debug && cd cmake-build-debug
 cmake ..
 make -j$(nproc)
-./src/editor/editor
+./scene_editor
 ```
 
 **System dependencies (APT)**:
@@ -123,7 +137,7 @@ make -j$(nproc)
 
 ## Known Issues / Active Development
 
-- There is no real main "launcher" - you must run the graph editor binary directly
+- The only real "launcher" is the scene editor binary, which is a bit of a misnomer since it's really just the editor. A future "launcher" could be added to run saved scenes without the editor UI.
 - Audio buzzing when slider moved while playing
 - Audio track UI is cluttered
 - Timeline allows deleting all tracks (should protect effects)
