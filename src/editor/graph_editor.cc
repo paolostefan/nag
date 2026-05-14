@@ -31,7 +31,6 @@ void GraphEditor::build_default_graph() {
   auto output_node_unique = OutputNode::create();
   output_node_unique->position = {300, 100};
   output_node = dynamic_cast<OutputNode *>(graph.add_node(std::move(output_node_unique)));
-
 }
 
 OperationResult GraphEditor::load_graph(const std::string &path) {
@@ -61,15 +60,16 @@ OperationResult GraphEditor::load_graph(const std::string &path) {
 }
 
 
-void GraphEditor::spawn_node(const NodeType type, const ImVec2 &position) {
+Node *GraphEditor::spawn_node(const NodeType type, const ImVec2 &position) {
   auto node = NodeRegistry::instance().create_node(type);
   if (!node) {
     spdlog::error("Failed to create node of type {}", static_cast<int>(type));
-    return;
+    return nullptr;
   }
 
   // Init visual nodes with default size
   if (auto *visual = dynamic_cast<VisualNode *>(node.get())) {
+    // TODO: remove hardcoded default size
     if (!visual->initialize(400, 300)) {
       spdlog::warn("Visual node '{}' failed to initialize render target",
                    node->name);
@@ -80,6 +80,9 @@ void GraphEditor::spawn_node(const NodeType type, const ImVec2 &position) {
 
   auto add_command = std::make_unique<AddNodeCommand>(std::move(node));
   command_history.execute(graph, std::move(add_command));
+
+  // ReSharper disable once CppDFALocalValueEscapesFunction
+  return node.get();
 }
 
 void GraphEditor::delete_nodes(const std::unordered_set<int> &node_ids_to_delete) {

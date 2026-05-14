@@ -53,8 +53,10 @@ protected:
    *
    * @param type     Node type to create via registry
    * @param position Screen-space position for the new node
+   *
+   * @return The newly created node, or nullptr if creation failed (e.g. unknown type).
    */
-  void spawn_node(NodeType type, const ImVec2 &position);
+  Node *spawn_node(NodeType type, const ImVec2 &position);
 
   /**
    * @brief Deletes specified nodes and their associated links.
