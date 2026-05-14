@@ -79,9 +79,13 @@ public:
 
   [[nodiscard]] const GraphReference *find_graph(const std::string &graph_id) const;
 
-  // TODO: stop using std::optional, use C-style empty string
-  [[nodiscard]] GraphFolder *add_folder(const std::optional<std::string> &parent_id,
+  [[nodiscard]] GraphFolder *add_folder(const char *parent_folder_id,
                                         const std::string &folder_name);
+
+  [[nodiscard]] GraphFolder *add_folder(const std::string &parent_folder_id,
+                                        const std::string &folder_name) {
+    return add_folder(parent_folder_id.empty() ? nullptr : parent_folder_id.c_str(), folder_name);
+  }
 
   /// @brief Rename a folder in the library. Does not affect the graph file or timeline segments.
   /// @return true if the folder was found and renamed, false otherwise.
@@ -90,9 +94,18 @@ public:
 
   bool remove_folder(const std::string &folder_id);
 
+  /**
+   *  Adds a graph reference to the specified folder in the library.
+   *  The graph is not saved to disk by this method; it only creates a reference in
+   *  the scene's folder structure. The caller is responsible for saving the
+   *  graph to disk using the SceneLibrary after adding it to the scene.
+   *
+   * @param folder_id
+   * @param graph_name
+   * @return
+   */
   [[nodiscard]] GraphReference *add_graph(const std::string &folder_id,
-                                          const std::string &graph_name,
-                                          const NodeGraph &graph);
+                                          const std::string &graph_name);
 
   bool remove_graph(const std::string &graph_id);
 
@@ -122,6 +135,7 @@ inline void to_json(nlohmann::json &j, const GraphReference &ref) {
   };
 }
 
+
 inline void from_json(const nlohmann::json &j, GraphReference &ref) {
   j.at("id").get_to(ref.id);
   j.at("name").get_to(ref.name);
@@ -130,6 +144,7 @@ inline void from_json(const nlohmann::json &j, GraphReference &ref) {
     j.at("dirty").get_to(ref.dirty);
 }
 
+// Note: to_json/from_json for GraphFolder are recursive to handle nested folders
 inline void to_json(nlohmann::json &j, const GraphFolder &folder) {
   j = nlohmann::json{{"id", folder.id}, {"name", folder.name}, {"graphs", folder.graphs}};
   for (const auto &child: folder.children) {
@@ -167,6 +182,7 @@ inline void from_json(const nlohmann::json &j, TimelineSegment &segment) {
     j.at("color").get_to(segment.color);
 }
 
+/// @brief Custom to_json/from_json for Scene to handle the root_folders vector of unique_ptrs
 inline void to_json(nlohmann::json &j, const Scene &scene) {
   j = nlohmann::json{
     {"version", Scene::kFormatVersion},

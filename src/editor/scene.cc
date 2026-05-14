@@ -59,17 +59,17 @@ const GraphReference *Scene::find_graph(const std::string &graph_id) const {
   return search(root_folders);
 }
 
-GraphFolder *Scene::add_folder(const std::optional<std::string> &parent_id, const std::string &folder_name) {
+GraphFolder *Scene::add_folder(const char *const parent_folder_id, const std::string &folder_name) {
   auto folder = std::make_unique<GraphFolder>(generate_id(), folder_name);
 
-  if (!parent_id.has_value()) {
+  if (!parent_folder_id) {
     root_folders.push_back(std::move(folder));
     return root_folders.back().get();
   }
 
-  GraphFolder *parent = find_folder(parent_id.value());
+  GraphFolder *parent = find_folder(parent_folder_id);
   if (!parent) {
-    spdlog::error("Parent folder not found: {}", parent_id.value());
+    spdlog::error("Parent folder not found: {}", parent_folder_id);
     return nullptr;
   }
 
@@ -114,8 +114,7 @@ bool Scene::remove_folder(const std::string &folder_id) {
 }
 
 GraphReference *Scene::add_graph(const std::string &folder_id,
-                                 const std::string &graph_name,
-                                 const NodeGraph & /* graph */) {
+                                 const std::string &graph_name) {
   GraphFolder *folder = find_folder(folder_id);
   if (!folder) {
     spdlog::error("Folder not found: {}", folder_id);
