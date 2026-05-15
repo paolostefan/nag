@@ -160,16 +160,13 @@ void GraphEditorUI::delete_selected_links() {
 // render_ui
 // ============================================================================
 
-void GraphEditorUI::render_node_editor(const bool with_menu) {
+void GraphEditorUI::render_node_editor() {
   if (ImGui::Begin("Graph##GraphEditorWin", nullptr,
                    ImGuiWindowFlags_MenuBar
                    | ImGuiWindowFlags_NoDecoration
                    | ImGuiWindowFlags_NoCollapse
                    | ImGuiWindowFlags_NoResize
                    | ImGuiWindowFlags_NoMove)) {
-    if (with_menu) {
-      render_menu_bar();
-    }
 
     display_dialogs();
 
@@ -326,16 +323,16 @@ void GraphEditorUI::render_node_editor(const bool with_menu) {
 }
 
 void GraphEditorUI::render_ui() {
-  render_node_editor(true);
 
-  if (ImGui::Begin("Node properties")) {
-    node_properties_panel_.render(graph, command_history);
-  }
-  ImGui::End(); // Node properties
+  render_menu_bar();
+
+  render_node_editor();
+
+  render_node_props();
 }
 
 void GraphEditorUI::render_menu_bar() {
-  if (!ImGui::BeginMenuBar()) return;
+  if (!ImGui::BeginMainMenuBar()) return;
 
   // ── File Menu ──────────────────────────────────────────────────────────────
   if (ImGui::BeginMenu(ICON_FA_FILE "  File")) {
@@ -415,7 +412,7 @@ void GraphEditorUI::render_menu_bar() {
 
   print_status_message();
 
-  ImGui::EndMenuBar();
+  ImGui::EndMainMenuBar();
 }
 
 void GraphEditorUI::display_dialogs() {

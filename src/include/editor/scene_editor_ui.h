@@ -14,6 +14,8 @@ class SceneEditorUI : public GraphEditorUI, public ImSequencer::SequenceInterfac
 public:
   SceneEditorUI();
 
+  void render_top_status_bar();
+
   ~SceneEditorUI() override = default;
 
   [[nodiscard]] int GetFrameMin() const override { return 0; }
@@ -33,11 +35,12 @@ public:
 protected:
   void render_ui() override;
 
-  void render_menu_bar() override;
 
   void display_dialogs() override;
 
 private:
+  void render_menu_bar();
+
   void render_graph_library_panel();
 
   void render_timeline();

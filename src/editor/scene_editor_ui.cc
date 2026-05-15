@@ -1,6 +1,7 @@
 #include "editor/scene_editor_ui.h"
 
 #include <IconsFontAwesome6.h>
+#include <imgui_internal.h>
 
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
@@ -21,8 +22,34 @@ SceneEditorUI::SceneEditorUI() : GraphEditorUI("Scene Editor", 1280, 800) {
   output_node = reinterpret_cast<OutputNode *>(spawn_node(NodeType::Output, ImVec2(300, 100)));
 }
 
+void SceneEditorUI::render_top_status_bar() {
+  // According to https://github.com/ocornut/imgui/issues/3518#issuecomment-918186716
+  // this is the right way to implement a statusbar.
+  constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
+                                            ImGuiWindowFlags_MenuBar;
+  float height = ImGui::GetFrameHeight();
+  if (ImGui::BeginViewportSideBar("##MainStatusBar", nullptr, ImGuiDir_Up, height, window_flags)) {
+    if (ImGui::BeginMenuBar()) {
+      ImGui::TextUnformatted(scene_->name.c_str());
+
+      // Print the status message right after the scene title
+      print_status_message();
+
+      ImGui::EndMenuBar();
+    }
+    ImGui::End();
+  }
+}
+
 void SceneEditorUI::render_ui() {
-  GraphEditorUI::render_ui();
+
+  render_menu_bar();
+
+  render_top_status_bar();
+
+  render_node_editor();
+
+  render_node_props();
 
   render_graph_library_panel();
   render_timeline();
@@ -133,7 +160,7 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
 }
 
 void SceneEditorUI::render_menu_bar() {
-  if (ImGui::BeginMenuBar()) {
+  if (ImGui::BeginMainMenuBar()) {
     if (ImGui::BeginMenu("File")) {
       if (ImGui::MenuItem("New Scene", "Ctrl+N")) {
         new_scene();
@@ -183,10 +210,7 @@ void SceneEditorUI::render_menu_bar() {
       ImGui::EndMenu();
     }
 
-    // Print the status message right after the menus, in the menubar.
-    print_status_message();
-
-    ImGui::EndMenuBar();
+    ImGui::EndMainMenuBar();
   }
 }
 

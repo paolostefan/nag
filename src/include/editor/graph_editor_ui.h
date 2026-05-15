@@ -33,10 +33,12 @@ protected:
 
   // ── Rendering ─────────────────────────────────────────────────────────────
 
-  /**
-   * @brief Renders the menu bar with File, Edit, and View menus.
-   */
-  virtual void render_menu_bar();
+  void render_node_props() {
+    if (ImGui::Begin("Node properties")) {
+      node_properties_panel_.render(graph, command_history);
+    }
+    ImGui::End(); // Node properties
+  }
 
   /**
    * @brief Renders context menus (add node, delete selection).
@@ -46,7 +48,7 @@ protected:
   /**
    * @brief Renders the main node editor area using ImNodes.
    */
-  void render_node_editor(bool with_menu);
+  void render_node_editor();
 
   void display_dialogs() override;
 
@@ -56,6 +58,11 @@ protected:
   PreviewWindow preview_window;
 
 private:
+  /**
+   * @brief Renders the menu bar with File, Edit, and View menus.
+   */
+  void render_menu_bar();
+
   /**
    * @brief Renders a visual preview of a visual node in the editor.
    *
