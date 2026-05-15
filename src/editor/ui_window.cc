@@ -9,7 +9,7 @@
 #include "spdlog/spdlog.h"
 
 #include "font/fa-solid-900.h"
-#include "font/figtree.h"
+#include "font/roboto-regular.h"
 
 UIWindow::UIWindow(std::string title, const int width, const int height)
   : title(std::move(title)), start_width(width), start_height(height) {
@@ -119,12 +119,13 @@ bool UIWindow::initialize() {
   // Load default font
   ImFontConfig default_config;
   // These are for pixel-perfect fonts like Hooge
-  // default_config.OversampleH = default_config.OversampleV = 1;
-  // default_config.PixelSnapH = default_config.PixelSnapV = true;
+  default_config.OversampleH = default_config.OversampleV = 1;
+  default_config.PixelSnapH = default_config.PixelSnapV = true;
   default_config.FontDataOwnedByAtlas = false; // We don't want ImGui to free the font data
   default_config.FontLoaderFlags = ImGuiFreeTypeBuilderFlags_ForceAutoHint | ImGuiFreeTypeBuilderFlags_LoadColor;
 
-  io->Fonts->AddFontFromMemoryTTF(figtree_ttf, figtree_ttf_len, kUIFontSize, &default_config);
+  io->Fonts->AddFontFromMemoryTTF(Roboto_Regular_ttf, (int) Roboto_Regular_ttf_len,
+                                  kUIFontSize, &default_config);
 
   // Load Font Awesome 6
   ImFontConfig icons_config;
@@ -155,8 +156,9 @@ bool UIWindow::initialize() {
 void UIWindow::print_status_message() {
   // ── Status Message (fade out after kStatusMessageDuration) ─────────────────
 
-  if(!status_message.empty()) {
-    if (const float elapsed = static_cast<float>(ImGui::GetTime()) - status_message_time; elapsed < kStatusMessageDuration) {
+  if (!status_message.empty()) {
+    if (const float elapsed = static_cast<float>(ImGui::GetTime()) - status_message_time;
+      elapsed < kStatusMessageDuration) {
       // Alpha: 100% for up to 1s from the end, then 1s fade out
       constexpr float fade_start = kStatusMessageDuration - 1.f;
       const float alpha = elapsed > fade_start
@@ -168,8 +170,7 @@ void UIWindow::print_status_message() {
                             ImVec4(0.6f, 1.f, 0.6f, alpha));
       ImGui::TextUnformatted(status_message.c_str());
       ImGui::PopStyleColor();
-    }
-    else {
+    } else {
       // Clear message after duration
       status_message.clear();
     }

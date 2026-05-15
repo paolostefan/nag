@@ -43,7 +43,7 @@ protected:
   void print_status_message();
 
   /// Font size for the UI. Adjust as needed for different screen DPIs.
-  static constexpr float kUIFontSize = 12.f;
+  static constexpr float kUIFontSize = 14.f;
 
   /// Duration to show status messages before fading out (in seconds).
   static constexpr float kStatusMessageDuration{3.f};
