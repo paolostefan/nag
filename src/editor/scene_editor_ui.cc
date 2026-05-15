@@ -28,9 +28,12 @@ void SceneEditorUI::render_top_status_bar() {
   constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
                                             ImGuiWindowFlags_MenuBar;
   float height = ImGui::GetFrameHeight();
-  if (ImGui::BeginViewportSideBar("##MainStatusBar", nullptr, ImGuiDir_Up, height, window_flags)) {
+  if (ImGui::BeginViewportSideBar("##TopStatusBar", nullptr, ImGuiDir_Up, height, window_flags)) {
     if (ImGui::BeginMenuBar()) {
       ImGui::TextUnformatted(scene_->name.c_str());
+
+      ImGui::SameLine();
+      ImGui::TextDisabled("%s", current_scene_path_.empty() ? "(unsaved)" : current_scene_path_.c_str());
 
       // Print the status message right after the scene title
       print_status_message();
