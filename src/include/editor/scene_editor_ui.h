@@ -47,8 +47,6 @@ private:
 
   void new_scene();
 
-  bool load_scene(const std::string &path);
-
   static void open_scene();
 
   void save_scene();
@@ -57,7 +55,7 @@ private:
 
   void save_current_graph();
 
-  void load_graph_from_library(const GraphReference &graph_ref);
+  void load_graph_from_library(GraphReference &graph_ref);
 
   void render_folder_tree(const std::vector<std::unique_ptr<GraphFolder>> &folders);
 
