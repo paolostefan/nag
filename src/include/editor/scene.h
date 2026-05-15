@@ -25,7 +25,7 @@ struct GraphReference {
   }
 };
 
-struct GraphFolder {
+struct  GraphFolder {
   std::string id;
   std::string name;
   std::vector<GraphReference> graphs;
@@ -134,7 +134,6 @@ inline void to_json(nlohmann::json &j, const GraphReference &ref) {
     {"dirty", ref.dirty}
   };
 }
-
 
 inline void from_json(const nlohmann::json &j, GraphReference &ref) {
   j.at("id").get_to(ref.id);

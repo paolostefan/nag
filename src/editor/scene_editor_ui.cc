@@ -11,11 +11,13 @@
 SceneEditorUI::SceneEditorUI() : GraphEditorUI("Scene Editor", 1280, 800) {
   scene_library_ = std::make_unique<SceneLibrary>("./scenes");
 
+  // Create a new empty scene
   new_scene();
 
   // Start with at least a "Default" folder and a default graph in it for better UX
   const auto *default_folder = scene_->add_folder(nullptr, "Default");
-  [[maybe_unused]] auto *default_graph = scene_->add_graph(default_folder->id, "Unnamed graph");
+  current_graph_ref = scene_->add_graph(default_folder->id, "Unnamed graph");
+  current_graph_ref->dirty = true;
 
   // Add a time node and an output node to the default graph to avoid starting with an empty graph
   time_node = reinterpret_cast<TimeNode *>(spawn_node(NodeType::Time, ImVec2(100, 100)));
@@ -32,6 +34,14 @@ void SceneEditorUI::render_top_status_bar() {
     if (ImGui::BeginMenuBar()) {
       ImGui::TextUnformatted(scene_->name.c_str());
 
+      if (!scene_->pristine) {
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(1.f, .3f, .0f, 1.f), "⬤");
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip("Unsaved changes");
+        }
+      }
+
       ImGui::SameLine();
       ImGui::TextDisabled("%s", current_scene_path_.empty() ? "(unsaved)" : current_scene_path_.c_str());
 
@@ -45,7 +55,6 @@ void SceneEditorUI::render_top_status_bar() {
 }
 
 void SceneEditorUI::render_ui() {
-
   render_menu_bar();
 
   render_top_status_bar();
@@ -98,7 +107,7 @@ void SceneEditorUI::display_dialogs() {
 void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFolder> > &folders) {
   for (auto &folder: folders) {
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-    if (const bool has_children = !folder->children.empty(); !has_children && folder->graphs.empty()) {
+    if (folder->children.empty() && folder->graphs.empty()) {
       flags |= ImGuiTreeNodeFlags_Leaf;
     }
 
@@ -133,9 +142,17 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
     if (opened) {
       for (auto &graph_ref: folder->graphs) {
         constexpr ImGuiTreeNodeFlags kGraphFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_SpanAvailWidth;
+        if (&graph_ref == current_graph_ref) {
+          // Highlight the selected graph
+          ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 0.6f, 1.0f, 1.0f)); // Bright blue
+        } else if (graph_ref.dirty) {
+          // Highlight dirty graphs in orange
+          ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
+        }
+
         if (ImGui::TreeNodeEx(graph_ref.id.c_str(), kGraphFlags, "%s", graph_ref.name.c_str())) {
-          if (ImGui::IsItemClicked()) {
-            load_graph_from_library(graph_ref.id);
+          if (ImGui::IsItemClicked() && &graph_ref != current_graph_ref) {
+            load_graph_from_library(graph_ref);
           }
 
           if (ImGui::BeginPopupContextItem()) {
@@ -153,6 +170,10 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
             ImGui::EndPopup();
           }
           ImGui::TreePop();
+        }
+
+        if (&graph_ref == current_graph_ref || graph_ref.dirty) {
+          ImGui::PopStyleColor();
         }
       }
 
@@ -395,7 +416,11 @@ void SceneEditorUI::save_scene() {
     return;
   }
 
-  if (SceneLibrary::save_scene(*scene_, current_scene_path_)) {
+  if (current_graph_ref && current_graph_ref->dirty) {
+    save_current_graph();
+  }
+
+  if (scene_library_->save_scene(*scene_, current_scene_path_)) {
     scene_->pristine = true;
     set_status_message("Scene saved");
   }
@@ -408,27 +433,14 @@ void SceneEditorUI::save_scene_as() {
 }
 
 void SceneEditorUI::save_current_graph() {
-  if (scene_->root_folders.empty()) {
-    [[maybe_unused]] auto *folder = scene_->add_folder(nullptr, "Default");
-  }
-
-  const auto &folder = scene_->root_folders[0];
-
-  if (const auto graph_ref =
-        scene_->add_graph(folder->id, "Graph " + std::to_string(folder->graphs.size()));
-    graph_ref && scene_library_->save_graph(graph, *graph_ref)) {
-    set_status_message("Graph saved: " + graph_ref->name);
+  if (current_graph_ref && scene_library_->save_graph(graph, *current_graph_ref)) {
+    current_graph_ref->dirty = false;
+    set_status_message("Graph saved: " + current_graph_ref->name);
   }
 }
 
-void SceneEditorUI::load_graph_from_library(const std::string &graph_id) {
-  const GraphReference *graph_ref = scene_->find_graph(graph_id);
-  if (!graph_ref) {
-    spdlog::error("Graph not found: {}", graph_id);
-    return;
-  }
-
-  if (const auto loaded_graph = scene_library_->load_graph(*graph_ref)) {
+void SceneEditorUI::load_graph_from_library(const GraphReference &graph_ref) {
+  if (const auto loaded_graph = scene_library_->load_graph(graph_ref)) {
     graph = std::move(*loaded_graph);
     node_pos_refresh = true;
 
@@ -444,9 +456,9 @@ void SceneEditorUI::load_graph_from_library(const std::string &graph_id) {
       }
     }
     if (!output_node) {
-      spdlog::warn("Graph '{}' has no output node", graph_ref->name);
+      spdlog::warn("Graph '{}' has no output node", graph_ref.name);
     }
 
-    set_status_message("Loaded: " + graph_ref->name);
+    set_status_message("Loaded: " + graph_ref.name);
   }
 }

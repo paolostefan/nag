@@ -57,7 +57,7 @@ private:
 
   void save_current_graph();
 
-  void load_graph_from_library(const std::string &graph_id);
+  void load_graph_from_library(const GraphReference &graph_ref);
 
   void render_folder_tree(const std::vector<std::unique_ptr<GraphFolder>> &folders);
 
@@ -67,6 +67,9 @@ private:
 
   /// The scene library manages loading/saving scenes and graphs, and provides a list of available graphs for the library panel.
   std::unique_ptr<SceneLibrary> scene_library_;
+
+  /// The currently selected graph reference from the library panel. This is used to determine which graph to load into the editor when a graph is selected.
+  GraphReference *current_graph_ref{nullptr};
 
   std::string current_scene_path_;
 

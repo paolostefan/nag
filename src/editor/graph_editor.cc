@@ -59,7 +59,6 @@ OperationResult GraphEditor::load_graph(const std::string &path) {
   return OperationResult::ok();
 }
 
-
 Node *GraphEditor::spawn_node(const NodeType type, const ImVec2 &position) {
   auto node = NodeRegistry::instance().create_node(type);
   if (!node) {
