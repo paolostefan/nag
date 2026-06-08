@@ -4,3 +4,8 @@
 
 # Build files
 build/
+
+# Temporary files
+*.tmp
+*.log
+/tmp/
