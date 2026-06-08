@@ -249,14 +249,6 @@ target_link_libraries(nag_editor_lib PUBLIC
     implot
 )
 
-# Editor
-add_executable(editor
-    src/editor/editor.cc
-    src/editor/main.cc
-    src/include/editor/scrolling_buffer.h
-)
-target_link_libraries(editor PRIVATE nag_editor_lib)
-
 # Scene Editor
 add_executable(scene_editor
     src/editor/scene_editor_main.cc
