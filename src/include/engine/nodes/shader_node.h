@@ -147,11 +147,11 @@ protected:
   void bind_texture_inputs(ShaderProgram *prog) const {
     int unit = 0;
     for (const auto &pin: inputs) {
-      if (*pin.data_type != typeid(Texture *)) continue;
+      if (pin.data_type != DataType::Texture) continue;
 
       GLuint tex_id = 0;
-      if (const auto *s = dynamic_cast<Stream<Texture *> *>(pin.stream.get())) {
-        if (s->value && s->value->is_valid()) tex_id = s->value->texture_id;
+      if (Texture *const *tex = pin.get_texture()) {
+        if (*tex && (*tex)->is_valid()) tex_id = (*tex)->texture_id;
       }
       glActiveTexture(GL_TEXTURE0 + unit);
       glBindTexture(GL_TEXTURE_2D, tex_id);
@@ -163,11 +163,11 @@ protected:
   // Sets float uniform "u_<pin.name>" for every float input pin.
   void bind_float_inputs(ShaderProgram *prog) const {
     for (const auto &pin: inputs) {
-      if (*pin.data_type != typeid(float)) continue;
+      if (pin.data_type != DataType::Float) continue;
 
       float value;
-      if (const auto *s = dynamic_cast<Stream<float> *>(pin.stream.get())) {
-        value = s->value;
+      if (const float *v = pin.get_float()) {
+        value = *v;
       } else {
         // If the pin maps to a parameter modifiable via GUI, use the param value instead.
         value = get_param(pin.name);
@@ -182,7 +182,7 @@ protected:
     int unit = 0;
 
     for (const auto &pin: inputs) {
-      if (*pin.data_type != typeid(Texture *)) continue;
+      if (pin.data_type != DataType::Texture) continue;
       glActiveTexture(GL_TEXTURE0 + unit);
       glBindTexture(GL_TEXTURE_2D, 0);
       ++unit;

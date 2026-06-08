@@ -14,9 +14,9 @@ protected:
   void render_ui() override;
 
   NodeGraph graph;
-  Stream<float> *sin_a_stream_out{};
-  Stream<float> *sin_b_stream_out{};
-  Stream<float> *out_stream{};
+  Stream *sin_a_stream_out{};
+  Stream *sin_b_stream_out{};
+  Stream *out_stream{};
 
   TimeNode *time_node{};
 

@@ -51,9 +51,7 @@ struct ParticleEmitterNode : Node {
 
   void evaluate() override {
     if (!outputs.empty()) {
-      if (const auto out = dynamic_cast<Stream<Particles2D> *>(outputs[0].stream.get())) {
-        out->update(particles_);
-      }
+      outputs[0].set_particles(particles_);
     }
   }
 
@@ -125,7 +123,7 @@ struct ParticleEmitterNode : Node {
 
   static std::unique_ptr<Node> create() {
     auto node = std::make_unique<ParticleEmitterNode>();
-    node->add_typed_output<Particles2D>("particles");
+    node->add_output(DataType::Particles2D, "particles");
     return node;
   }
 

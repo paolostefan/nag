@@ -42,17 +42,11 @@ struct VisualNode : Node {
    */
   void evaluate() override {
     if (enabled && render_target && render_target->is_valid()) {
-      // Render to FBO
       render();
-
-      // Update the output stream with texture
       if (!outputs.empty()) {
-        if (auto *tex_stream = dynamic_cast<Stream<Texture *> *>(outputs[0].stream.get())) {
-          tex_stream->update(&output_texture);
-        }
+        outputs[0].set_texture(&output_texture);
       }
     }
-
     mark_inputs_consumed();
   }
 

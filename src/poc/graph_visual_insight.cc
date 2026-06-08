@@ -169,10 +169,10 @@ void GraphVisualInsight::build_default_graph() {
   graph.add_link(composite->outputs[0], output_node->inputs[0]);
 
   // Set stream pointers
-  noise_stream_out = dynamic_cast<Stream<float> *>(noise_ptr->outputs[0].stream.get());
-  sin_a_stream_out = dynamic_cast<Stream<float> *>(sin_a->outputs[0].stream.get());
-  sin_b_stream_out = dynamic_cast<Stream<float> *>(lfo_b->outputs[0].stream.get());
-  out_stream = dynamic_cast<Stream<float> *>(adding->outputs[0].stream.get());
+  noise_stream_out = static_cast<Stream *>(noise_ptr->outputs[0].stream.get());
+  sin_a_stream_out = static_cast<Stream *>(sin_a->outputs[0].stream.get());
+  sin_b_stream_out = static_cast<Stream *>(lfo_b->outputs[0].stream.get());
+  out_stream = static_cast<Stream *>(adding->outputs[0].stream.get());
 }
 
 // ============================================================================
@@ -451,13 +451,13 @@ void GraphVisualInsight::render_plot() {
 
       // Add points only of ptrs are still valid (null after load)
       if (noise_stream_out)
-        buf_noise.AddPoint(time_node->time, noise_stream_out->value);
+        buf_noise.AddPoint(time_node->time, *noise_stream_out->as_float());
       if (sin_a_stream_out)
-        buf_a.AddPoint(time_node->time, sin_a_stream_out->value);
+        buf_a.AddPoint(time_node->time, *sin_a_stream_out->as_float());
       if (sin_b_stream_out)
-        buf_b.AddPoint(time_node->time, sin_b_stream_out->value);
+        buf_b.AddPoint(time_node->time, *sin_b_stream_out->as_float());
       if (out_stream)
-        buf_out.AddPoint(time_node->time, out_stream->value);
+        buf_out.AddPoint(time_node->time, *out_stream->as_float());
     }
 
     // Plot
@@ -802,9 +802,9 @@ void GraphVisualInsight::render_visual_node_body(
 }
 
 unsigned int GraphVisualInsight::get_pin_color(const Pin &pin) {
-  if (*pin.data_type == typeid(float)) return ImColor(100, 200, 100);
-  if (*pin.data_type == typeid(Texture *)) return ImColor(200, 100, 200);
-  if (*pin.data_type == typeid(void)) return ImColor(150, 150, 150);
+  if (pin.data_type == DataType::Float) return ImColor(100, 200, 100);
+  if (pin.data_type == DataType::Texture) return ImColor(200, 100, 200);
+  if (pin.data_type == DataType::Float) return ImColor(150, 150, 150);
   return ImColor(100, 100, 200);
 }
 

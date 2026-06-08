@@ -4,124 +4,36 @@
 namespace node_registration {
   void register_math_nodes() {
     // AddNode
-    NodeRegistry::instance().register_node<AddNode>(
-      NodeType::Add,
-      "Math",
-      "Adds two or more inputs"
-    );
+    NodeRegistry::instance().register_node(NodeType::Add, "Math", "Adds two or more inputs", [] { return AddNode::create(); });
     // SubtractNode
-    NodeRegistry::instance().register_node<SubtractNode>(
-      NodeType::Subtract,
-      "Math",
-      "Subtracts two inputs"
-    );
+    NodeRegistry::instance().register_node(NodeType::Subtract, "Math", "Subtracts two inputs", [] { return SubtractNode::create(); });
     // MultiplyNode
-    NodeRegistry::instance().register_node<MultiplyNode>(
-      NodeType::Multiply,
-      "Math",
-      "Multiplies two inputs"
-    );
+    NodeRegistry::instance().register_node(NodeType::Multiply, "Math", "Multiplies two inputs", [] { return MultiplyNode::create(); });
     // DivideNode
-    NodeRegistry::instance().register_node<DivideNode>(
-      NodeType::Divide,
-      "Math",
-      "Divides two inputs"
-    );
-    NodeRegistry::instance().register_node<MaxNode>(
-      NodeType::Max,
-      "Math",
-      "Selects the larger input"
-    );
+    NodeRegistry::instance().register_node(NodeType::Divide, "Math", "Divides two inputs", [] { return DivideNode::create(); });
+    NodeRegistry::instance().register_node(NodeType::Max, "Math", "Selects the larger input", [] { return MaxNode::create(2); });
     // ModuloNode
-    NodeRegistry::instance().register_node<ModuloNode>(
-      NodeType::Modulo,
-      "Math",
-      "Calculates the modulo of two inputs"
-    );
+    NodeRegistry::instance().register_node(NodeType::Modulo, "Math", "Calculates the modulo of two inputs", [] { return ModuloNode::create(); });
     // PowerNode
-    NodeRegistry::instance().register_node<PowerNode>(
-      NodeType::Power,
-      "Math",
-      "Raises the first input to the power of the second input"
-    );
+    NodeRegistry::instance().register_node(NodeType::Power, "Math", "Raises the first input to the power of the second input", [] { return PowerNode::create(); });
     // MinNode
-    NodeRegistry::instance().register_node<MinNode>(
-      NodeType::Min,
-      "Math",
-      "Selects the smaller input"
-    );
+    NodeRegistry::instance().register_node(NodeType::Min, "Math", "Selects the smaller input", [] { return MinNode::create(); });
     // CompareNode
-    NodeRegistry::instance().register_node<CompareNode>(
-      NodeType::Compare,
-      "Math",
-      "Compares two inputs and outputs true if the first is greater, otherwise false"
-    );
+    NodeRegistry::instance().register_node(NodeType::Compare, "Math", "Compares two inputs and outputs true if the first is greater, otherwise false", [] { return CompareNode::create(); });
     // AbsNode
-    NodeRegistry::instance().register_node<AbsNode>(
-      NodeType::Abs,
-      "Math",
-      "Calculates the absolute value of the input"
-    );
+    NodeRegistry::instance().register_node(NodeType::Abs, "Math", "Calculates the absolute value of the input", [] { return AbsNode::create(); });
     // FloorNode
-    NodeRegistry::instance().register_node<FloorNode>(
-      NodeType::Floor,
-      "Math",
-      "Rounds the input down to the nearest integer"
-    );
-    NodeRegistry::instance().register_node<CeilNode>(
-      NodeType::Ceil,
-      "Math",
-      "Rounds the input up to the nearest integer"
-    );
-    NodeRegistry::instance().register_node<RoundNode>(
-      NodeType::Round,
-      "Math",
-      "Rounds the input to the nearest integer"
-    );
-    NodeRegistry::instance().register_node<SqrtNode>(
-      NodeType::Sqrt,
-      "Math",
-      "Computes the square root of the input"
-    );
-    NodeRegistry::instance().register_node<NegateNode>(
-      NodeType::Negate,
-      "Math",
-      "Negates the input value"
-    );
-    NodeRegistry::instance().register_node<SinNode>(
-      NodeType::Sin,
-      "Math",
-      "Computes the sine of the input"
-    );
-    NodeRegistry::instance().register_node<CosNode>(
-      NodeType::Cos,
-      "Math",
-      "Computes the cosine of the input"
-    );
-    NodeRegistry::instance().register_node<TanNode>(
-      NodeType::Tan,
-      "Math",
-      "Computes the tangent of the input"
-    );
-    NodeRegistry::instance().register_node<RemapNode>(
-      NodeType::Remap,
-      "Math",
-      "Remaps input from one range to another"
-    );
-    NodeRegistry::instance().register_node<ClampNode>(
-      NodeType::Clamp,
-      "Math",
-      "Clamps input to a specified range"
-    );
-    NodeRegistry::instance().register_node<LerpNode>(
-      NodeType::Lerp,
-      "Math",
-      "Linear interpolation between two values"
-    );
-    NodeRegistry::instance().register_node<SmoothStepNode>(
-      NodeType::SmoothStep,
-      "Math",
-      "Smooth interpolation with ease in/out"
-    );
+    NodeRegistry::instance().register_node(NodeType::Floor, "Math", "Rounds the input down to the nearest integer", [] { return FloorNode::create(); });
+    NodeRegistry::instance().register_node(NodeType::Ceil, "Math", "Rounds the input up to the nearest integer", [] { return CeilNode::create(); });
+    NodeRegistry::instance().register_node(NodeType::Round, "Math", "Rounds the input to the nearest integer", [] { return RoundNode::create(); });
+    NodeRegistry::instance().register_node(NodeType::Sqrt, "Math", "Computes the square root of the input", [] { return SqrtNode::create(); });
+    NodeRegistry::instance().register_node(NodeType::Negate, "Math", "Negates the input value", [] { return NegateNode::create(); });
+    NodeRegistry::instance().register_node(NodeType::Sin, "Math", "Computes the sine of the input", [] { return SinNode::create(); });
+    NodeRegistry::instance().register_node(NodeType::Cos, "Math", "Computes the cosine of the input", [] { return CosNode::create(); });
+    NodeRegistry::instance().register_node(NodeType::Tan, "Math", "Computes the tangent of the input", [] { return TanNode::create(); });
+    NodeRegistry::instance().register_node(NodeType::Remap, "Math", "Remaps input from one range to another", [] { return RemapNode::create(); });
+    NodeRegistry::instance().register_node(NodeType::Clamp, "Math", "Clamps input to a specified range", [] { return ClampNode::create(); });
+    NodeRegistry::instance().register_node(NodeType::Lerp, "Math", "Linear interpolation between two values", [] { return LerpNode::create(); });
+    NodeRegistry::instance().register_node(NodeType::SmoothStep, "Math", "Smooth interpolation with ease in/out", [] { return SmoothStepNode::create(0.f, 1.f); });
   }
 } // namespace node_registration

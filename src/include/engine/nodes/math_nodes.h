@@ -25,21 +25,16 @@ struct MultiplyNode : MultiInputNode {
       return;
     }
 
-    const auto *in_a = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    const auto *in_b = dynamic_cast<Stream<float> *>(inputs[1].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in_a || !in_b || !out) {
-      return;
-    }
-
-    out->update(in_a->value * in_b->value);
+    const float *in_a = inputs[0].get_float();
+    const float *in_b = inputs[1].get_float();
+    if (!in_a || !in_b || !outputs[0].get_float()) { return; }
+    outputs[0].set_float((*in_a) * (*in_b));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<MultiplyNode> create() {
     auto node = std::make_unique<MultiplyNode>();
-    node->add_output("product");
+    node->add_output(DataType::Float, "product");
     return node;
   }
 };
@@ -61,27 +56,18 @@ struct DivideNode : MultiInputNode {
       return;
     }
 
-    const auto *in_a = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    const auto *in_b = dynamic_cast<Stream<float> *>(inputs[1].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in_a || !in_b || !out) {
-      return;
-    }
-
-    // Protect against division by zero
-    float divisor = in_b->value;
-    if (std::abs(divisor) < kEpsilon) {
-      divisor = kEpsilon;
-    }
-
-    out->update(in_a->value / divisor);
+    const float *in_a = inputs[0].get_float();
+    const float *in_b = inputs[1].get_float();
+    if (!in_a || !in_b || !outputs[0].get_float()) { return; }
+    float divisor = *in_b;
+    if (std::abs(divisor) < kEpsilon) { divisor = kEpsilon; }
+    outputs[0].set_float((*in_a) / divisor);
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<DivideNode> create() {
     auto node = std::make_unique<DivideNode>();
-    node->add_output("quotient");
+    node->add_output(DataType::Float, "quotient");
     return node;
   }
 };
@@ -100,20 +86,14 @@ struct AddNode : MultiInputNode {
    */
   void evaluate() override {
     if (!outputs.empty()) {
-      auto *const out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-      if (!out) {
-        return;
-      }
-
+      if (!outputs[0].get_float()) { return; }
       float sum = 0.f;
       for (const auto &pin: inputs) {
-        if (const auto *const in = dynamic_cast<Stream<float> *>(pin.stream.get())) {
-          // This avoids crash on disconnected pins
-          sum += in->value;
+        if (const float *in = pin.get_float()) {
+          sum += *in;
         }
       }
-
-      out->update(sum);
+      outputs[0].set_float(sum);
 
       mark_inputs_consumed();
     }
@@ -121,7 +101,7 @@ struct AddNode : MultiInputNode {
 
   [[nodiscard]] static std::unique_ptr<AddNode> create(const size_t num_inputs = 2) {
     auto node = std::make_unique<AddNode>(num_inputs);
-    node->add_output("sum");
+    node->add_output(DataType::Float, "sum");
     return node;
   }
 };
@@ -140,21 +120,16 @@ struct SubtractNode : MultiInputNode {
       return;
     }
 
-    const auto *in_a = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    const auto *in_b = dynamic_cast<Stream<float> *>(inputs[1].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in_a || !in_b || !out) {
-      return;
-    }
-
-    out->update(in_a->value - in_b->value);
+    const float *in_a = inputs[0].get_float();
+    const float *in_b = inputs[1].get_float();
+    if (!in_a || !in_b || !outputs[0].get_float()) { return; }
+    outputs[0].set_float((*in_a) - (*in_b));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<SubtractNode> create() {
     auto node = std::make_unique<SubtractNode>();
-    node->add_output("a-b");
+    node->add_output(DataType::Float, "a-b");
     return node;
   }
 };
@@ -173,21 +148,16 @@ struct ModuloNode : MultiInputNode {
       return;
     }
 
-    const auto *in_a = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    const auto *in_b = dynamic_cast<Stream<float> *>(inputs[1].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in_a || !in_b || !out) {
-      return;
-    }
-
-    out->update(std::fmod(in_a->value, in_b->value));
+    const float *in_a = inputs[0].get_float();
+    const float *in_b = inputs[1].get_float();
+    if (!in_a || !in_b || !outputs[0].get_float()) { return; }
+    outputs[0].set_float(std::fmod(*in_a, *in_b));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<ModuloNode> create() {
     auto node = std::make_unique<ModuloNode>();
-    node->add_output("a%b");
+    node->add_output(DataType::Float, "a%b");
     return node;
   }
 };
@@ -206,21 +176,16 @@ struct PowerNode : MultiInputNode {
       return;
     }
 
-    const auto *base = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    const auto *exponent = dynamic_cast<Stream<float> *>(inputs[1].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!base || !exponent || !out) {
-      return;
-    }
-
-    out->update(std::pow(base->value, exponent->value));
+    const float *base = inputs[0].get_float();
+    const float *exponent = inputs[1].get_float();
+    if (!base || !exponent || !outputs[0].get_float()) { return; }
+    outputs[0].set_float(std::pow(*base, *exponent));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<PowerNode> create() {
     auto node = std::make_unique<PowerNode>();
-    node->add_output("a^b");
+    node->add_output(DataType::Float, "a^b");
     return node;
   }
 };
@@ -239,28 +204,23 @@ struct MinNode : MultiInputNode {
       return;
     }
 
-    auto *const out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!out) {
-      return;
-    }
-
+    if (!outputs[0].get_float()) { return; }
     float min = std::numeric_limits<float>::max();
 
     for (const auto &pin: inputs) {
       // This if avoids crashes on disconnected pins
-      if (const auto *const in = dynamic_cast<Stream<float> *>(pin.stream.get())) {
-        min = std::min(min, in->value);
+      if (const float *in = pin.get_float()) {
+        min = std::min(min, *in);
       }
     }
 
-    out->update(min);
+    outputs[0].set_float(min);
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<MinNode> create(const uint8_t num_inputs = 2) {
     auto node = std::make_unique<MinNode>(num_inputs);
-    node->add_output("min");
+    node->add_output(DataType::Float, "min");
     return node;
   }
 };
@@ -279,28 +239,23 @@ struct MaxNode : MultiInputNode {
       return;
     }
 
-    auto *const out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!out) {
-      return;
-    }
-
+    if (!outputs[0].get_float()) { return; }
     float max = std::numeric_limits<float>::min();
 
     for (const auto &pin: inputs) {
       // This if avoids crashes on disconnected pins
-      if (const auto *const in = dynamic_cast<Stream<float> *>(pin.stream.get())) {
-        max = std::max(max, in->value);
+      if (const float *in = pin.get_float()) {
+        max = std::max(max, *in);
       }
     }
 
-    out->update(max);
+    outputs[0].set_float(max);
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<MaxNode> create(const uint8_t num_inputs = 2) {
     auto node = std::make_unique<MaxNode>(num_inputs);
-    node->add_output("max");
+    node->add_output(DataType::Float, "max");
     return node;
   }
 };
@@ -319,21 +274,16 @@ struct CompareNode : MultiInputNode {
       return;
     }
 
-    const auto *in_a = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    const auto *in_b = dynamic_cast<Stream<float> *>(inputs[1].stream.get());
-    auto *out = dynamic_cast<Stream<bool> *>(outputs[0].stream.get());
-
-    if (!in_a || !in_b || !out) {
-      return;
-    }
-
-    out->update(in_a->value > in_b->value);
+    const float *in_a = inputs[0].get_float();
+    const float *in_b = inputs[1].get_float();
+    if (!in_a || !in_b || !outputs[0].get_bool()) { return; }
+    outputs[0].set_bool((*in_a) > (*in_b));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<CompareNode> create() {
     auto node = std::make_unique<CompareNode>();
-    node->add_typed_output<bool>("a>b");
+    node->add_output(DataType::Bool, "a>b");
     return node;
   }
 };
@@ -356,21 +306,16 @@ struct AbsNode : Node {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in || !out) {
-      return;
-    }
-
-    out->update(std::abs(in->value));
+    const float *in = inputs[0].get_float();
+    if (!in || !outputs[0].get_float()) { return; }
+    outputs[0].set_float(std::abs(*in));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<AbsNode> create() {
     auto node = std::make_unique<AbsNode>();
-    node->add_input("a");
-    node->add_output("abs(a)");
+    node->add_input(DataType::Float, "a");
+    node->add_output(DataType::Float, "abs(a)");
     return node;
   }
 };
@@ -389,21 +334,16 @@ struct FloorNode : Node {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in || !out) {
-      return;
-    }
-
-    out->update(std::floor(in->value));
+    const float *in = inputs[0].get_float();
+    if (!in || !outputs[0].get_float()) { return; }
+    outputs[0].set_float(std::floor(*in));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<FloorNode> create() {
     auto node = std::make_unique<FloorNode>();
-    node->add_input("a");
-    node->add_output("floor(a)");
+    node->add_input(DataType::Float, "a");
+    node->add_output(DataType::Float, "floor(a)");
     return node;
   }
 };
@@ -422,21 +362,16 @@ struct CeilNode : Node {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in || !out) {
-      return;
-    }
-
-    out->update(std::ceil(in->value));
+    const float *in = inputs[0].get_float();
+    if (!in || !outputs[0].get_float()) { return; }
+    outputs[0].set_float(std::ceil(*in));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<CeilNode> create() {
     auto node = std::make_unique<CeilNode>();
-    node->add_input("a");
-    node->add_output("ceil(a)");
+    node->add_input(DataType::Float, "a");
+    node->add_output(DataType::Float, "ceil(a)");
     return node;
   }
 };
@@ -455,21 +390,16 @@ struct RoundNode : Node {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in || !out) {
-      return;
-    }
-
-    out->update(std::round(in->value));
+    const float *in = inputs[0].get_float();
+    if (!in || !outputs[0].get_float()) { return; }
+    outputs[0].set_float(std::round(*in));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<RoundNode> create() {
     auto node = std::make_unique<RoundNode>();
-    node->add_input("a");
-    node->add_output("round(a)");
+    node->add_input(DataType::Float, "a");
+    node->add_output(DataType::Float, "round(a)");
     return node;
   }
 };
@@ -489,23 +419,17 @@ struct SqrtNode : Node {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in || !out) {
-      return;
-    }
-
-    // Clamp to avoid NaN from negative values
-    const float value = std::max(0.f, in->value);
-    out->update(std::sqrt(value));
+    const float *in = inputs[0].get_float();
+    if (!in || !outputs[0].get_float()) { return; }
+    const float value = std::max(0.f, *in);
+    outputs[0].set_float(std::sqrt(value));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<SqrtNode> create() {
     auto node = std::make_unique<SqrtNode>();
-    node->add_input("a");
-    node->add_output("sqrt(a)");
+    node->add_input(DataType::Float, "a");
+    node->add_output(DataType::Float, "sqrt(a)");
     return node;
   }
 };
@@ -524,21 +448,16 @@ struct NegateNode : Node {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in || !out) {
-      return;
-    }
-
-    out->update(-in->value);
+    const float *in = inputs[0].get_float();
+    if (!in || !outputs[0].get_float()) { return; }
+    outputs[0].set_float(-(*in));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<NegateNode> create() {
     auto node = std::make_unique<NegateNode>();
-    node->add_input("a");
-    node->add_output("-a");
+    node->add_input(DataType::Float, "a");
+    node->add_output(DataType::Float, "-a");
     return node;
   }
 };
@@ -553,21 +472,16 @@ struct SinNode : Node {
   }
 
   void evaluate() override {
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in || !out) {
-      return;
-    }
-
-    out->update(std::sin(in->value));
+    const float *in = inputs[0].get_float();
+    if (!in || !outputs[0].get_float()) { return; }
+    outputs[0].set_float(std::sin(*in));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<SinNode> create() {
     auto node = std::make_unique<SinNode>();
-    node->add_input("a");
-    node->add_output("sin(a)");
+    node->add_input(DataType::Float, "a");
+    node->add_output(DataType::Float, "sin(a)");
     return node;
   }
 };
@@ -587,21 +501,16 @@ struct CosNode : Node {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in || !out) {
-      return;
-    }
-
-    out->update(std::cos(in->value));
+    const float *in = inputs[0].get_float();
+    if (!in || !outputs[0].get_float()) { return; }
+    outputs[0].set_float(std::cos(*in));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<CosNode> create() {
     auto node = std::make_unique<CosNode>();
-    node->add_input("a");
-    node->add_output("cos(a)");
+    node->add_input(DataType::Float, "a");
+    node->add_output(DataType::Float, "cos(a)");
     return node;
   }
 };
@@ -620,21 +529,16 @@ struct TanNode : Node {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in || !out) {
-      return;
-    }
-
-    out->update(std::tan(in->value));
+    const float *in = inputs[0].get_float();
+    if (!in || !outputs[0].get_float()) { return; }
+    outputs[0].set_float(std::tan(*in));
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<TanNode> create() {
     auto node = std::make_unique<TanNode>();
-    node->add_input("a");
-    node->add_output("tan(a)");
+    node->add_input(DataType::Float, "a");
+    node->add_output(DataType::Float, "tan(a)");
     return node;
   }
 };
@@ -662,26 +566,22 @@ struct RemapNode : Node {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in || !out) {
-      return;
-    }
+    const float *in = inputs[0].get_float();
+    if (!in || !outputs[0].get_float()) { return; }
 
     // Avoid division by zero
     const float in_range = in_max - in_min;
     if (std::abs(in_range) < 1e-6f) {
-      out->update(out_min);
+      outputs[0].set_float(out_min);
       mark_inputs_consumed();
       return;
     }
 
     // Linear mapping
-    const float t = (in->value - in_min) / in_range;
+    const float t = (*in - in_min) / in_range;
     const float result = out_min + t * (out_max - out_min);
 
-    out->update(result);
+    outputs[0].set_float(result);
     mark_inputs_consumed();
   }
 
@@ -760,8 +660,8 @@ struct RemapNode : Node {
     node->in_max = in_max;
     node->out_min = out_min;
     node->out_max = out_max;
-    node->add_input("in");
-    node->add_output("out");
+    node->add_input(DataType::Float, "in");
+    node->add_output(DataType::Float, "out");
     return node;
   }
 };
@@ -783,15 +683,11 @@ struct ClampNode : Node {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
+    const float *in = inputs[0].get_float();
+    if (!in || !outputs[0].get_float()) { return; }
 
-    if (!in || !out) {
-      return;
-    }
-
-    const float clamped = std::clamp(in->value, min_value, max_value);
-    out->update(clamped);
+    const float clamped = std::clamp(*in, min_value, max_value);
+    outputs[0].set_float(clamped);
     mark_inputs_consumed();
   }
 
@@ -844,8 +740,8 @@ struct ClampNode : Node {
     auto node = std::make_unique<ClampNode>();
     node->min_value = min_value;
     node->max_value = max_value;
-    node->add_input("in");
-    node->add_output("out");
+    node->add_input(DataType::Float, "in");
+    node->add_output(DataType::Float, "out");
     return node;
   }
 };
@@ -864,28 +760,26 @@ struct LerpNode : Node {
       return;
     }
 
-    const auto *in_a = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    const auto *in_b = dynamic_cast<Stream<float> *>(inputs[1].stream.get());
-    const auto *in_t = dynamic_cast<Stream<float> *>(inputs[2].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in_a || !in_b || !in_t || !out) {
+    const float *in_a = inputs[0].get_float();
+    const float *in_b = inputs[1].get_float();
+    const float *in_t = inputs[2].get_float();
+    if (!in_a || !in_b || !in_t || !outputs[0].get_float()) {
       return;
     }
 
-    const float t = std::clamp(in_t->value, 0.f, 1.f);
-    const float result = in_a->value + t * (in_b->value - in_a->value);
+    const float t = std::clamp(*in_t, 0.f, 1.f);
+    const float result = *in_a + t * (*in_b - *in_a);
 
-    out->update(result);
+    outputs[0].set_float(result);
     mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<LerpNode> create() {
     auto node = std::make_unique<LerpNode>();
-    node->add_input("a");
-    node->add_input("b");
-    node->add_input("t");
-    node->add_output("out");
+    node->add_input(DataType::Float, "a");
+    node->add_input(DataType::Float, "b");
+    node->add_input(DataType::Float, "t");
+    node->add_output(DataType::Float, "out");
     return node;
   }
 };
@@ -907,65 +801,17 @@ struct SmoothStepNode : Node {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in || !out) {
-      return;
-    }
+    const float *in = inputs[0].get_float();
+    if (!in || !outputs[0].get_float()) { return; }
 
     // Clamp t to [0, 1]
-    const float t = std::clamp((in->value - edge0) / (edge1 - edge0), 0.f, 1.f);
+    const float t = std::clamp((*in - edge0) / (edge1 - edge0), 0.f, 1.f);
 
     // Hermite interpolation: 3t² - 2t³
     const float smooth = t * t * (3.f - 2.f * t);
 
-    out->update(smooth);
+    outputs[0].set_float(smooth);
     mark_inputs_consumed();
-  }
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j;
-    j["edge0"] = edge0;
-    j["edge1"] = edge1;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      if (j.contains("edge0")) edge0 = j["edge0"];
-      if (j.contains("edge1")) edge1 = j["edge1"];
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize SmoothStep params: ") + e.what()
-      );
-    }
-  }
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat(
-      "Edge0",
-      id,
-      edge0,
-      [](Node &n, const float v) { dynamic_cast<SmoothStepNode &>(n).edge0 = v; },
-      graph, history,
-      0.f, 1.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Edge1",
-      id,
-      edge1,
-      [](Node &n, const float v) { dynamic_cast<SmoothStepNode &>(n).edge1 = v; },
-      graph, history,
-      0.f, 1.f, "%.2f"
-    );
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "edge0") return edge0;
-    if (param_name == "edge1") return edge1;
-    return 0.f;
   }
 
   [[nodiscard]] static std::unique_ptr<SmoothStepNode> create(const float edge0 = 0.f,
@@ -973,8 +819,8 @@ struct SmoothStepNode : Node {
     auto node = std::make_unique<SmoothStepNode>();
     node->edge0 = edge0;
     node->edge1 = edge1;
-    node->add_input("in");
-    node->add_output("out");
+    node->add_input(DataType::Float, "in");
+    node->add_output(DataType::Float, "out");
     return node;
   }
 };

@@ -21,9 +21,7 @@ struct ConstantFloatNode : Node {
 
   void evaluate() override {
     if (!outputs.empty()) {
-      if (const auto out = dynamic_cast<Stream<float> *>(outputs[0].stream.get())) {
-        out->update(value);
-      }
+      outputs[0].set_float(value);
     }
   }
 
@@ -56,7 +54,7 @@ struct ConstantFloatNode : Node {
 
   static std::unique_ptr<Node> create(const float _value = 0.f) {
     auto node = std::make_unique<ConstantFloatNode>(_value);
-    node->add_output("out");
+    node->add_output(DataType::Float, "out");
     return node;
   }
 };
@@ -75,9 +73,7 @@ struct TimeNode : Node {
 
   constexpr void evaluate() override {
     if (!outputs.empty()) {
-      if (const auto out = dynamic_cast<Stream<float> *>(outputs[0].stream.get())) {
-        out->update(time);
-      }
+      outputs[0].set_float(time);
     }
   }
 
@@ -88,8 +84,8 @@ struct TimeNode : Node {
 
   static std::unique_ptr<Node> create() {
     auto node = std::make_unique<TimeNode>();
-    node->add_output("time");
-    node->outputs[0].stream = std::make_shared<Stream<float> >();
+    node->add_output(DataType::Float, "time");
+    
 
     return node;
   }
@@ -115,24 +111,20 @@ struct NoiseNode : Node {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in || !out) {
-      return;
-    }
+    const float *in = inputs[0].get_float();
+    if (!in) { return; }
 
     float result = 0.f;
     float amp = amplitude;
     float freq = frequency;
 
     for (int i = 0; i < octaves; ++i) {
-      result += simple_noise(in->value * freq) * amp;
+      result += simple_noise((*in) * freq) * amp;
       amp *= persistence;
       freq *= 2.f;
     }
 
-    out->update(result);
+    outputs[0].set_float(result);
     mark_inputs_consumed();
   }
 
@@ -203,8 +195,8 @@ struct NoiseNode : Node {
     node->amplitude = amplitude;
     node->octaves = octaves;
     node->persistence = persistence;
-    node->add_input("x");
-    node->add_output("noise");
+    node->add_input(DataType::Float, "x");
+    node->add_output(DataType::Float, "noise");
     return node;
   }
 
@@ -261,18 +253,14 @@ struct RandomNode : Node {
       return;
     }
 
-    const auto *trigger = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!trigger || !out) {
-      return;
-    }
+    const float *trigger = inputs[0].get_float();
+    if (!trigger || !outputs[0].get_float()) { return; }
 
     // Generate new value only when the trigger changes
-    if (trigger->version != last_trigger_version) {
+    if (inputs[0].stream->version != last_trigger_version) {
       float random_value = dist(rng);
-      out->update(random_value);
-      last_trigger_version = trigger->version;
+      outputs[0].set_float(random_value);
+      last_trigger_version = inputs[0].stream->version;
     }
 
     mark_inputs_consumed();
@@ -355,20 +343,16 @@ struct StepSequencerNode : Node {
       return;
     }
 
-    const auto *trigger = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!trigger || !out) {
-      return;
-    }
+    const float *trigger = inputs[0].get_float();
+    if (!trigger || !outputs[0].get_float()) { return; }
 
     // Advance step only when the trigger changes
-    if (trigger->version != last_trigger_version) {
+    if (inputs[0].stream->version != last_trigger_version) {
       current_step = (current_step + 1) % steps.size();
-      last_trigger_version = trigger->version;
+      last_trigger_version = inputs[0].stream->version;
     }
 
-    out->update(steps[current_step]);
+    outputs[0].set_float(steps[current_step]);
     mark_inputs_consumed();
   }
 

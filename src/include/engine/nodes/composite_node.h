@@ -84,9 +84,9 @@ struct CompositeNode : ShaderNode {
     auto node = std::make_unique<CompositeNode>();
     node->blend_mode = blend_mode;
     node->opacity = opacity;
-    node->add_typed_input<Texture *>("base"); // Texture input 0
-    node->add_typed_input<Texture *>("blend"); // Texture input 1
-    node->add_typed_output<Texture *>("texture"); // Composited output
+    node->add_input(DataType::Texture, "base"); // Texture input 0
+    node->add_input(DataType::Texture, "blend"); // Texture input 1
+    node->add_output(DataType::Texture, "texture"); // Composited output
     return node;
   }
 

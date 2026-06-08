@@ -108,17 +108,17 @@ struct CircleNode : ShaderNode {
 private:
   void update_from_inputs() override {
     if (inputs.size() >= 2) {
-      if (const auto *x_stream = dynamic_cast<Stream<float> *>(inputs[0].stream.get())) {
-        position.x = x_stream->value;
+      if (const float *x = inputs[0].get_float()) {
+        position.x = *x;
       }
-      if (auto *y_stream = dynamic_cast<Stream<float> *>(inputs[1].stream.get())) {
-        position.y = y_stream->value;
+      if (const float *y = inputs[1].get_float()) {
+        position.y = *y;
       }
     }
 
     if (inputs.size() >= 3) {
-      if (const auto *r_stream = dynamic_cast<Stream<float> *>(inputs[2].stream.get())) {
-        radius = r_stream->value;
+      if (const float *r = inputs[2].get_float()) {
+        radius = *r;
       }
     }
   }
@@ -134,11 +134,11 @@ public:
     node->position = position;
     node->radius = radius;
     node->color = color;
-    node->add_input("pos_x");
-    node->add_input("pos_y");
-    node->add_input("radius");
+    node->add_input(DataType::Float, "pos_x");
+    node->add_input(DataType::Float, "pos_y");
+    node->add_input(DataType::Float, "radius");
 
-    node->add_typed_output<Texture *>("texture");
+    node->add_output(DataType::Texture, "texture");
     return node;
   }
 };

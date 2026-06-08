@@ -581,8 +581,8 @@ void GraphEditorUI::render_visual_node_body(
 }
 
 unsigned int GraphEditorUI::get_pin_color(const Pin &pin) {
-  if (*pin.data_type == typeid(float)) return ImColor(100, 200, 100);
-  if (*pin.data_type == typeid(Texture *)) return ImColor(200, 100, 200);
-  if (*pin.data_type == typeid(void)) return ImColor(150, 150, 150);
+  if (pin.data_type == DataType::Float) return ImColor(100, 200, 100);
+  if (pin.data_type == DataType::Texture) return ImColor(200, 100, 200);
+  if (pin.data_type == DataType::Float) return ImColor(150, 150, 150);
   return ImColor(100, 100, 200);
 }

@@ -21,14 +21,14 @@ public:
 
   [[nodiscard]] static std::unique_ptr<OutputNode> create() {
     auto node = std::make_unique<OutputNode>();
-    node->add_typed_input<Texture *>("texture");
+    node->add_input(DataType::Texture, "texture");
     return node;
   }
 
   void evaluate() override {
-    // Read the Texture* from the connected stream, if any.
-    const auto *stream = dynamic_cast<Stream<Texture *> *>(inputs[0].stream.get());
-    last_texture_ = stream != nullptr ? stream->value : nullptr;
+    if (Texture **tex = inputs[0].get_texture()) {
+      last_texture_ = *tex;
+    }
     mark_inputs_consumed();
   }
 

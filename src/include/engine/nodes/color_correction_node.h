@@ -122,13 +122,13 @@ struct ColorCorrectionNode : ShaderNode {
     node->saturation = saturation;
     node->hue_shift  = hue_shift;
 
-    node->add_typed_input<Texture *>("texture");
-    node->add_typed_input<float>("brightness");
-    node->add_typed_input<float>("contrast");
-    node->add_typed_input<float>("saturation");
-    node->add_typed_input<float>("hue_shift");
+    node->add_input(DataType::Texture, "texture");
+    node->add_input(DataType::Float, "brightness");
+    node->add_input(DataType::Float, "contrast");
+    node->add_input(DataType::Float, "saturation");
+    node->add_input(DataType::Float, "hue_shift");
 
-    node->add_typed_output<Texture *>("texture");
+    node->add_output(DataType::Texture, "texture");
     return node;
   }
 
@@ -136,8 +136,8 @@ private:
   void update_from_inputs() override {
     auto read = [&](const char *pin_name, float &dst) {
       if (const Pin *p = get_input(pin_name); p && p->connected) {
-        if (const auto *s = dynamic_cast<Stream<float> *>(p->stream.get())) {
-          dst = s->value;
+        if (const float *s = p->get_float()) {
+          dst = *s;
         }
       }
     };

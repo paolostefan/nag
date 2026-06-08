@@ -95,8 +95,8 @@ GLuint ShaderProgram::compile_shader(const GLenum type, const std::string &sourc
   if (!success) {
     GLchar info_log[512];
     glGetShaderInfoLog(shader, 512, nullptr, info_log);
-    spdlog::error("Shader compilation failed ({}): {}",
-                  type == GL_VERTEX_SHADER ? "vertex" : "fragment",
+    spdlog::error("{} shader compilation failed: {}",
+                  type == GL_VERTEX_SHADER ? "Vertex" : "Fragment",
                   info_log);
     glDeleteShader(shader);
     return 0;

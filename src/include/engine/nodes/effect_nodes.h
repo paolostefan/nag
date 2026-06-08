@@ -123,9 +123,8 @@ private:
     // If radius pin is connected, override the member variable with the input value.
     if (const Pin *radius_pin = get_input("radius");
       radius_pin && radius_pin->connected) {
-      if (const auto *s =
-          dynamic_cast<Stream<float> *>(radius_pin->stream.get())) {
-        radius = s->value;
+      if (const float *s = radius_pin->get_float()) {
+        radius = *s;
       }
     }
   }
@@ -134,9 +133,9 @@ public:
   [[nodiscard]] static std::unique_ptr<BlurNode> create(const float radius = 4.f) {
     auto node = std::make_unique<BlurNode>();
     node->radius = radius;
-    node->add_typed_input<Texture *>("texture");
-    node->add_typed_input<float>("radius"); // animatable via pin
-    node->add_typed_output<Texture *>("texture");
+    node->add_input(DataType::Texture, "texture");
+    node->add_input(DataType::Float, "radius"); // animatable via pin
+    node->add_output(DataType::Texture, "texture");
     return node;
   }
 };
@@ -204,9 +203,9 @@ struct ChromaticAberrationNode : ShaderNode {
     const float strength = 3.f) {
     auto node = std::make_unique<ChromaticAberrationNode>();
     node->strength = strength;
-    node->add_typed_input<Texture *>("texture");
-    node->add_typed_input<float>("strength");
-    node->add_typed_output<Texture *>("texture");
+    node->add_input(DataType::Texture, "texture");
+    node->add_input(DataType::Float, "strength");
+    node->add_output(DataType::Texture, "texture");
     return node;
   }
 };
@@ -273,9 +272,9 @@ struct PixelateNode : ShaderNode {
     const float pixel_size = 8.f) {
     auto node = std::make_unique<PixelateNode>();
     node->pixel_size = pixel_size;
-    node->add_typed_input<Texture *>("texture");
-    node->add_typed_input<float>("pixel_size");
-    node->add_typed_output<Texture *>("texture");
+    node->add_input(DataType::Texture, "texture");
+    node->add_input(DataType::Float, "pixel_size");
+    node->add_output(DataType::Texture, "texture");
     return node;
   }
 };

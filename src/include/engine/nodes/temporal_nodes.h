@@ -43,14 +43,12 @@ struct LFONode : Node {
       return;
     }
 
-    const auto *in = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!in || !out) {
+    const float *in = inputs[0].get_float();
+    if (!in || !outputs[0].get_float()) {
       return;
     }
 
-    const float time = in->value;
+    const float time = *in;
     const float angle = 2.f * PI * frequency * time + phase;
 
     float wave_value = 0.f;
@@ -80,7 +78,7 @@ struct LFONode : Node {
     }
 
     const float result = offset + amplitude * wave_value;
-    out->update(result);
+    outputs[0].set_float(result);
     mark_inputs_consumed();
   }
 
@@ -197,8 +195,8 @@ struct LFONode : Node {
     node->wave_shape = wave_shape;
     node->phase = phase;
     node->offset = offset;
-    node->add_input("time");
-    node->add_output("wave");
+    node->add_input(DataType::Float, "time");
+    node->add_output(DataType::Float, "wave");
     return node;
   }
 };
@@ -241,16 +239,14 @@ struct EnvelopeNode : Node {
       return;
     }
 
-    const auto *trigger_stream = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    const auto *time_stream = dynamic_cast<Stream<float> *>(inputs[1].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!trigger_stream || !time_stream || !out) {
+    const float *trigger_stream = inputs[0].get_float();
+    const float *time_stream = inputs[1].get_float();
+    if (!trigger_stream || !time_stream || !outputs[0].get_float()) {
       return;
     }
 
-    const float trigger = trigger_stream->value;
-    const float time = time_stream->value;
+    const float trigger = *trigger_stream;
+    const float time = *time_stream;
     const bool is_triggered = trigger > 0.5f;
 
     // Detect trigger transitions
@@ -267,7 +263,7 @@ struct EnvelopeNode : Node {
     // Update envelope based on current state
     update_envelope(time);
 
-    out->update(envelope_value);
+    outputs[0].set_float(envelope_value);
     mark_inputs_consumed();
   }
 
@@ -441,9 +437,9 @@ public:
     node->decay_time = decay_time;
     node->sustain_level = sustain_level;
     node->release_time = release_time;
-    node->add_input("trigger");
-    node->add_input("time");
-    node->add_output("envelope");
+    node->add_input(DataType::Float, "trigger");
+    node->add_input(DataType::Float, "time");
+    node->add_output(DataType::Float, "envelope");
     return node;
   }
 };
@@ -483,16 +479,14 @@ struct DelayNode : Node {
       return;
     }
 
-    const auto *value_stream = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    const auto *time_stream = dynamic_cast<Stream<float> *>(inputs[1].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!value_stream || !time_stream || !out) {
+    const float *value_stream = inputs[0].get_float();
+    const float *time_stream = inputs[1].get_float();
+    if (!value_stream || !time_stream || !outputs[0].get_float()) {
       return;
     }
 
-    const float current_time = time_stream->value;
-    const float current_value = value_stream->value;
+    const float current_time = *time_stream;
+    const float current_value = *value_stream;
 
     // Initialize on first run
     if (!initialized) {
@@ -518,7 +512,7 @@ struct DelayNode : Node {
 
     // Output oldest value from buffer
     const float delayed_value = buffer.empty() ? 0.f : buffer.front();
-    out->update(delayed_value);
+    outputs[0].set_float(delayed_value);
     mark_inputs_consumed();
   }
 
@@ -593,9 +587,9 @@ struct DelayNode : Node {
     node->delay_time = delay_time;
     node->sample_rate = sample_rate;
     node->update_buffer_size();
-    node->add_input("value");
-    node->add_input("time");
-    node->add_output("delayed");
+    node->add_input(DataType::Float, "value");
+    node->add_input(DataType::Float, "time");
+    node->add_output(DataType::Float, "delayed");
     return node;
   }
 };
@@ -622,16 +616,14 @@ struct SmootherNode : Node {
       return;
     }
 
-    const auto *target_stream = dynamic_cast<Stream<float> *>(inputs[0].stream.get());
-    const auto *time_stream = dynamic_cast<Stream<float> *>(inputs[1].stream.get());
-    auto *out = dynamic_cast<Stream<float> *>(outputs[0].stream.get());
-
-    if (!target_stream || !time_stream || !out) {
+    const float *target_stream = inputs[0].get_float();
+    const float *time_stream = inputs[1].get_float();
+    if (!target_stream || !time_stream || !outputs[0].get_float()) {
       return;
     }
 
-    const float target = target_stream->value;
-    const float time = time_stream->value;
+    const float target = *target_stream;
+    const float time = *time_stream;
 
     // Initialize on first run
     if (!initialized) {
@@ -653,7 +645,7 @@ struct SmootherNode : Node {
       current_value = target;
     }
 
-    out->update(current_value);
+    outputs[0].set_float(current_value);
     mark_inputs_consumed();
   }
 
@@ -697,9 +689,9 @@ struct SmootherNode : Node {
   static std::unique_ptr<SmootherNode> create(const float smooth_time = 0.1f) {
     auto node = std::make_unique<SmootherNode>();
     node->smooth_time = smooth_time;
-    node->add_input("target");
-    node->add_input("time");
-    node->add_output("smoothed");
+    node->add_input(DataType::Float, "target");
+    node->add_input(DataType::Float, "time");
+    node->add_output(DataType::Float, "smoothed");
     return node;
   }
 };

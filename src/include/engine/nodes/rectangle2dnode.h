@@ -84,17 +84,17 @@ struct Rectangle2DNode : ShaderNode {
 protected:
   void update_from_inputs() override {
     if (inputs.size() >= 2) {
-      if (const auto *const x_stream = dynamic_cast<Stream<float> *>(inputs[0].stream.get())) {
-        position.x = x_stream->value;
+      if (const float *x = inputs[0].get_float()) {
+        position.x = *x;
       }
-      if (const auto *const y_stream = dynamic_cast<Stream<float> *>(inputs[1].stream.get())) {
-        position.y = y_stream->value;
+      if (const float *y = inputs[1].get_float()) {
+        position.y = *y;
       }
     }
 
     if (inputs.size() >= 3) {
-      if (const auto *const rot_stream = dynamic_cast<Stream<float> *>(inputs[2].stream.get())) {
-        rotation = rot_stream->value;
+      if (const float *rot = inputs[2].get_float()) {
+        rotation = *rot;
       }
     }
   }
@@ -113,11 +113,11 @@ public:
     node->color = color;
     node->corner_radius = corner_radius;
 
-    node->add_input("pos_x");
-    node->add_input("pos_y");
-    node->add_input("rotation");
+    node->add_input(DataType::Float, "pos_x");
+    node->add_input(DataType::Float, "pos_y");
+    node->add_input(DataType::Float, "rotation");
 
-    node->add_typed_output<Texture *>("texture");
+    node->add_output(DataType::Texture, "texture");
 
     return node;
   }

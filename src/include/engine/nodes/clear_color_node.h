@@ -89,8 +89,8 @@ private:
         // Skip if not connected, the value will be taken from the node's own color parameter
         if (!inputs[i].connected) continue;
 
-        if (const auto *stream = dynamic_cast<Stream<float> *>(inputs[i].stream.get())) {
-          color[i] = stream->value;
+        if (const float *v = inputs[i].get_float()) {
+          color[i] = *v;
         }
       }
     }
@@ -98,8 +98,8 @@ private:
     if (inputs.size() >= 5) {
       // Update the 'enabled' field from inputs[4] if connected
       if (inputs[4].connected) {
-        if (const auto *stream = dynamic_cast<Stream<bool> *>(inputs[4].stream.get())) {
-          enabled = stream->value;
+        if (const bool *b = inputs[4].get_bool()) {
+          enabled = *b;
         }
       }
     }
@@ -113,13 +113,13 @@ public:
     auto node = std::make_unique<ClearColorNode>();
 
     node->color = color;
-    node->add_input("r");
-    node->add_input("g");
-    node->add_input("b");
-    node->add_input("a");
-    node->add_typed_input<bool>("enabled");
+    node->add_input(DataType::Float, "r");
+    node->add_input(DataType::Float, "g");
+    node->add_input(DataType::Float, "b");
+    node->add_input(DataType::Float, "a");
+    node->add_input(DataType::Bool, "enabled");
 
-    node->add_typed_output<Texture *>("texture");
+    node->add_output(DataType::Texture, "texture");
 
     return node;
   }

@@ -16,7 +16,7 @@ Node *NodeGraph::add_node(std::unique_ptr<Node> &&node) {
 
     // Create a stream for each output pin
     if (!pin.stream) {
-      pin.stream = std::make_shared<Stream<float> >();
+      pin.stream = std::make_shared<Stream>(default_stream_value(pin.data_type));
     }
   }
 

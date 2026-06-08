@@ -107,7 +107,7 @@ struct GradientNode : ShaderNode {
     node->color_start = color_start;
     node->color_end = color_end;
 
-    node->add_typed_output<Texture *>("texture");
+    node->add_output(DataType::Texture, "texture");
     return node;
   }
 

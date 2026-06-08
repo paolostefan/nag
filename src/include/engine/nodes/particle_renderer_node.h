@@ -165,9 +165,9 @@ struct ParticleRendererNode : VisualNode {
 
   static std::unique_ptr<Node> create() {
     auto node = std::make_unique<ParticleRendererNode>();
-    node->add_typed_input<Particles2D>("particles");
-    node->add_typed_input<Texture *>("texture");
-    node->add_typed_output<Texture *>("texture");
+    node->add_input(DataType::Particles2D, "particles");
+    node->add_input(DataType::Texture, "texture");
+    node->add_output(DataType::Texture, "texture");
     return node;
   }
 
@@ -185,14 +185,14 @@ private:
 
   void render_background() const {
     if (inputs.size() < 2) return;
-    const auto *ts = dynamic_cast<Stream<Texture *> *>(inputs[1].stream.get());
-    if (!ts || !ts->value || !ts->value->is_valid()) return;
+    Texture *const *ts = inputs[1].get_texture();
+    if (!ts || !*ts || !(*ts)->is_valid()) return;
 
     glDisable(GL_BLEND);
     bg_shader_->use();
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, ts->value->texture_id);
+    glBindTexture(GL_TEXTURE_2D, (*ts)->texture_id);
     bg_shader_->set_uniform("u_texture", 0);
 
     ShaderQuadHelper::instance().render();
@@ -204,10 +204,10 @@ private:
 
   void render_particles() const {
     if (inputs.empty()) return;
-    const auto *ps = dynamic_cast<Stream<Particles2D> *>(inputs[0].stream.get());
-    if (!ps || ps->value.particles.empty()) return;
+    const Particles2D *ps = inputs[0].get_particles();
+    if (!ps || ps->particles.empty()) return;
 
-    const auto &particles = ps->value.particles;
+    const auto &particles = ps->particles;
     const size_t count = particles.size();
 
     if (vbo_ == 0) return;

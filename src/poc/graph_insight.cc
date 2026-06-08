@@ -31,9 +31,9 @@ GraphInsight::GraphInsight() : UIWindow("Graph insight POC", 800, 600) {
   // ===============
 
   // Set stream pointers
-  sin_a_stream_out = dynamic_cast<Stream<float> *>(sin_a->outputs[0].stream.get());
-  sin_b_stream_out = dynamic_cast<Stream<float> *>(sin_b->outputs[0].stream.get());
-  out_stream = dynamic_cast<Stream<float> *>(adding_node->outputs[0].stream.get());
+  sin_a_stream_out = static_cast<Stream *>(sin_a->outputs[0].stream.get());
+  sin_b_stream_out = static_cast<Stream *>(sin_b->outputs[0].stream.get());
+  out_stream = static_cast<Stream *>(adding_node->outputs[0].stream.get());
 }
 
 
@@ -73,9 +73,9 @@ void GraphInsight::render_ui() {
 
     graph.evaluate();
 
-    buffer_in_a.AddPoint(time_node->time, sin_a_stream_out->value);
-    buffer_in_b.AddPoint(time_node->time, sin_b_stream_out->value);
-    buffer_out.AddPoint(time_node->time, out_stream->value);
+    buffer_in_a.AddPoint(time_node->time, *sin_a_stream_out->as_float());
+    buffer_in_b.AddPoint(time_node->time, *sin_b_stream_out->as_float());
+    buffer_out.AddPoint(time_node->time, *out_stream->as_float());
   }
 
   static ImPlotAxisFlags axis_flags = ImPlotAxisFlags_AutoFit;
@@ -111,7 +111,7 @@ void GraphInsight::render_ui() {
     ImGui::Text("Inputs:");
     for (auto const &pin: node->inputs) {
       ImGui::BulletText("%s: %s (v=%lu)", pin.name.c_str(),
-                        pin.stream ? pin.stream->name() : "null",
+                        pin.stream ? data_type_name(pin.data_type) : "null",
                         pin.stream ? pin.stream->version : 0);
     }
     ImGui::Separator();
@@ -119,7 +119,7 @@ void GraphInsight::render_ui() {
     ImGui::Text("Outputs:");
     for (auto const &pin: node->outputs) {
       ImGui::BulletText("%s: %s (v=%lu)", pin.name.c_str(),
-                        pin.stream ? pin.stream->name() : "null",
+                        pin.stream ? data_type_name(pin.data_type) : "null",
                         pin.stream ? pin.stream->version : 0);
     }
 

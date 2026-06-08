@@ -66,9 +66,9 @@ struct VintageCRTNode : ShaderNode {
     const float pixel_size = 8.f) {
     auto node = std::make_unique<VintageCRTNode>();
     node->pixel_size = pixel_size;
-    node->add_typed_input<Texture *>("texture");
-    node->add_typed_input<float>("pixel_size");
-    node->add_typed_output<Texture *>("texture");
+    node->add_input(DataType::Texture, "texture");
+    node->add_input(DataType::Float, "pixel_size");
+    node->add_output(DataType::Texture, "texture");
     return node;
   }
 };

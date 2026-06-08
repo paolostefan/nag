@@ -51,7 +51,7 @@ TEST_F(NodesTest, MultiplyNode) {
   // Evaluation of multiply node should be triggered by the constant nodes
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 6.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 6.f);
 }
 
 TEST_F(NodesTest, DivideNodeDivideByZero) {
@@ -81,7 +81,7 @@ TEST_F(NodesTest, DivideNodeDivideByZero) {
   // Evaluation of divide node should be triggered by the constant nodes
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value,
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(),
                   2.f/DivideNode::kEpsilon);
 }
 
@@ -103,7 +103,7 @@ TEST_F(NodesTest, RemapNode)
   // Evaluation of remap node should be triggered by the constant node
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 50.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 50.f);
 }
 
 TEST_F(NodesTest, LFONodeTest) {
@@ -129,7 +129,7 @@ TEST_F(NodesTest, LFONodeTest) {
   // Trigger evaluation
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(lfo_node->outputs[0].stream.get())->value, 0.5f);
+  EXPECT_FLOAT_EQ(*lfo_node->outputs[0].get_float(), 0.5f);
 }
 
 // ===========================================================================
@@ -147,7 +147,7 @@ TEST_F(NodesTest, ConstantFloatNode) {
   node_ptr->evaluate();
 
   EXPECT_FLOAT_EQ(
-    dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 42.f);
+    *node_ptr->outputs[0].get_float(), 42.f);
 }
 
 TEST_F(NodesTest, TimeNode) {
@@ -161,11 +161,11 @@ TEST_F(NodesTest, TimeNode) {
 
   // Initial time should be 0
   node_ptr->evaluate();
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 0.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 0.f);
 
   // Step forward by 0.5 seconds
   dynamic_cast<TimeNode*>(node_ptr)->step(0.5f);
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 0.5f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 0.5f);
 }
 
 TEST_F(NodesTest, NoiseNode) {
@@ -185,7 +185,7 @@ TEST_F(NodesTest, NoiseNode) {
   node_graph->evaluate();
 
   // Just verify it produces a value (noise is deterministic based on input)
-  const float result = dynamic_cast<Stream<float> *>(noise_ptr->outputs[0].stream.get())->value;
+  const float result = *noise_ptr->outputs[0].get_float();
   EXPECT_TRUE(std::isfinite(result));
 }
 
@@ -198,8 +198,8 @@ TEST_F(NodesTest, RandomNode) {
 
   auto trigger_node = ConstantFloatNode::create(1.f);
 
-  node->add_input("trigger");
-  node->add_output("random");
+  node->add_input(DataType::Float, "trigger");
+  node->add_output(DataType::Float, "random");
 
   const auto trigger_ptr = node_graph->add_node(std::move(trigger_node));
   const auto random_ptr = node_graph->add_node(std::move(node));
@@ -209,7 +209,7 @@ TEST_F(NodesTest, RandomNode) {
   trigger_ptr->evaluate();
   node_graph->evaluate();
 
-  const float result = dynamic_cast<Stream<float> *>(random_ptr->outputs[0].stream.get())->value;
+  const float result = *random_ptr->outputs[0].get_float();
   EXPECT_GE(result, 0.f);
   EXPECT_LE(result, 10.f);
 }
@@ -222,8 +222,8 @@ TEST_F(NodesTest, StepSequencerNode) {
 
   auto trigger_node = ConstantFloatNode::create(1.f);
 
-  node->add_input("trigger");
-  node->add_output("step");
+  node->add_input(DataType::Float, "trigger");
+  node->add_output(DataType::Float, "step");
 
   const auto trigger_ptr = node_graph->add_node(std::move(trigger_node));
   const auto seq_ptr = node_graph->add_node(std::move(node));
@@ -234,7 +234,7 @@ TEST_F(NodesTest, StepSequencerNode) {
   node_graph->evaluate();
 
   // First step should be 2.f (advances on first trigger)
-  const float result = dynamic_cast<Stream<float> *>(seq_ptr->outputs[0].stream.get())->value;
+  const float result = *seq_ptr->outputs[0].get_float();
   EXPECT_FLOAT_EQ(result, 2.f);
 }
 
@@ -267,12 +267,12 @@ TEST_F(NodesTest, AddNode) {
   c_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 10.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 10.f);
 }
 
 TEST_F(NodesTest, SubtractNode) {
   auto node = std::make_unique<SubtractNode>();
-  node->add_output("difference");
+  node->add_output(DataType::Float, "difference");
 
   EXPECT_EQ(node->type, NodeType::Subtract);
   EXPECT_EQ(node->name, "Subtract");
@@ -291,12 +291,12 @@ TEST_F(NodesTest, SubtractNode) {
   b_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 7.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 7.f);
 }
 
 TEST_F(NodesTest, ModuloNode) {
   auto node = std::make_unique<ModuloNode>();
-  node->add_output("remainder");
+  node->add_output(DataType::Float, "remainder");
 
   EXPECT_EQ(node->type, NodeType::Modulo);
   EXPECT_EQ(node->name, "Modulo");
@@ -315,12 +315,12 @@ TEST_F(NodesTest, ModuloNode) {
   b_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 1.5f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 1.5f);
 }
 
 TEST_F(NodesTest, PowerNode) {
   auto node = std::make_unique<PowerNode>();
-  node->add_output("result");
+  node->add_output(DataType::Float, "result");
 
   EXPECT_EQ(node->type, NodeType::Power);
   EXPECT_EQ(node->name, "Power");
@@ -339,12 +339,12 @@ TEST_F(NodesTest, PowerNode) {
   exp_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 8.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 8.f);
 }
 
 TEST_F(NodesTest, MinNode) {
   auto node = MinNode::create(2);
-  node->add_output("min");
+  node->add_output(DataType::Float, "min");
 
   EXPECT_EQ(node->type, NodeType::Min);
   EXPECT_EQ(node->name, "Min");
@@ -363,12 +363,12 @@ TEST_F(NodesTest, MinNode) {
   b_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 3.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 3.f);
 }
 
 TEST_F(NodesTest, MaxNode) {
   auto node = MaxNode::create(2);
-  node->add_output("max");
+  node->add_output(DataType::Float, "max");
 
   EXPECT_EQ(node->type, NodeType::Max);
   EXPECT_EQ(node->name, "Max");
@@ -387,7 +387,7 @@ TEST_F(NodesTest, MaxNode) {
   b_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 5.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 5.f);
 }
 
 // ===========================================================================
@@ -396,8 +396,8 @@ TEST_F(NodesTest, MaxNode) {
 
 TEST_F(NodesTest, AbsNode) {
   auto node = std::make_unique<AbsNode>();
-  node->add_input("in");
-  node->add_output("out");
+  node->add_input(DataType::Float, "in");
+  node->add_output(DataType::Float, "out");
 
   EXPECT_EQ(node->type, NodeType::Abs);
   EXPECT_EQ(node->name, "Abs");
@@ -412,13 +412,13 @@ TEST_F(NodesTest, AbsNode) {
   input_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 5.5f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 5.5f);
 }
 
 TEST_F(NodesTest, FloorNode) {
   auto node = std::make_unique<FloorNode>();
-  node->add_input("in");
-  node->add_output("out");
+  node->add_input(DataType::Float, "in");
+  node->add_output(DataType::Float, "out");
 
   EXPECT_EQ(node->type, NodeType::Floor);
   EXPECT_EQ(node->name, "Floor");
@@ -433,13 +433,13 @@ TEST_F(NodesTest, FloorNode) {
   input_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 3.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 3.f);
 }
 
 TEST_F(NodesTest, CeilNode) {
   auto node = std::make_unique<CeilNode>();
-  node->add_input("in");
-  node->add_output("out");
+  node->add_input(DataType::Float, "in");
+  node->add_output(DataType::Float, "out");
 
   EXPECT_EQ(node->type, NodeType::Ceil);
   EXPECT_EQ(node->name, "Ceil");
@@ -454,13 +454,13 @@ TEST_F(NodesTest, CeilNode) {
   input_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 4.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 4.f);
 }
 
 TEST_F(NodesTest, RoundNode) {
   auto node = std::make_unique<RoundNode>();
-  node->add_input("in");
-  node->add_output("out");
+  node->add_input(DataType::Float, "in");
+  node->add_output(DataType::Float, "out");
 
   EXPECT_EQ(node->type, NodeType::Round);
   EXPECT_EQ(node->name, "Round");
@@ -475,13 +475,13 @@ TEST_F(NodesTest, RoundNode) {
   input_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 4.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 4.f);
 }
 
 TEST_F(NodesTest, SqrtNode) {
   auto node = std::make_unique<SqrtNode>();
-  node->add_input("in");
-  node->add_output("out");
+  node->add_input(DataType::Float, "in");
+  node->add_output(DataType::Float, "out");
 
   EXPECT_EQ(node->type, NodeType::Sqrt);
   EXPECT_EQ(node->name, "Sqrt");
@@ -496,13 +496,13 @@ TEST_F(NodesTest, SqrtNode) {
   input_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 4.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 4.f);
 }
 
 TEST_F(NodesTest, SqrtNodeNegativeInput) {
   auto node = std::make_unique<SqrtNode>();
-  node->add_input("in");
-  node->add_output("out");
+  node->add_input(DataType::Float, "in");
+  node->add_output(DataType::Float, "out");
 
   auto input = ConstantFloatNode::create(-4.f);
 
@@ -515,13 +515,13 @@ TEST_F(NodesTest, SqrtNodeNegativeInput) {
   node_graph->evaluate();
 
   // Should clamp to 0 and return sqrt(0) = 0
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 0.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 0.f);
 }
 
 TEST_F(NodesTest, NegateNode) {
   auto node = std::make_unique<NegateNode>();
-  node->add_input("in");
-  node->add_output("out");
+  node->add_input(DataType::Float, "in");
+  node->add_output(DataType::Float, "out");
 
   EXPECT_EQ(node->type, NodeType::Negate);
   EXPECT_EQ(node->name, "Negate");
@@ -536,7 +536,7 @@ TEST_F(NodesTest, NegateNode) {
   input_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, -5.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), -5.f);
 }
 
 TEST_F(NodesTest, SinNode) {
@@ -556,7 +556,7 @@ TEST_F(NodesTest, SinNode) {
   input_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 0.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 0.f);
 }
 
 TEST_F(NodesTest, CosNode) {
@@ -576,7 +576,7 @@ TEST_F(NodesTest, CosNode) {
   input_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 1.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 1.f);
 }
 
 TEST_F(NodesTest, TanNode) {
@@ -596,7 +596,7 @@ TEST_F(NodesTest, TanNode) {
   input_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 0.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 0.f);
 }
 
 // ===========================================================================
@@ -620,7 +620,7 @@ TEST_F(NodesTest, ClampNode) {
   input_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 10.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 10.f);
 }
 
 TEST_F(NodesTest, LerpNode) {
@@ -648,7 +648,7 @@ TEST_F(NodesTest, LerpNode) {
   t_ptr->evaluate();
   node_graph->evaluate();
 
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 25.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 25.f);
 }
 
 TEST_F(NodesTest, SmoothStepNode) {
@@ -669,7 +669,7 @@ TEST_F(NodesTest, SmoothStepNode) {
   node_graph->evaluate();
 
   // At t=0.5, smoothstep should give 0.5
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 0.5f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 0.5f);
 }
 
 // ===========================================================================
@@ -698,7 +698,7 @@ TEST_F(NodesTest, EnvelopeNode) {
   node_graph->evaluate();
 
   // Initially should be idle (0.0)
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 0.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 0.f);
 }
 
 TEST_F(NodesTest, DelayNode) {
@@ -723,7 +723,7 @@ TEST_F(NodesTest, DelayNode) {
   node_graph->evaluate();
 
   // Initially should output 0 (buffer is empty/initialized)
-  const float result = dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value;
+  const float result = *node_ptr->outputs[0].get_float();
   EXPECT_TRUE(std::isfinite(result));
 }
 
@@ -749,5 +749,5 @@ TEST_F(NodesTest, SmootherNode) {
   node_graph->evaluate();
 
   // On first evaluation, should initialize to target value
-  EXPECT_FLOAT_EQ(dynamic_cast<Stream<float> *>(node_ptr->outputs[0].stream.get())->value, 10.f);
+  EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 10.f);
 }

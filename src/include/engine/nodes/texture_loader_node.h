@@ -48,11 +48,8 @@ struct TextureLoaderNode : VisualNode {
       path_dirty_ = false;
     }
 
-    // Always push current texture pointer into the output stream.
     if (!outputs.empty()) {
-      if (auto *s = dynamic_cast<Stream<Texture *> *>(outputs[0].stream.get())) {
-        s->update(output_texture.is_valid() ? &output_texture : nullptr);
-      }
+      outputs[0].set_texture(output_texture.is_valid() ? &output_texture : nullptr);
     }
 
     mark_inputs_consumed();
@@ -181,7 +178,7 @@ struct TextureLoaderNode : VisualNode {
   static std::unique_ptr<TextureLoaderNode> create(const std::string &path = {}) {
     auto node = std::make_unique<TextureLoaderNode>();
 
-    node->add_typed_output<Texture *>("texture");
+    node->add_output(DataType::Texture, "texture");
 
     if (!path.empty()) {
       node->set_path(path);

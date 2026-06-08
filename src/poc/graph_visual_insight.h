@@ -65,10 +65,10 @@ private:
 
   PreviewWindow preview_window;
 
-  Stream<float> *noise_stream_out{};
-  Stream<float> *sin_a_stream_out{};
-  Stream<float> *sin_b_stream_out{};
-  Stream<float> *out_stream{};
+  Stream *noise_stream_out{};
+  Stream *sin_a_stream_out{};
+  Stream *sin_b_stream_out{};
+  Stream *out_stream{};
 
   // ── ImNodes State ─────────────────────────────────────────────────────────
   ImNodesEditorContext *editor_context{nullptr};

@@ -96,11 +96,11 @@ struct DisplaceNode : ShaderNode {
     auto node     = std::make_unique<DisplaceNode>();
     node->strength = strength;
 
-    node->add_typed_input<Texture *>("texture");
-    node->add_typed_input<Texture *>("map");
-    node->add_typed_input<float>("strength");
+    node->add_input(DataType::Texture, "texture");
+    node->add_input(DataType::Texture, "map");
+    node->add_input(DataType::Float, "strength");
 
-    node->add_typed_output<Texture *>("texture");
+    node->add_output(DataType::Texture, "texture");
     return node;
   }
 
@@ -108,8 +108,8 @@ private:
   void update_from_inputs() override {
     // Texture* pins handled by bind_texture_inputs() in ShaderNode::render().
     if (const Pin *p = get_input("strength"); p && p->connected) {
-      if (const auto *s = dynamic_cast<Stream<float> *>(p->stream.get())) {
-        strength = s->value;
+      if (const float *s = p->get_float()) {
+        strength = *s;
       }
     }
   }

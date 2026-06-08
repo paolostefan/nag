@@ -158,12 +158,12 @@ struct SDFShapeNode : ShaderNode {
     node->color           = color;
     node->edge_smoothness = edge_smoothness;
 
-    node->add_typed_input<float>("pos_x");
-    node->add_typed_input<float>("pos_y");
-    node->add_typed_input<float>("radius");
-    node->add_typed_input<float>("rotation");
+    node->add_input(DataType::Float, "pos_x");
+    node->add_input(DataType::Float, "pos_y");
+    node->add_input(DataType::Float, "radius");
+    node->add_input(DataType::Float, "rotation");
 
-    node->add_typed_output<Texture *>("texture");
+    node->add_output(DataType::Texture, "texture");
     return node;
   }
 
@@ -171,8 +171,8 @@ private:
   void update_from_inputs() override {
     auto read = [&](const char *pin_name, float &dst) {
       if (const Pin *p = get_input(pin_name); p && p->connected) {
-        if (const auto *s = dynamic_cast<Stream<float> *>(p->stream.get())) {
-          dst = s->value;
+        if (const float *s = p->get_float()) {
+          dst = *s;
         }
       }
     };
