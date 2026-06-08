@@ -2,38 +2,83 @@
 
 A simple SDL2 demo engine.
 
-## Nag Champa agarbathi
+## What to do next
 
-Nag Champa Agarbathi (नागचम्पा अगरबत्ती) literally means "the incense of the sacred Champaca tree" or "the incense of the Champaca flower".
+### Bugs 🐛
 
-"Nāga" refers to the sacred Nagara tree or spirit/breath, and "Champa" refers to the flower or the tree itself (the plumeria or Champaca tree), and "Agarbatti" is the Sanskrit word for a scented incense stick.
+- Audio buzzing when the slider is moved while playing
+- audio track UI/info is cluttered and ugly
+- the timeline allows deleting all tracks, including the effects: it should not allow deletion of effects and link audio_tracks editor member to the corresponding timelines.
 
-"Nagchampa agarbathi" refers to Nag Champa incense sticks, with "Nag" meaning "snake" and "Champa" referring to the fragrant Champaka flower found in India and Nepal. "Agarbathi" is the Hindi word for the incense sticks themselves, which are made from a blend of Champaka flower, sandalwood, and other natural resins. This popular Indian incense is known for its unique, rich, earthy, and slightly sweet aroma and is used for meditation, relaxation, and to create a calming, spiritually uplifting atmosphere.
+### New engine features 🚀
 
-Breaking down the terms:
+- Play!
+- Update Mandelbrot coloring (which now sucks)
+- Add some effects:
+  - Julia quaternions
+  - plasma
+  - fire
+  - noise
 
-- Nag: a Sanskrit word for "snake," sometimes thought to refer to sacred serpent deities, or the Nagara tree.
-- Champa: refers to the Champaka flower (a golden magnolia), also known as Plumeria or the "snake flower".
-- Agarbathi: the Hindi word for the incense sticks, which are hand-rolled around a bamboo stick.
+### Editor Features
 
-## Dependecies policy
+#### WIP 🚧
 
-The project is configured to use the following dependencies:
+Here should go stuff which is currently developed, but not 100% ready.
+
+#### To be 🚀
+
+- Add titles to timeline tracks
+- keyframe handling
+- add keyframes to the timeline view
+- interactively set and edit keyframes on every effect parameter
+- interactively select tween keyframe method
+- set the start/end of an effect via UI
+- fine movements in mod-audio tracks: step forward/backward in the pattern
+
+## Building the project
+
+So far (January 2026), the project is Linux-only.
+
+Some dependencies are loaded through the system package manager, some others through CMake.
+The latter don't need any intervention, as they will be downloaded from GitHub at the Cmake configure step.
+
+### System dependencies
+
+The following packages are required under APT-based GNU/Linux distros (like Ubuntu and Debian):
+
+- libasound2-dev
+- libglew-dev
+- libfreetype-dev
+- libmpg123-dev
+- libopenmpt-dev
+- pkg-config
+
+### CMake-managed deps
+
+These dependencies are automatically downloaded using the [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) CMake module.
 
 - SDL2
 - imgui
 - imguifiledialog
+- nlohmann/json
 
-The dependencies are managed using the [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) CMake module.
+---
 
-## System prerequisites
+## The project name
 
-```bash
-sudo apt update
-sudo apt install libopenmpt-dev libmpg123-dev libasound2-dev pkg-config
-```
+Nag Champa Agarbathi (नागचम्पा अगरबत्ती) literally means "the incense of the sacred Champaca tree" or "the incense of the
+Champaca flower."
 
-## What to do next
+They're my favorite incense sticks, with "Nag" meaning "snake" and "Champa" referring to the fragrant Champaka flower
+(the plumeria or Champaca tree) found in India and Nepal.
+"Agarbathi" is the Hindi word for the incense sticks themselves, which are made from a blend of Champaka flower,
+sandalwood, and other natural resins.
 
-- Allow the user to load an audio module
-- Add a timeline system
+I had this in mind when I chose the name of this project, and I thought it was a good name. But, right after writing 
+the above, I learned that the English word "nag" has a completely different meaning, and I loved this pun even more.
+
+## Credits
+
+The FontStruction “Amiga Topaz” (https://fontstruct.com/fontstructions/show/675155) by Patrick H. Lauke is licensed under a Creative Commons Attribution license (http://creativecommons.org/licenses/by/3.0/).
+[ancestry]

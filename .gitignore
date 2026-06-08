@@ -1,9 +1,12 @@
 # IDE files
 .idea/
 .vscode/
+.windsurf/
 
 # Build files
 build/
+cmake-build-*/
+tmp/
 
 # Temporary files
 *.tmp
