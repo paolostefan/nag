@@ -78,7 +78,11 @@ Node *GraphEditor::spawn_node(const NodeType type, const ImVec2 &position) {
   node->position = position;
 
   auto add_command = std::make_unique<AddNodeCommand>(std::move(node));
-  command_history.execute(graph, std::move(add_command));
+  if (history_enabled.load(std::memory_order_acquire)) {
+    command_history.execute(graph, std::move(add_command));
+  } else {
+    add_command->execute(graph);
+  }
 
   // ReSharper disable once CppDFALocalValueEscapesFunction
   return node.get();

@@ -22,6 +22,9 @@ SceneEditorUI::SceneEditorUI() : GraphEditorUI("Scene Editor", 1280, 800) {
   // Add a time node and an output node to the default graph to avoid starting with an empty graph
   time_node = reinterpret_cast<TimeNode *>(spawn_node(NodeType::Time, ImVec2(100, 100)));
   output_node = reinterpret_cast<OutputNode *>(spawn_node(NodeType::Output, ImVec2(300, 100)));
+
+  // Enable history after initial setup to avoid polluting the command history with setup actions
+  history_enabled.store(true, std::memory_order_release);
 }
 
 void SceneEditorUI::render_ui() {
@@ -185,14 +188,20 @@ void SceneEditorUI::render_menu_bar() {
     }
 
     if (ImGui::BeginMenu("Edit")) {
+      ImGui::BeginDisabled(!command_history.can_undo());
       if (ImGui::MenuItem(ICON_FA_ARROW_ROTATE_LEFT "  Undo", "Ctrl+Z")) {
         command_history.undo(graph);
         node_pos_refresh = true;
       }
+      ImGui::EndDisabled();
+
+      ImGui::BeginDisabled(!command_history.can_redo());
       if (ImGui::MenuItem(ICON_FA_ARROW_ROTATE_RIGHT "  Redo", "Ctrl+Y")) {
         command_history.redo(graph);
         node_pos_refresh = true;
       }
+      ImGui::EndDisabled();
+
       ImGui::EndMenu();
     }
 

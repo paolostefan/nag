@@ -25,6 +25,10 @@ protected:
   /** True after a graph change (load/reset/undo). */
   std::atomic<bool> node_pos_refresh{true};
 
+  /** If true, executed commands will be pushed to the command history for undo/redo support. */
+  std::atomic<bool> history_enabled{false};
+
+  /// Command history for undo/redo support. Graph actions should push commands to this history when appropriate.
   CommandHistory command_history;
 
   // ── Serialization ─────────────────────────────────────────────────────────
@@ -50,6 +54,9 @@ protected:
 
   /**
    * @brief Spawns a new node of the given type at a canvas position.
+   *
+   * The node is created via the registry and added to the graph, and an AddNodeCommand
+   * is pushed to the command history for undo/redo support, unless the @ref history_enabled flag is false.
    *
    * @param type     Node type to create via registry
    * @param position Screen-space position for the new node
