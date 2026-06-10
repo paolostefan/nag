@@ -18,9 +18,9 @@ struct Link {
 struct NodeGraph {
   int id{};
 
-  IdGenerator<> node_id_generator;
-  IdGenerator<> pin_id_generator;
-  IdGenerator<> link_id_generator;
+  IdGenerator node_id_generator;
+  IdGenerator pin_id_generator;
+  IdGenerator link_id_generator;
 
   std::string name{"<unnamed>"};
   std::vector<std::unique_ptr<Node> > nodes;
