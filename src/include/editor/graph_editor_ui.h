@@ -61,7 +61,7 @@ private:
   /**
    * @brief Renders the menu bar with File, Edit, and View menus.
    */
-  void render_menu_bar();
+  virtual void render_menu_bar();
 
   /**
    * @brief Renders a visual preview of a visual node in the editor.

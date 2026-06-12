@@ -88,8 +88,13 @@ struct ParticleRendererNode : VisualNode {
 
     render_target->clear(0.f, 0.f, 0.f, 0.f);
 
-    render_background();
     render_particles();
+
+    // Set alpha to 1.0 do ImGui preview displays FBO as opaque
+    glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_TRUE);
+    glClearColor(0.f, 0.f, 0.f, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 
     RenderTarget::unbind();
   }
@@ -181,25 +186,6 @@ private:
 
   static float hash_float(const int i) {
     return static_cast<float>(hash_int(i)) / 4294967296.0f;
-  }
-
-  void render_background() const {
-    if (inputs.size() < 2) return;
-    Texture *const *ts = inputs[1].get_texture();
-    if (!ts || !*ts || !(*ts)->is_valid()) return;
-
-    glDisable(GL_BLEND);
-    bg_shader_->use();
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, (*ts)->texture_id);
-    bg_shader_->set_uniform("u_texture", 0);
-
-    ShaderQuadHelper::instance().render();
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    ShaderProgram::unuse();
   }
 
   void render_particles() const {

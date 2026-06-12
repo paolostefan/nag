@@ -85,7 +85,6 @@ struct TimeNode : Node {
   static std::unique_ptr<Node> create() {
     auto node = std::make_unique<TimeNode>();
     node->add_output(DataType::Float, "time");
-    
 
     return node;
   }
@@ -258,7 +257,7 @@ struct RandomNode : Node {
 
     // Generate new value only when the trigger changes
     if (inputs[0].stream->version != last_trigger_version) {
-      float random_value = dist(rng);
+      const float random_value = dist(rng);
       outputs[0].set_float(random_value);
       last_trigger_version = inputs[0].stream->version;
     }

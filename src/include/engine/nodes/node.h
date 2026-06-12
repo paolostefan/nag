@@ -30,6 +30,7 @@ enum class NodeType : uint8_t {
   Random,
   StepSequencer,
   ParticleEmitter,
+  ParticleSystem,
 
   // Unary math operators
   Abs,
@@ -98,45 +99,53 @@ enum class NodeType : uint8_t {
 };
 
 struct Pin {
-  int id{};
-  bool connected{false};
-  PinDirection direction{Input};
-  uint64_t last_seen_version{0};
-  DataType data_type{DataType::Float};
-  std::string name{"<unnamed>"};
+  std::string                 name{"<unnamed>"};
   std::shared_ptr<StreamBase> stream{nullptr};
+  uint64_t                    last_seen_version{0};
+  int                         id{};
+  bool                        connected{false};
+  PinDirection                direction{Input};
+  DataType                    data_type{DataType::Float};
+  uint8_t                     pad{}; // Used as general purpose field in particular pins
 
-  [[nodiscard]] Stream *get_stream() { return static_cast<Stream *>(stream.get()); }
+  [[nodiscard]] Stream *      get_stream() { return static_cast<Stream *>(stream.get()); }
   [[nodiscard]] const Stream *get_stream() const { return static_cast<const Stream *>(stream.get()); }
 
   [[nodiscard]] float *get_float() {
     auto *s = static_cast<Stream *>(stream.get());
     return s ? s->as_float() : nullptr;
   }
+
   [[nodiscard]] const float *get_float() const {
     auto *s = static_cast<const Stream *>(stream.get());
     return s ? s->as_float() : nullptr;
   }
+
   [[nodiscard]] bool *get_bool() {
     auto *s = static_cast<Stream *>(stream.get());
     return s ? s->as_bool() : nullptr;
   }
+
   [[nodiscard]] const bool *get_bool() const {
     auto *s = static_cast<const Stream *>(stream.get());
     return s ? s->as_bool() : nullptr;
   }
+
   [[nodiscard]] Texture **get_texture() {
     auto *s = static_cast<Stream *>(stream.get());
     return s ? s->as_texture() : nullptr;
   }
+
   [[nodiscard]] Texture *const *get_texture() const {
     auto *s = static_cast<const Stream *>(stream.get());
     return s ? s->as_texture() : nullptr;
   }
+
   [[nodiscard]] Particles2D *get_particles() {
     auto *s = static_cast<Stream *>(stream.get());
     return s ? s->as_particles() : nullptr;
   }
+
   [[nodiscard]] const Particles2D *get_particles() const {
     auto *s = static_cast<const Stream *>(stream.get());
     return s ? s->as_particles() : nullptr;
@@ -147,16 +156,19 @@ struct Pin {
       s->update_float(v);
     }
   }
+
   void set_bool(const bool v) {
     if (auto *s = static_cast<Stream *>(stream.get())) {
       s->update_bool(v);
     }
   }
+
   void set_texture(Texture *const v) {
     if (auto *s = static_cast<Stream *>(stream.get())) {
       s->update_texture(v);
     }
   }
+
   void set_particles(const Particles2D &v) {
     if (auto *s = static_cast<Stream *>(stream.get())) {
       s->update_particles(v);
@@ -165,10 +177,10 @@ struct Pin {
 };
 
 struct Node {
-  int id{};
-  NodeType type{NodeType::Default};
-  std::string name{"<unnamed>"};
-  ImVec2 position{};
+  int              id{};
+  NodeType         type{NodeType::Default};
+  std::string      name{"<unnamed>"};
+  ImVec2           position{};
   std::vector<Pin> inputs;
   std::vector<Pin> outputs;
 
@@ -177,7 +189,7 @@ struct Node {
   virtual void evaluate() = 0;
 
   [[nodiscard]] bool needs_evaluation() const noexcept {
-    for (auto const &pin : inputs) {
+    for (auto const &pin: inputs) {
       if (pin.stream && pin.stream->version != pin.last_seen_version) {
         return true;
       }
@@ -186,7 +198,7 @@ struct Node {
   }
 
   void mark_inputs_consumed() noexcept {
-    for (auto &pin : inputs) {
+    for (auto &pin: inputs) {
       if (pin.stream) {
         pin.last_seen_version = pin.stream->version;
       }
@@ -211,33 +223,56 @@ struct Node {
     return 0.f;
   }
 
-  void add_input(const DataType data_type = DataType::Float,
-                 const std::string &pin_name = "in") {
+  Pin *add_input(const DataType     data_type = DataType::Float,
+                 const std::string &pin_name  = "in") {
     Pin pin;
-    pin.name = pin_name;
+    pin.name      = pin_name;
     pin.data_type = data_type;
     pin.direction = Input;
-    pin.stream = nullptr;
+    pin.stream    = nullptr;
     inputs.push_back(pin);
+    return &inputs.back();
   }
 
-  void add_output(const DataType data_type = DataType::Float,
-                  const std::string &pin_name = "out") {
+  Pin *add_output(const DataType     data_type = DataType::Float,
+                  const std::string &pin_name  = "out") {
     Pin pin;
-    pin.name = pin_name;
+    pin.name      = pin_name;
     pin.data_type = data_type;
     pin.direction = Output;
-    pin.stream = std::make_shared<Stream>(default_stream_value(data_type));
+    pin.stream    = std::make_shared<Stream>(default_stream_value(data_type));
     outputs.push_back(pin);
+
+    return &outputs.back();
   }
 
   [[nodiscard]] constexpr Pin *get_input(const std::string &input_name) noexcept {
-    for (auto &pin : inputs) {
+    for (auto &pin: inputs) {
       if (pin.name == input_name) {
         return &pin;
       }
     }
     return nullptr;
+  }
+
+  [[nodiscard]] constexpr Pin *get_input_by_id(const int input_id) noexcept {
+    for (auto &pin: inputs) {
+      if (pin.id == input_id) {
+        return &pin;
+      }
+    }
+
+    return nullptr;
+  }
+
+  Pin *remove_input(const size_t index) {
+    if (index >= inputs.size()) {
+      return nullptr;
+    }
+    const auto it          = inputs.begin() + index;
+    auto *     removed_pin = new Pin(std::move(*it));
+    inputs.erase(it);
+    return removed_pin;
   }
 };
 

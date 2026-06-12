@@ -8,61 +8,55 @@
 #include "engine/property_widget.h"
 
 struct ParticleEmitterNode : Node {
-  float time{0.f};
-  float rate{10.f};
-  float speed{100.f};
-  float min_life{0.5f};
-  float max_life{2.0f};
-  int max_particles{10000};
-  int seed{42};
-
-  float spawn_accumulator{0.f};
   std::mt19937 rng;
+  float    last_time{0.f};
+  float    rate{10.f};
+  float    speed{100.f};
+  float    min_life{0.5f};
+  float    max_life{2.f};
+  float    spawn_accumulator{0.f};
+  uint32_t max_particles{10000};
+  int      seed{42};
 
-  explicit ParticleEmitterNode(const int seed = 42) {
+  explicit ParticleEmitterNode(const int seed_ = 42) : seed(seed_) {
     type = NodeType::ParticleEmitter;
     name = "Particle Emitter";
-    rng.seed(seed);
-  }
-
-  void step(const float dt) {
-    time += dt;
-    spawn_accumulator += rate * dt;
-
-    // Spawn new particles
-    while (spawn_accumulator >= 1.0f && particles_.particles.size() < static_cast<size_t>(max_particles)) {
-      spawn_particle();
-      spawn_accumulator -= 1.0f;
-    }
-
-    // Update existing particles
-    for (auto &p : particles_.particles) {
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.life -= dt;
-    }
-
-    // Remove dead particles
-    auto &vec = particles_.particles;
-    std::erase_if(vec, [](const Particle2D &p) { return p.life <= 0.f; });
-
-    evaluate();
+    rng.seed(seed_);
   }
 
   void evaluate() override {
-    if (!outputs.empty()) {
-      outputs[0].set_particles(particles_);
+    // Spawn particles based on the rate and elapsed time
+    const float *in = inputs.empty() ? nullptr : inputs[0].get_float();
+    if (!in || outputs.empty()) { return; }
+
+    Particles2D particles_;
+    particles_.dt = *in - last_time;
+    last_time     = *in;
+
+    // Accumulate spawn count based on rate and elapsed time
+    spawn_accumulator += rate * particles_.dt;
+
+    // Reserve space to avoid reallocations during particle spawning
+    particles_.particles.reserve(static_cast<size_t>(spawn_accumulator) + 1);
+
+
+    while (spawn_accumulator >= 1.f && particles_.particles.size() < max_particles) {
+      particles_.particles.push_back(spawn_particle());
+      spawn_accumulator -= 1.f;
     }
+
+    outputs[0].set_particles(particles_);
+    mark_inputs_consumed();
   }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j;
-    j["rate"] = rate;
-    j["speed"] = speed;
-    j["min_life"] = min_life;
-    j["max_life"] = max_life;
+    j["rate"]          = rate;
+    j["speed"]         = speed;
+    j["min_life"]      = min_life;
+    j["max_life"]      = max_life;
     j["max_particles"] = max_particles;
-    j["seed"] = seed;
+    j["seed"]          = seed;
     return j;
   }
 
@@ -119,30 +113,25 @@ struct ParticleEmitterNode : Node {
     return 0.f;
   }
 
-  [[nodiscard]] size_t particle_count() const { return particles_.particles.size(); }
-
+  /// Factory method to create a new ParticleEmitterNode with the correct output pin
   static std::unique_ptr<Node> create() {
     auto node = std::make_unique<ParticleEmitterNode>();
+    node->add_input(DataType::Float, "time");
     node->add_output(DataType::Particles2D, "particles");
     return node;
   }
 
 private:
-  Particles2D particles_;
-
-  Particles2D &particles() { return particles_; }
-  [[nodiscard]] const Particles2D &particles() const { return particles_; }
-
-  void spawn_particle() {
+  Particle2D spawn_particle() {
     const float angle = std::uniform_real_distribution(0.f, 2.f * 3.14159265f)(rng);
-    const float life = std::uniform_real_distribution(min_life, max_life)(rng);
+    const float life  = std::uniform_real_distribution(min_life, max_life)(rng);
 
     Particle2D p;
-    p.vx = std::cos(angle) * speed;
-    p.vy = std::sin(angle) * speed;
-    p.life = life;
+    p.vx       = std::cos(angle) * speed;
+    p.vy       = std::sin(angle) * speed;
+    p.life     = life;
     p.max_life = life;
-    particles_.particles.push_back(p);
+    return p;
   }
 };
 

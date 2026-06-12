@@ -11,8 +11,8 @@
 #include "spdlog/spdlog.h"
 
 #include "engine/node_registry.h"
-#include "engine/nodes/particle_emitter_node.h"
 #include "engine/shader_quad_helper.h"
+#include "engine/nodes/particle_system_node.h"
 
 
 GraphEditorUI::GraphEditorUI(
@@ -167,7 +167,6 @@ void GraphEditorUI::render_node_editor() {
                    | ImGuiWindowFlags_NoCollapse
                    | ImGuiWindowFlags_NoResize
                    | ImGuiWindowFlags_NoMove)) {
-
     display_dialogs();
 
     ImNodes::EditorContextSet(editor_context);
@@ -185,6 +184,7 @@ void GraphEditorUI::render_node_editor() {
 
       ImNodes::BeginNode(node->id);
 
+      // Render title bar
       ImNodes::BeginNodeTitleBar();
       if (auto *tn = dynamic_cast<TimeNode *>(node.get())) {
         ImGui::Text("Time [%.2f s]", tn->time);
@@ -193,19 +193,15 @@ void GraphEditorUI::render_node_editor() {
           tn->step(ImGui::GetIO().DeltaTime);
           graph.evaluate();
         }
-      } else if (auto *pe = dynamic_cast<ParticleEmitterNode *>(node.get())) {
-        ImGui::Text("%s [%zu]", node->name.c_str(), pe->particle_count());
-
-        if (flowing) {
-          pe->step(ImGui::GetIO().DeltaTime);
-          graph.evaluate();
-        }
+      } else if (const auto *particle_system_node = dynamic_cast<ParticleSystemNode *>(node.get())) {
+        ImGui::Text("%s [%d, %d died]", node->name.c_str(), particle_system_node->population, particle_system_node->casualties);
       } else {
         ImGui::TextUnformatted(node->name.c_str());
       }
 
       ImNodes::EndNodeTitleBar();
 
+      // Render input/output pins
       if (node->inputs.size() + node->outputs.size() == 0) {
         ImGui::TextUnformatted("No in/out?!");
       }
@@ -323,7 +319,6 @@ void GraphEditorUI::render_node_editor() {
 }
 
 void GraphEditorUI::render_ui() {
-
   render_menu_bar();
 
   render_node_editor();
@@ -581,8 +576,8 @@ void GraphEditorUI::render_visual_node_body(
 }
 
 unsigned int GraphEditorUI::get_pin_color(const Pin &pin) {
+  if (pin.data_type == DataType::Particles2D) return ImColor(200, 200, 100);
   if (pin.data_type == DataType::Float) return ImColor(100, 200, 100);
   if (pin.data_type == DataType::Texture) return ImColor(200, 100, 200);
-  if (pin.data_type == DataType::Float) return ImColor(150, 150, 150);
   return ImColor(100, 100, 200);
 }

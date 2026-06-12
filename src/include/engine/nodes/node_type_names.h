@@ -38,6 +38,7 @@ inline constexpr std::array<std::string_view,
   "Random",
   "Step Sequencer",
   "Particle Emitter",
+  "Particle System",
 
   // Unary math operators
   "Abs",
