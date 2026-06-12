@@ -258,7 +258,7 @@ void SceneEditorUI::render_graph_library_panel() {
     // Focus the text input when the popup opens
     if (ImGui::IsWindowAppearing()) {
       ImGui::SetKeyboardFocusHere();
-      // Pre-fill the buffer with the current name
+      // Upon popping up the rename popup, fill the buffer with the current name
       switch (rename_target_) {
         case RenameTargetScene:
           strncpy(name_buffer, scene_->name.c_str(), sizeof(name_buffer));
@@ -318,7 +318,7 @@ void SceneEditorUI::render_timeline() {
 
   if (ImGui::CollapsingHeader("Timeline", ImGuiTreeNodeFlags_DefaultOpen)) {
     if (ImGui::Button("Add Segment")) {
-      TimelineSegment segment(0, 100, "");
+      const TimelineSegment segment(0, 100, "");
       scene_->add_timeline_segment(segment);
     }
     ImGui::SameLine();
@@ -350,8 +350,7 @@ void SceneEditorUI::render_top_status_bar() {
   // this is the right way to implement a statusbar.
   constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
                                             ImGuiWindowFlags_MenuBar;
-  float height = ImGui::GetFrameHeight();
-  if (ImGui::BeginViewportSideBar("##TopStatusBar", nullptr, ImGuiDir_Up, height, window_flags)) {
+  if (const float height = ImGui::GetFrameHeight(); ImGui::BeginViewportSideBar("##TopStatusBar", nullptr, ImGuiDir_Up, height, window_flags)) {
     if (ImGui::BeginMenuBar()) {
       ImGui::TextUnformatted(scene_->name.c_str());
 

@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <utility>
 #include <variant>
 
 #include "engine/data_type.h"
@@ -21,7 +22,7 @@ using StreamValue = std::variant<std::monostate, float, bool, Texture *, Particl
 struct Stream : StreamBase {
   StreamValue value;
 
-  explicit Stream(const StreamValue v = {}) : value(v) {}
+  explicit Stream(StreamValue  v = {}) : value(std::move(v)) {}
 
   [[nodiscard]] float *as_float() { return std::get_if<float>(&value); }
   [[nodiscard]] const float *as_float() const { return std::get_if<float>(&value); }

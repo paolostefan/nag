@@ -23,7 +23,7 @@ namespace PropertyWidget {
     }
 
     if (ImGui::IsItemDeactivatedAfterEdit()) {
-      if (auto it = before_map.find(key); it != before_map.end()) {
+      if (const auto it = before_map.find(key); it != before_map.end()) {
         const float value_before = it->second;
         before_map.erase(it);
 
@@ -61,8 +61,7 @@ namespace PropertyWidget {
     }
 
     if (ImGui::IsItemDeactivatedAfterEdit()) {
-      auto it = before_map.find(key);
-      if (it != before_map.end()) {
+      if (const auto it = before_map.find(key); it != before_map.end()) {
         const float value_before = it->second;
         before_map.erase(it);
 
@@ -98,8 +97,7 @@ namespace PropertyWidget {
     }
 
     if (ImGui::IsItemDeactivatedAfterEdit()) {
-      const auto it = before_map.find(key);
-      if (it != before_map.end()) {
+      if (const auto it = before_map.find(key); it != before_map.end()) {
         const ImVec4 value_before = it->second;
         before_map.erase(it);
 

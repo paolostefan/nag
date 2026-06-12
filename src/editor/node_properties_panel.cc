@@ -21,13 +21,6 @@ void NodePropertiesPanel::render(NodeGraph &graph, CommandHistory &history) {
   // Track selection changes if needed downstream.
   last_selected_id_ = selected_id;
 
-  // -------------------------------------------------------------------------
-  // Render the collapsible panel.
-  // -------------------------------------------------------------------------
-  if (!ImGui::CollapsingHeader("Properties", ImGuiTreeNodeFlags_DefaultOpen)) {
-    return; // Panel is collapsed — nothing more to draw.
-  }
-
   ImGui::PushID("NodePropertiesPanel");
 
   if (selected_count == 0) {

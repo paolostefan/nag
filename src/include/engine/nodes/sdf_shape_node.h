@@ -23,33 +23,33 @@
  * Output: Texture*
  */
 struct SDFShapeNode : ShaderNode {
-  enum class Shape { Circle = 0, Box = 1, Ring = 2 };
+  enum class Shape:uint8_t { Circle = 0, Box = 1, Ring = 2 };
 
+  Vec4  color{1.f, 1.f, 1.f, 1.f};
   Vec2  position{0.5f, 0.5f};
   float radius{0.2f};
   float rotation{0.f};
-  Shape shape{Shape::Circle};
-  float aspect{1.f};           // box only: width/height ratio
-  float ring_thickness{0.2f};  // ring only: [0, 1]
-  Vec4  color{1.f, 1.f, 1.f, 1.f};
+  float aspect{1.f};          // box only: width/height ratio
+  float ring_thickness{0.2f}; // ring only: [0, 1]
   float edge_smoothness{0.01f};
+  Shape shape{Shape::Circle};
 
   SDFShapeNode() {
     type = NodeType::SDFShape;
     name = "SDF Shape";
   }
 
-  [[nodiscard]] const char *shader_name()     const override { return "sdf_shape"; }
+  [[nodiscard]] const char *shader_name() const override { return "sdf_shape"; }
   [[nodiscard]] const char *frag_shader_src() const override { return ksdf_shape_frag; }
 
   void bind_params() override {
-    shader->set_uniform("u_position",        position.x, position.y);
-    shader->set_uniform("u_radius",          radius);
-    shader->set_uniform("u_rotation",        rotation);
-    shader->set_uniform("u_shape",           static_cast<float>(shape));
-    shader->set_uniform("u_aspect",          aspect);
-    shader->set_uniform("u_ring_thickness",  ring_thickness);
-    shader->set_uniform("u_color",           color.x, color.y, color.z, color.w);
+    shader->set_uniform("u_position", position.x, position.y);
+    shader->set_uniform("u_radius", radius);
+    shader->set_uniform("u_rotation", rotation);
+    shader->set_uniform("u_shape", static_cast<float>(shape));
+    shader->set_uniform("u_aspect", aspect);
+    shader->set_uniform("u_ring_thickness", ring_thickness);
+    shader->set_uniform("u_color", color.x, color.y, color.z, color.w);
     shader->set_uniform("u_edge_smoothness", edge_smoothness);
   }
 
@@ -61,9 +61,9 @@ struct SDFShapeNode : ShaderNode {
   // ── get_param — bridge for bind_float_inputs() ────────────────────────────
 
   [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "pos_x")    return position.x;
-    if (param_name == "pos_y")    return position.y;
-    if (param_name == "radius")   return radius;
+    if (param_name == "pos_x") return position.x;
+    if (param_name == "pos_y") return position.y;
+    if (param_name == "radius") return radius;
     if (param_name == "rotation") return rotation;
     return 0.f;
   }
@@ -71,11 +71,11 @@ struct SDFShapeNode : ShaderNode {
   // ── Serialization ─────────────────────────────────────────────────────────
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j = VisualNode::serialize_params();
+    nlohmann::json j     = VisualNode::serialize_params();
     j["position"]        = {position.x, position.y};
     j["radius"]          = radius;
     j["rotation"]        = rotation;
-    j["shape"]           = static_cast<int>(shape);
+    j["shape"]           = shape;
     j["aspect"]          = aspect;
     j["ring_thickness"]  = ring_thickness;
     j["color"]           = {color.x, color.y, color.z, color.w};
@@ -91,11 +91,11 @@ struct SDFShapeNode : ShaderNode {
         position.x = j["position"][0];
         position.y = j["position"][1];
       }
-      if (j.contains("radius"))          radius         = j["radius"];
-      if (j.contains("rotation"))        rotation       = j["rotation"];
-      if (j.contains("shape"))           shape          = static_cast<Shape>(j["shape"].get<int>());
-      if (j.contains("aspect"))          aspect         = j["aspect"];
-      if (j.contains("ring_thickness"))  ring_thickness = j["ring_thickness"];
+      if (j.contains("radius")) radius = j["radius"];
+      if (j.contains("rotation")) rotation = j["rotation"];
+      if (j.contains("shape")) shape = static_cast<Shape>(j["shape"].get<int>());
+      if (j.contains("aspect")) aspect = j["aspect"];
+      if (j.contains("ring_thickness")) ring_thickness = j["ring_thickness"];
       if (j.contains("color") && j["color"].is_array() && j["color"].size() >= 4) {
         color.x = j["color"][0];
         color.y = j["color"][1];
@@ -115,8 +115,8 @@ struct SDFShapeNode : ShaderNode {
 
   void draw_properties(NodeGraph &graph, CommandHistory &history) override {
     // Shape selector
-    constexpr const char *kShapes[] = {"Circle", "Box", "Ring"};
-    int shape_idx = static_cast<int>(shape);
+    static constexpr const char *kShapes[] = {"Circle", "Box", "Ring"};
+    int                          shape_idx = static_cast<int>(shape);
     if (ImGui::Combo("Shape", &shape_idx, kShapes, 3)) {
       shape = static_cast<Shape>(shape_idx);
     }
@@ -131,26 +131,40 @@ struct SDFShapeNode : ShaderNode {
 
     auto *color_ = reinterpret_cast<ImVec4 *>(&color);
     PropertyWidget::ColorEdit4("Color", id,
-      *color_,
-      [](Node &n, const ImVec4 &v) { dynamic_cast<SDFShapeNode &>(n).color = v; },
-      graph, history);
+                               *color_,
+                               [](Node &n, const ImVec4 &v) { dynamic_cast<SDFShapeNode &>(n).color = v; },
+                               graph, history);
 
     PropertyWidget::SliderFloat("Edge smoothness", id,
-      edge_smoothness,
-      [](Node &n, const float v) { dynamic_cast<SDFShapeNode &>(n).edge_smoothness = v; },
-      graph, history,
-      /*min=*/0.f, /*max=*/1.f, /*format=*/"%.3f");
+                                edge_smoothness,
+                                [](Node &n, const float v) { dynamic_cast<SDFShapeNode &>(n).edge_smoothness = v; },
+                                graph, history,
+                                /*min=*/0.f, /*max=*/1.f, /*format=*/"%.3f");
+  }
+
+  void update_from_inputs() override {
+    auto read = [&](const char *pin_name, float &dst) {
+      if (const Pin *p = get_input(pin_name); p && p->connected) {
+        if (const float *s = p->get_float()) {
+          dst = *s;
+        }
+      }
+    };
+
+    read("pos_x", position.x);
+    read("pos_y", position.y);
+    read("radius", radius);
+    read("rotation", rotation);
   }
 
   // ── Factory ───────────────────────────────────────────────────────────────
 
   static std::unique_ptr<SDFShapeNode> create(
-      const Vec2  &position        = {0.5f, 0.5f},
-      const float  radius          = 0.2f,
-      const Shape  shape           = Shape::Circle,
-      const Vec4  &color           = Vec4::white(),
-      const float  edge_smoothness = 0.01f)
-  {
+    const Vec2 &position        = {0.5f, 0.5f},
+    const float radius          = 0.2f,
+    const Shape shape           = Shape::Circle,
+    const Vec4 &color           = Vec4::white(),
+    const float edge_smoothness = 0.01f) {
     auto node             = std::make_unique<SDFShapeNode>();
     node->position        = position;
     node->radius          = radius;
@@ -165,22 +179,6 @@ struct SDFShapeNode : ShaderNode {
 
     node->add_output(DataType::Texture, "texture");
     return node;
-  }
-
-private:
-  void update_from_inputs() override {
-    auto read = [&](const char *pin_name, float &dst) {
-      if (const Pin *p = get_input(pin_name); p && p->connected) {
-        if (const float *s = p->get_float()) {
-          dst = *s;
-        }
-      }
-    };
-
-    read("pos_x",    position.x);
-    read("pos_y",    position.y);
-    read("radius",   radius);
-    read("rotation", rotation);
   }
 };
 

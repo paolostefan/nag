@@ -5,9 +5,9 @@
 `GraphEditorUI` is a complete component class for node graph editing. It
 combines:
 
--   **UIWindow**: SDL2/OpenGL window management and ImGui rendering
+- **UIWindow**: SDL2/OpenGL window management and ImGui rendering
     loop\
--   **GraphEditor**: node graph logic, CRUD operations, serialization
+- **GraphEditor**: node graph logic, CRUD operations, serialization
 
 ## Features
 
@@ -81,13 +81,13 @@ GraphEditorUI();  // Creates 1024x768 window titled "Graph Editor"
 
 ## Performance
 
--   **Rendering**: \~60 FPS typical (ImGui)
--   **Graph evaluation**: Single-threaded
--   **Memory**: \~1--2MB per medium graph (100+ nodes)
+- **Rendering**: \~60 FPS typical (ImGui)
+- **Graph evaluation**: Single-threaded
+- **Memory**: \~1--2MB per medium graph (100+ nodes)
 
 ## Limitations
 
--   No multi-threading
--   No temporal plotting
--   No node copy/paste
--   Standard ImNodes zoom/pan only
+- No multi-threading
+- No temporal plotting
+- No node copy/paste
+- Standard ImNodes zoom/pan only
