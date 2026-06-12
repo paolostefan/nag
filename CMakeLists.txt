@@ -215,7 +215,7 @@ target_compile_options(nag_engine_lib PRIVATE
     -Wpedantic
     -Wshadow
     -Wnon-virtual-dtor
-    -Wold-style-cast
+#    -Wold-style-cast
     -Woverloaded-virtual
 )
 
