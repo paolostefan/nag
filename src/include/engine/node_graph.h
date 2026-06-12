@@ -66,7 +66,10 @@ struct NodeGraph {
 
   [[nodiscard]] bool has_path(int from_node_id, int to_node_id) const;
 
-  [[nodiscard]] Node *find_node(int id) const;
+  [[nodiscard]] Node *find_node(int node_id) const;
+
+  [[nodiscard]] Pin *find_pin(int pin_id) const;
+
 };
 
 

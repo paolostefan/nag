@@ -256,3 +256,15 @@ void NodeGraph::evaluate() const {
   }
   return nullptr;
 }
+
+[[nodiscard]] Pin *NodeGraph::find_pin(const int pin_id) const {
+  for (const auto &node: nodes) {
+    for (const auto &pin: node->inputs) {
+      if (pin.id == pin_id) return const_cast<Pin *>(&pin);
+    }
+    for (const auto &pin: node->outputs) {
+      if (pin.id == pin_id) return const_cast<Pin *>(&pin);
+    }
+  }
+  return nullptr;
+}
