@@ -8,19 +8,73 @@
 struct ParticleSystemNode : Node {
   // Will be saved to the "pad" Pin member of added forces
   enum class ParticleSystemForce:uint8_t {
-    AccelerationX = 10, // Acceleration along Y (e.g. gravity)
-    AccelerationY,      // Acceleration along X
-    Radial,             // Radial acceleration, proportional to the distance from the particle system center
-    DragX,              // Exponential damping along X
-    DragY,              // Exponential damping along Y
-    Vortex,             // Spiral acceleration
+    Unknown = 0, // Used for string parse errors
+    AccelerationX = 10, // Acceleration along X (e.g. wind)
+    AccelerationY, // Acceleration along Y (e.g gravity)
+    Radial, // Radial acceleration, proportional to the distance from the particle system center
+    DragX, // Exponential damping along X
+    DragY, // Exponential damping along Y
+    Vortex, // Spiral acceleration
   };
 
-  uint32_t population{0};   // Number of particles active
-  uint32_t casualties{0};   // Number of particles who died this frame
-  int rename_pin_id{-1};    // UI: Id of the force pin being renamed
+  uint32_t population{0}; // Number of particles active
+  uint32_t casualties{0}; // Number of particles who died this frame
+  int rename_pin_id{-1}; // UI: Id of the force pin being renamed
   char pin_name_buf[127]{}; // UI: buffer for pin name
-  bool is_renaming{false};  // UI: Are we renaming a force pin?
+  bool is_renaming{false}; // UI: Are we renaming a force pin?
+
+  static std::string to_string(const ParticleSystemForce force) {
+    switch (force) {
+      case ParticleSystemForce::AccelerationX:
+        return "AccelerationX";
+
+      case ParticleSystemForce::AccelerationY:
+        return "AccelerationY";
+
+      case ParticleSystemForce::DragX:
+        return "DragX";
+
+      case ParticleSystemForce::DragY:
+        return "DragY";
+
+      case ParticleSystemForce::Radial:
+        return "Radial";
+
+      case ParticleSystemForce::Vortex:
+        return "Vortex";
+
+      default:
+        return "Unknown";
+    }
+  }
+
+  static ParticleSystemForce from_string(const std::string &force_string) {
+    if (force_string == "AccelerationX") {
+      return ParticleSystemForce::AccelerationX;
+    }
+
+    if (force_string == "AccelerationY") {
+      return ParticleSystemForce::AccelerationY;
+    }
+
+    if (force_string == "DragX") {
+      return ParticleSystemForce::DragX;
+    }
+
+    if (force_string == "DragY") {
+      return ParticleSystemForce::DragY;
+    }
+
+    if (force_string == "Radial") {
+      return ParticleSystemForce::Radial;
+    }
+
+    if (force_string == "Vortex") {
+      return ParticleSystemForce::Vortex;
+    }
+
+    return ParticleSystemForce::Unknown;
+  }
 
   explicit ParticleSystemNode() {
     type = NodeType::ParticleSystem;
@@ -40,7 +94,7 @@ struct ParticleSystemNode : Node {
     const Particles2D *new_particles = inputs[0].get_particles();
     if (!new_particles || !outputs[0].get_particles()) { return; }
 
-    const float dt = new_particles->dt;
+    const float dt_ = new_particles->dt;
 
     // Add all the new particles to the output stream
     for (const auto &p: new_particles->particles) {
@@ -51,7 +105,7 @@ struct ParticleSystemNode : Node {
     for (auto &p: out_particles->particles) {
       p.ax = p.ay = 0.f;
       // Decrease life by dt
-      p.life -= dt;
+      p.life -= dt_;
     }
 
     const uint32_t pop_with_dead = out_particles->particles.size();
@@ -115,18 +169,20 @@ struct ParticleSystemNode : Node {
             p.ay += -val * p.x / dist;
           }
           break;
+        default:
+          break;
       }
     }
 
     // Update all particles' positions
     for (auto &p: out_particles->particles) {
       // Update velocity based on acceleration
-      p.vx += p.ax * dt;
-      p.vy += p.ay * dt;
+      p.vx += p.ax * dt_;
+      p.vy += p.ay * dt_;
 
       // Update position based on velocity
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
+      p.x += p.vx * dt_;
+      p.y += p.vy * dt_;
     }
   }
 
@@ -144,6 +200,36 @@ struct ParticleSystemNode : Node {
     }
 
     return j;
+  }
+
+  OperationResult deserialize_params(const nlohmann::json &j) override {
+    if (j.contains("force_slots")) {
+      const nlohmann::json &forces_j = j["force_slots"];
+      if (!forces_j.is_array()) {
+        spdlog::warn("ParticleSystemNode::deserialize_params(): force_slots must be array, instead found {}",
+                     forces_j.type_name());
+        return OperationResult::error("wrong force_slots type");
+      }
+
+      for (const auto &it: forces_j) {
+        const std::string force_type = it["type"];
+        const ParticleSystemForce f = from_string(force_type);
+        if (f == ParticleSystemForce::Unknown) {
+          spdlog::warn("ParticleSystemNode::deserialize_params(): cannot parse force type '{}'",
+                       force_type);
+          continue;
+        }
+
+        if (!it["name"].is_string()) {
+          spdlog::warn("ParticleSystemNode::deserialize_params(): force \"name\" must be string");
+          continue;
+        }
+
+        Pin *force_pin = add_input(DataType::Float, it["name"]);
+        force_pin->pad = static_cast<uint8_t>(f);
+      }
+    }
+    return OperationResult::ok();
   }
 
   [[nodiscard]] float get_param(const std::string &/*param_name*/) const override {
@@ -170,7 +256,7 @@ struct ParticleSystemNode : Node {
     if (ImGui::Button(ICON_FA_PLUS "  Add Force")) {
       Pin *force_pin = add_input(DataType::Float, "force " + std::to_string(inputs.size()));
       force_pin->id = graph.pin_id_generator.generate_id();
-      force_pin->pad = static_cast<uint8_t>(ParticleSystemForce::AccelerationY);
+      force_pin->pad = static_cast<uint8_t>(ParticleSystemForce::AccelerationX);
     }
 
     for (size_t i = 1; i < inputs.size(); ++i) {
@@ -182,9 +268,9 @@ struct ParticleSystemNode : Node {
       ImGui::BeginDisabled(is_renaming);
 
       // Combo for selecting force type
-      int force_type = inputs[i].pad - (uint8_t) ParticleSystemForce::AccelerationY;
+      int force_type = inputs[i].pad - (uint8_t) ParticleSystemForce::AccelerationX;
       if (ImGui::Combo("Force type", &force_type, kForceTypes, 6)) {
-        inputs[i].pad = static_cast<uint8_t>((int) ParticleSystemForce::AccelerationY + force_type);
+        inputs[i].pad = static_cast<uint8_t>((int) ParticleSystemForce::AccelerationX + force_type);
       }
       ImGui::SameLine();
 
@@ -262,25 +348,6 @@ struct ParticleSystemNode : Node {
     node->add_output(DataType::Particles2D, "out_particles");
 
     return node;
-  }
-
-  static std::string to_string(const ParticleSystemForce force) {
-    switch (force) {
-      case ParticleSystemForce::AccelerationX:
-        return "AccelerationX";
-      case ParticleSystemForce::AccelerationY:
-        return "AccelerationY";
-      case ParticleSystemForce::DragX:
-        return "DragX";
-      case ParticleSystemForce::DragY:
-        return "DragY";
-      case ParticleSystemForce::Radial:
-        return "Radial";
-      case ParticleSystemForce::Vortex:
-        return "Vortex";
-      default:
-        return "Unknown";
-    }
   }
 };
 
