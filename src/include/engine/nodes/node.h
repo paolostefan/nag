@@ -177,12 +177,13 @@ struct Pin {
 };
 
 struct Node {
-  int              id{};
-  NodeType         type{NodeType::Default};
   std::string      name{"<unnamed>"};
-  ImVec2           position{};
   std::vector<Pin> inputs;
   std::vector<Pin> outputs;
+  ImVec2           position{};
+  int              id{};
+  NodeType         type{NodeType::Default};
+  uint8_t          pad[3]{};
 
   virtual ~Node() = default;
 

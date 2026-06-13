@@ -43,7 +43,7 @@ struct ConstantFloatNode : Node {
       value,
       [](Node &n, const float v) { dynamic_cast<ConstantFloatNode &>(n).value = v; },
       graph, history,
-      0.f, 1.f, "%.3f"
+      -20.f, 20.f, "%.3f"
     );
   }
 
@@ -98,7 +98,6 @@ struct NoiseNode : Node {
   float amplitude{1.f};
   int octaves{1};
   float persistence{0.5f};
-
 
   NoiseNode() {
     type = NodeType::Noise;
