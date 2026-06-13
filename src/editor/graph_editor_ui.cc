@@ -186,18 +186,43 @@ void GraphEditorUI::render_node_editor() {
 
       // Render title bar
       ImNodes::BeginNodeTitleBar();
-      if (auto *tn = dynamic_cast<TimeNode *>(node.get())) {
-        ImGui::Text("Time [%.2f s]", tn->time);
 
-        if (flowing) {
-          tn->step(ImGui::GetIO().DeltaTime);
-          graph.evaluate();
+      switch (node->type) {
+        case NodeType::Time: {
+          auto *tn = (TimeNode *) node.get();
+          ImGui::Text("Time [%.2f s]", tn->time);
+
+          if (flowing) {
+            tn->step(ImGui::GetIO().DeltaTime);
+            graph.evaluate();
+          }
         }
-      } else if (const auto *particle_system_node = dynamic_cast<ParticleSystemNode *>(node.get())) {
-        ImGui::Text("%s [%d, %d died]", node->name.c_str(), particle_system_node->population, particle_system_node->casualties);
-      } else {
-        ImGui::TextUnformatted(node->name.c_str());
-      }
+        break;
+
+        case NodeType::Abs:
+        case NodeType::Add:
+        case NodeType::Constant:
+        case NodeType::Divide:
+        case NodeType::LFO:
+        case NodeType::Modulo:
+        case NodeType::Multiply:
+        case NodeType::Subtract:
+          // Show constant value in const nodes
+          ImGui::Text("%s [%0.3f]", node->name.c_str(),
+                      *node->outputs[0].get_float());
+          break;
+
+        case NodeType::ParticleSystem: {
+          const auto *particle_system_node = (ParticleSystemNode *) node.get();
+          ImGui::Text("%s [%d, %d died]", node->name.c_str(),
+                      particle_system_node->population,
+                      particle_system_node->casualties);
+        }
+        break;
+        default:
+          ImGui::TextUnformatted(node->name.c_str());
+          break;
+      } // switch node type
 
       ImNodes::EndNodeTitleBar();
 
@@ -315,6 +340,7 @@ void GraphEditorUI::render_node_editor() {
       }
     }
   }
+
   ImGui::End(); // Node editor
 }
 
