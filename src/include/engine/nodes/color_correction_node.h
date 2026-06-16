@@ -109,6 +109,21 @@ struct ColorCorrectionNode : ShaderNode {
                                 /*disabled=*/get_input("hue_shift")->connected);
   }
 
+  void update_from_inputs() override {
+    auto read = [&](const char *pin_name, float &dst) {
+      if (const Pin *p = get_input(pin_name); p && p->connected) {
+        if (const float *s = p->get_float()) {
+          dst = *s;
+        }
+      }
+    };
+
+    read("brightness", brightness);
+    read("contrast", contrast);
+    read("saturation", saturation);
+    read("hue_shift", hue_shift);
+  }
+
   // ── Factory ───────────────────────────────────────────────────────────────
 
   static std::unique_ptr<ColorCorrectionNode> create(
@@ -132,21 +147,6 @@ struct ColorCorrectionNode : ShaderNode {
     return node;
   }
 
-private:
-  void update_from_inputs() override {
-    auto read = [&](const char *pin_name, float &dst) {
-      if (const Pin *p = get_input(pin_name); p && p->connected) {
-        if (const float *s = p->get_float()) {
-          dst = *s;
-        }
-      }
-    };
-
-    read("brightness", brightness);
-    read("contrast", contrast);
-    read("saturation", saturation);
-    read("hue_shift", hue_shift);
-  }
 };
 
 #endif  // NAG_ENGINE_COLOR_CORRECTION_NODE_H

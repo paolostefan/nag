@@ -83,7 +83,6 @@ struct ClearColorNode : VisualNode {
     );
   }
 
-private:
   void update_from_inputs() {
     // Update color from inputs[0-3] if connected (r, g, b, a)
     if (inputs.size() >= 4) {

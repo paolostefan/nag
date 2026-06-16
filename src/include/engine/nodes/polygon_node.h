@@ -140,7 +140,6 @@ struct PolygonNode : ShaderNode {
     return node;
   }
 
-private:
   void update_from_inputs() override {
     auto read = [&](const char *pin_name, float &dst) {
       if (const Pin *p = get_input(pin_name); p && p->connected) {

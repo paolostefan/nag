@@ -106,7 +106,6 @@ struct CircleNode : ShaderNode {
       /*min=*/0.f, /*max=*/1.f);
   }
 
-private:
   void update_from_inputs() override {
     if (inputs.size() >= 2) {
       if (const float *x = inputs[0].get_float()) {

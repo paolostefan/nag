@@ -105,7 +105,6 @@ struct DisplaceNode : ShaderNode {
     return node;
   }
 
-private:
   void update_from_inputs() override {
     // Texture* pins handled by bind_texture_inputs() in ShaderNode::render().
     if (const Pin *p = get_input("strength"); p && p->connected) {
