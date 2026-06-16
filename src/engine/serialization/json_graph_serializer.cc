@@ -9,7 +9,6 @@
 #include "nlohmann/json.hpp"
 
 #include "engine/node_registry.h"
-#include "engine/nodes/node_type_names.h"
 
 using json = nlohmann::json;
 

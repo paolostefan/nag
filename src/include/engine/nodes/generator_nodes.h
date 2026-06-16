@@ -259,8 +259,7 @@ struct RandomNode : Node {
       return;
     }
 
-    const float *trigger = inputs[0].get_float();
-    if (!trigger || !outputs[0].get_float()) { return; }
+    if (const float *trigger = inputs[0].get_float(); !trigger || !outputs[0].get_float()) { return; }
 
     // Generate new value only when the trigger changes
     if (inputs[0].stream->version != last_trigger_version) {
@@ -324,7 +323,11 @@ struct RandomNode : Node {
     const float max_value_ = 1.f,
     const int seed_ = 42
   ) {
-    return std::make_unique<RandomNode>(min_value_, max_value_, seed_);
+    auto node = std::make_unique<RandomNode>(min_value_, max_value_, seed_);
+
+    node->add_input(DataType::Float, "trigger");
+    node->add_output(DataType::Float, "random");
+    return node;
   }
 };
 
@@ -358,8 +361,7 @@ struct StepSequencerNode : Node {
       return;
     }
 
-    const float *trigger = inputs[0].get_float();
-    if (!trigger || !outputs[0].get_float()) { return; }
+    if (const float *trigger = inputs[0].get_float(); !trigger || !outputs[0].get_float()) { return; }
 
     // Advance step only when the trigger changes
     if (inputs[0].stream->version != last_trigger_version) {
