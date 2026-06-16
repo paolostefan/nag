@@ -12,6 +12,7 @@
 
 #include "engine/node_registry.h"
 #include "engine/shader_quad_helper.h"
+#include "engine/nodes/particle_emitter_node.h"
 #include "engine/nodes/particle_system_node.h"
 
 
@@ -27,17 +28,17 @@ GraphEditorUI::GraphEditorUI(
   // Configure ImNodes
   ImNodes::PushAttributeFlag(ImNodesAttributeFlags_EnableLinkDetachWithDragClick);
 
-  ImNodesIO &io = ImNodes::GetIO();
+  ImNodesIO &io                           = ImNodes::GetIO();
   io.LinkDetachWithModifierClick.Modifier = &ImGui::GetIO().KeyCtrl;
-  io.MultipleSelectModifier.Modifier = &ImGui::GetIO().KeyCtrl;
+  io.MultipleSelectModifier.Modifier      = &ImGui::GetIO().KeyCtrl;
 
   ImNodesStyle &style = ImNodes::GetStyle();
-  style.Flags |= ImNodesStyleFlags_GridLinesPrimary | ImNodesStyleFlags_GridSnapping;
+  style.Flags         |= ImNodesStyleFlags_GridLinesPrimary | ImNodesStyleFlags_GridSnapping;
 }
 
 
 void GraphEditorUI::main_event_loop() {
-  bool running = true;
+  bool      running = true;
   SDL_Event event;
 
   // ReSharper disable once CppDFAConstantConditions
@@ -173,7 +174,7 @@ void GraphEditorUI::render_node_editor() {
     ImNodes::BeginNodeEditor();
 
     const bool refresh_positions = node_pos_refresh.exchange(false);
-    const bool flowing = is_time_flowing.load(std::memory_order_acquire);
+    const bool flowing           = is_time_flowing.load(std::memory_order_acquire);
 
     // ── Nodes ──────────────────────────────────────────────────────────────────
     for (const auto &node: graph.nodes) {
@@ -187,44 +188,66 @@ void GraphEditorUI::render_node_editor() {
       // Render title bar
       ImNodes::BeginNodeTitleBar();
 
+      ImGui::TextUnformatted(node->name.c_str());
+
       switch (node->type) {
         case NodeType::Time: {
-          auto *tn = (TimeNode *) node.get();
-          ImGui::Text("Time [%.2f s]", tn->time);
-
           if (flowing) {
-            tn->step(ImGui::GetIO().DeltaTime);
+            ((TimeNode *) node.get())->step(ImGui::GetIO().DeltaTime);
             graph.evaluate();
           }
         }
         break;
-
-        case NodeType::Abs:
-        case NodeType::Add:
-        case NodeType::Constant:
-        case NodeType::Divide:
-        case NodeType::LFO:
-        case NodeType::Modulo:
-        case NodeType::Multiply:
-        case NodeType::Subtract:
-          // Show constant value in const nodes
-          ImGui::Text("%s [%0.3f]", node->name.c_str(),
-                      *node->outputs[0].get_float());
-          break;
-
-        case NodeType::ParticleSystem: {
-          const auto *particle_system_node = (ParticleSystemNode *) node.get();
-          ImGui::Text("%s [%d, %d died]", node->name.c_str(),
-                      particle_system_node->population,
-                      particle_system_node->casualties);
-        }
-        break;
         default:
-          ImGui::TextUnformatted(node->name.c_str());
           break;
       } // switch node type
 
       ImNodes::EndNodeTitleBar();
+
+      switch (node->type) {
+        case NodeType::Time:
+          ImGui::TextDisabled("%.02f s", ((TimeNode *) node.get())->time);
+          break;
+
+        case NodeType::Abs:
+        case NodeType::Add:
+        case NodeType::Constant:
+        case NodeType::Cos:
+        case NodeType::Divide:
+        case NodeType::LFO:
+        case NodeType::Lerp:
+        case NodeType::Modulo:
+        case NodeType::Negate:
+        case NodeType::Multiply:
+        case NodeType::Random:
+        case NodeType::Sin:
+        case NodeType::Smoother:
+        case NodeType::SmoothStep:
+        case NodeType::Subtract:
+        case NodeType::Tan:
+
+          // Show output value in smaller font, muted color
+          // Show output value in math nodes
+          ImGui::TextDisabled("%0.03f", *node->outputs[0].get_float());
+          break;
+
+        case NodeType::ParticleEmitter: {
+          ImGui::TextDisabled(
+            "%0.01f p/s", node.get()->get_param("rate"));
+        }
+        break;
+
+        case NodeType::ParticleSystem: {
+          const auto *particle_system_node = (ParticleSystemNode *) node.get();
+          ImGui::TextDisabled("%d particles", particle_system_node->population);
+          ImGui::TextDisabled("%d died", particle_system_node->casualties);
+        }
+        break;
+
+        default:
+          break;
+      } // switch node type
+
 
       // Render input/output pins
       if (node->inputs.size() + node->outputs.size() == 0) {
@@ -359,9 +382,9 @@ void GraphEditorUI::render_menu_bar() {
   if (ImGui::BeginMenu(ICON_FA_FILE "  File")) {
     if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK "  Save Graph", "Ctrl+S")) {
       IGFD::FileDialogConfig cfg;
-      cfg.path = ".";
+      cfg.path     = ".";
       cfg.fileName = "graph.json";
-      cfg.flags = ImGuiFileDialogFlags_ConfirmOverwrite;
+      cfg.flags    = ImGuiFileDialogFlags_ConfirmOverwrite;
       ImGuiFileDialog::Instance()->OpenDialog(
         kSaveGraphDialogKey, "Save Graph", kFileFilter, cfg
       );
@@ -590,7 +613,7 @@ void GraphEditorUI::render_visual_node_body(
   }
 
   constexpr float kPreviewWidth = 150.f;
-  const float aspect =
+  const float     aspect        =
       static_cast<float>(visual_node->render_target->get_height()) /
       static_cast<float>(visual_node->render_target->get_width());
 
