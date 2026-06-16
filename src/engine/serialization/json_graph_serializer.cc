@@ -214,7 +214,7 @@ OperationResult JsonGraphSerializer::load(
 json JsonGraphSerializer::serialize_node(const Node *node) {
   json j;
   j["id"] = node->id;
-  j["type"] = node_type_to_string(node->type);
+  j["type"] = node->type_name();
   j["name"] = node->name;
   j["position"] = {node->position.x, node->position.y};
 
@@ -229,10 +229,10 @@ std::unique_ptr<Node> JsonGraphSerializer::deserialize_node(const json &j) {
   // Deserialize type by name for stability across enum reorderings.
   // Backward-compat: if the field is still an integer (graph saved before this
   // change), fall back to the old numeric cast so existing files keep working.
-  NodeType type = NodeType::Default;
+  auto type = NodeType::Default;
   if (j.contains("type")) {
     if (j["type"].is_string()) {
-      type = node_type_from_string(j["type"].get<std::string>());
+      type = NodeRegistry::instance().find_type_by_name(j["type"].get<std::string>());
     } else if (j["type"].is_number_integer()) {
       spdlog::warn("Node {}: 'type' is numeric (old format), casting directly", old_id);
       type = static_cast<NodeType>(j["type"].get<int>());

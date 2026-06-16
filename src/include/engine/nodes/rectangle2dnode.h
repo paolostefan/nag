@@ -22,8 +22,9 @@ struct Rectangle2DNode : ShaderNode {
     name = "Rectangle";
   }
 
-  [[nodiscard]] const char *shader_name() const override { return "rectangle"; }
-  [[nodiscard]] constexpr const char *frag_shader_src() const override { return krectangle_frag; }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Rectangle2D"; }
+  [[nodiscard]] const char *shader_name() const noexcept override { return "rectangle"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return krectangle_frag; }
 
   void bind_params() override
   {

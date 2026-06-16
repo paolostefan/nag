@@ -10,7 +10,6 @@
 #include "engine/particles2d.h"
 #include "engine/property_widget.h"
 #include "engine/shader_manager.h"
-#include "engine/shader_quad_helper.h"
 #include "shaders/fullscreen_quad_vert.h"
 #include "shaders/particle_bg_frag.h"
 #include "shaders/particle_renderer_frag.h"
@@ -48,6 +47,8 @@ struct ParticleRendererNode : VisualNode {
     if (vbo_)
       glDeleteBuffers(1, &vbo_);
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Particle Renderer"; }
 
   bool initialize(const int width, const int height) override {
     if (!VisualNode::initialize(width, height)) return false;

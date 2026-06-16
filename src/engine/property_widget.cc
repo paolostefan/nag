@@ -1,6 +1,44 @@
 #include "engine/property_widget.h"
 
 namespace PropertyWidget {
+
+  void InputInt(const std::string &label,
+                        int node_id,
+                        int &value,
+                        std::function<void(Node &, int)> setter,
+                        NodeGraph &graph,
+                        CommandHistory &history,
+                        const int min,
+                        const int max,
+                        const bool disabled) {
+    const std::string key = internal::MakeKey(node_id, label);
+    auto &before_map = internal::BeforeMap<int>();
+
+    ImGui::BeginDisabled(disabled);
+    ImGui::InputInt(label.c_str(), &value);
+
+    if (ImGui::IsItemActivated()) {
+      before_map[key] = value;
+    }
+
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+      if (const auto it = before_map.find(key); it != before_map.end()) {
+        const int value_before = it->second;
+        before_map.erase(it);
+
+        // Only emit a command if the value actually changed.
+        if (value_before != value) {
+          history.execute(
+            graph,
+            std::make_unique<SetNodeParamCommand<int> >(
+              node_id, label, value_before, value, std::move(setter)));
+        }
+      }
+    }
+
+    ImGui::EndDisabled();
+  }
+
   void DragFloat(const std::string &label,
                         int node_id,
                         float &value,

@@ -31,8 +31,9 @@ struct GradientNode : ShaderNode {
     name = "Gradient";
   }
 
-  [[nodiscard]] const char *shader_name() const override { return "gradient"; }
-  [[nodiscard]] constexpr const char *frag_shader_src() const override { return kgradient_frag; }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Gradient"; }
+  [[nodiscard]] const char *shader_name() const noexcept override { return "gradient"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kgradient_frag; }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();

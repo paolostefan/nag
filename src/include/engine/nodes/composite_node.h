@@ -33,13 +33,9 @@ struct CompositeNode : ShaderNode {
     name = CompositeNode::shader_name();
   }
 
-  [[nodiscard]] const char *shader_name() const override {
-    return "composite";
-  }
-
-  [[nodiscard]] constexpr const char *frag_shader_src() const override {
-    return kcomposite_frag;
-  }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Composite"; }
+  [[nodiscard]] const char *shader_name() const noexcept override { return "composite"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kcomposite_frag; }
 
   void bind_params() override {
     shader->set_uniform("u_blend_mode", static_cast<int>(blend_mode));

@@ -23,6 +23,8 @@ struct ParticleSystemNode : Node {
   char pin_name_buf[127]{}; // UI: buffer for pin name
   bool is_renaming{false}; // UI: Are we renaming a force pin?
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Particle System"; }
+
   static std::string to_string(const ParticleSystemForce force) {
     switch (force) {
       case ParticleSystemForce::AccelerationX:

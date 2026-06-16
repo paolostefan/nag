@@ -34,8 +34,9 @@ struct TileNode : ShaderNode {
     name = "Tile";
   }
 
-  [[nodiscard]] const char *shader_name() const override { return "tile"; }
-  [[nodiscard]] const char *frag_shader_src() const override { return ktile_frag; }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Tile"; }
+  [[nodiscard]] const char *shader_name() const noexcept override { return "tile"; }
+  [[nodiscard]] const char *frag_shader_src() const noexcept override { return ktile_frag; }
 
   void bind_params() override {
     shader->set_uniform("u_tile_x", tile_x);

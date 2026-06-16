@@ -13,25 +13,30 @@ void NodeRegistry::register_node(
   const NodeType type,
   const std::string &category,
   const std::string &description,
-  std::function<std::unique_ptr<Node>()> create_func
+  const std::function<std::unique_ptr<Node>()> create_func
 ) {
   if (registry_.contains(type)) {
     spdlog::warn("Node type {} already registered, overwriting",
                  static_cast<int>(type));
   }
 
-  const auto display_name = std::string(node_type_to_string(type));
+  const auto temp = create_func();
+  if (!temp) {
+    spdlog::error("Failed to create node instance for type {} during registration",
+                  static_cast<int>(type));
+    return;
+  }
 
   registry_[type] = {
     type,
-    display_name,
+    std::string(temp->type_name()),
     category,
     description,
     create_func
   };
 
   spdlog::debug("Registered node type: {} ({})",
-                display_name,
+                temp->type_name(),
                 static_cast<int>(type));
 }
 

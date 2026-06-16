@@ -6,11 +6,16 @@
 #include "engine/nodes/node.h"
 #include "engine/render_target.h"
 
+/**
+ * @struct VisualNode
+ *
+ * Base class for nodes that render to a texture via an FBO.
+ * Manages the lifecycle of the render target and output texture stream.
+ */
 struct VisualNode : Node {
-  bool enabled{true};
-
   std::unique_ptr<RenderTarget> render_target;
   Texture output_texture;
+  bool enabled{true};
 
   ~VisualNode() override = default;
 

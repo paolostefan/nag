@@ -37,6 +37,28 @@ namespace PropertyWidget {
   } // namespace internal
 
   // ---------------------------------------------------------------------------
+  // InputInt
+  // ---------------------------------------------------------------------------
+
+  /// @brief Renders an InputInt widget and emits an undo command on release.
+  ///
+  /// @param label       Widget label (also used as param_name in the command).
+  /// @param node_id     ID of the owning node.
+  /// @param value       Reference to the int field on the node.
+  /// @param setter      Callable to restore the value during undo/redo.
+  /// @param graph       The node graph (passed to history.execute).
+  /// @param history     The command history.
+  /// @param min         Minimum value (default 0).
+  /// @param max         Maximum value (default 100).
+  /// @param disabled    If true, the widget is rendered disabled and does not emit commands (default false).
+  void InputInt(const std::string &label, int node_id, int &value,
+                std::function<void(Node &, int)> setter,
+                NodeGraph &graph, CommandHistory &history,
+                int min = 0,
+                int max = 100,
+                bool disabled = false);
+
+  // ---------------------------------------------------------------------------
   // DragFloat
   // ---------------------------------------------------------------------------
 

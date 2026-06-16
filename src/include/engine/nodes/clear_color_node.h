@@ -22,6 +22,8 @@ struct ClearColorNode : VisualNode {
     name = "ClearColor";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Clear Color"; }
+
   void render() override {
     static Color transparent = Color::transparent();
     if (!render_target || !render_target->is_valid()) {

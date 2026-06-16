@@ -38,6 +38,8 @@ struct LFONode : Node {
     name = "LFO";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "LFO"; }
+
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
       return;
@@ -233,6 +235,8 @@ struct EnvelopeNode : Node {
     type = NodeType::Envelope;
     name = "Envelope";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Envelope"; }
 
   void evaluate() override {
     if (inputs.size() < 2 || outputs.empty()) {
@@ -464,6 +468,8 @@ struct DelayNode : Node {
     update_buffer_size();
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Delay"; }
+
   /**
    * Update buffer size based on delay time and sample rate.
    */
@@ -610,6 +616,8 @@ struct SmootherNode : Node {
     type = NodeType::Smoother;
     name = "Smoother";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Smoother"; }
 
   void evaluate() override {
     if (inputs.size() < 2 || outputs.empty()) {

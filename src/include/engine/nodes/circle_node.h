@@ -21,8 +21,9 @@ struct CircleNode : ShaderNode {
     name = "Circle";
   }
 
-  [[nodiscard]] const char *shader_name() const override { return "circle"; }
-  [[nodiscard]] constexpr const char *frag_shader_src() const override { return kcircle_frag; }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Circle"; }
+  [[nodiscard]] const char *shader_name() const noexcept override { return "circle"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kcircle_frag; }
 
   void bind_params() override {
     shader->set_uniform("u_position", position.x, position.y);

@@ -19,11 +19,7 @@ public:
     type = NodeType::Output;
   }
 
-  [[nodiscard]] static std::unique_ptr<OutputNode> create() {
-    auto node = std::make_unique<OutputNode>();
-    node->add_input(DataType::Texture, "texture");
-    return node;
-  }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Output"; }
 
   void evaluate() override {
     if (Texture **tex = inputs[0].get_texture()) {
@@ -37,6 +33,12 @@ public:
    * The pointer is non-owning; valid only as long as the source VisualNode lives.
    */
   [[nodiscard]] constexpr const Texture *get_texture() const { return last_texture_; }
+
+  [[nodiscard]] static std::unique_ptr<OutputNode> create() {
+    auto node = std::make_unique<OutputNode>();
+    node->add_input(DataType::Texture, "texture");
+    return node;
+  }
 
 private:
   const Texture *last_texture_{nullptr};

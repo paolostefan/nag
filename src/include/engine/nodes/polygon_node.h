@@ -33,24 +33,25 @@ struct PolygonNode : ShaderNode {
     name = "Polygon";
   }
 
-  [[nodiscard]] const char *shader_name()     const override { return "polygon"; }
-  [[nodiscard]] const char *frag_shader_src() const override { return kpolygon_frag; }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Polygon"; }
+  [[nodiscard]] const char *shader_name() const noexcept override { return "polygon"; }
+  [[nodiscard]] const char *frag_shader_src() const noexcept override { return kpolygon_frag; }
 
   void bind_params() override {
-    shader->set_uniform("u_position",        position.x, position.y);
-    shader->set_uniform("u_radius",          radius);
-    shader->set_uniform("u_rotation",        rotation);
-    shader->set_uniform("u_n_sides",         static_cast<float>(n_sides));
-    shader->set_uniform("u_color",           color.x, color.y, color.z, color.w);
+    shader->set_uniform("u_position", position.x, position.y);
+    shader->set_uniform("u_radius", radius);
+    shader->set_uniform("u_rotation", rotation);
+    shader->set_uniform("u_n_sides", static_cast<float>(n_sides));
+    shader->set_uniform("u_color", color.x, color.y, color.z, color.w);
     shader->set_uniform("u_edge_smoothness", edge_smoothness);
   }
 
   // ── get_param — bridge for bind_float_inputs() ────────────────────────────
 
   [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "pos_x")    return position.x;
-    if (param_name == "pos_y")    return position.y;
-    if (param_name == "radius")   return radius;
+    if (param_name == "pos_x") return position.x;
+    if (param_name == "pos_y") return position.y;
+    if (param_name == "radius") return radius;
     if (param_name == "rotation") return rotation;
     return 0.f;
   }
@@ -58,7 +59,7 @@ struct PolygonNode : ShaderNode {
   // ── Serialization ─────────────────────────────────────────────────────────
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j = VisualNode::serialize_params();
+    nlohmann::json j     = VisualNode::serialize_params();
     j["position"]        = {position.x, position.y};
     j["radius"]          = radius;
     j["rotation"]        = rotation;
@@ -76,9 +77,9 @@ struct PolygonNode : ShaderNode {
         position.x = j["position"][0];
         position.y = j["position"][1];
       }
-      if (j.contains("radius"))          radius          = j["radius"];
-      if (j.contains("rotation"))        rotation        = j["rotation"];
-      if (j.contains("n_sides"))         n_sides         = j["n_sides"];
+      if (j.contains("radius")) radius = j["radius"];
+      if (j.contains("rotation")) rotation = j["rotation"];
+      if (j.contains("n_sides")) n_sides = j["n_sides"];
       if (j.contains("color") && j["color"].is_array() && j["color"].size() >= 4) {
         color.x = j["color"][0];
         color.y = j["color"][1];
@@ -99,31 +100,30 @@ struct PolygonNode : ShaderNode {
   void draw_properties(NodeGraph &graph, CommandHistory &history) override {
     auto *color_ = reinterpret_cast<ImVec4 *>(&color);
     PropertyWidget::ColorEdit4("Color", id,
-      *color_,
-      [](Node &n, const ImVec4 &v) { dynamic_cast<PolygonNode &>(n).color = v; },
-      graph, history);
+                               *color_,
+                               [](Node &n, const ImVec4 &v) { dynamic_cast<PolygonNode &>(n).color = v; },
+                               graph, history);
 
     // n_sides: int slider, intentionally not a pin (see class note).
     // Wrapped manually in undo/redo via SetNodeParamCommand if needed.
     ImGui::SliderInt("Sides", &n_sides, 3, 12);
 
     PropertyWidget::SliderFloat("Edge smoothness", id,
-      edge_smoothness,
-      [](Node &n, const float v) { dynamic_cast<PolygonNode &>(n).edge_smoothness = v; },
-      graph, history,
-      /*min=*/0.f, /*max=*/1.f,
-      /*format=*/"%.3f");
+                                edge_smoothness,
+                                [](Node &n, const float v) { dynamic_cast<PolygonNode &>(n).edge_smoothness = v; },
+                                graph, history,
+                                /*min=*/0.f, /*max=*/1.f,
+                                /*format=*/"%.3f");
   }
 
   // ── Factory ───────────────────────────────────────────────────────────────
 
   static std::unique_ptr<PolygonNode> create(
-      const Vec2  &position        = {0.5f, 0.5f},
-      const float  radius          = 0.2f,
-      const int    n_sides         = 6,
-      const Vec4  &color           = Vec4::white(),
-      const float  edge_smoothness = 0.01f)
-  {
+    const Vec2 &position        = {0.5f, 0.5f},
+    const float radius          = 0.2f,
+    const int   n_sides         = 6,
+    const Vec4 &color           = Vec4::white(),
+    const float edge_smoothness = 0.01f) {
     auto node             = std::make_unique<PolygonNode>();
     node->position        = position;
     node->radius          = radius;
@@ -150,9 +150,9 @@ private:
       }
     };
 
-    read("pos_x",    position.x);
-    read("pos_y",    position.y);
-    read("radius",   radius);
+    read("pos_x", position.x);
+    read("pos_y", position.y);
+    read("radius", radius);
     read("rotation", rotation);
   }
 };

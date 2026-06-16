@@ -11,7 +11,7 @@
 #include "shaders/fullscreen_quad_vert.h"
 
 /**
- * @brief Base class for post-process / effect nodes driven by a fragment shader.
+ * @brief Virtual base struct for post-process / effect nodes driven by a fragment shader.
  *
  * Extends VisualNode following the same pattern as GradientNode / CompositeNode:
  *   - initialize() loads the shader via ShaderManager (file-based, cached).
@@ -38,15 +38,15 @@ struct ShaderNode : VisualNode {
   // ── Interface for subclasses ──────────────────────────────────────────────
 
   /** Unique shader cache key, e.g. "blur_gaussian". */
-  [[nodiscard]] virtual const char *shader_name() const = 0;
+  [[nodiscard]] virtual const char *shader_name() const noexcept = 0;
 
   /** Vertex shader source. Defaults to the shared fullscreen quad vertex shader. */
-  [[nodiscard]] virtual const char *vert_shader_src() const {
+  [[nodiscard]] virtual const char *vert_shader_src() const noexcept {
     return kfullscreen_quad_vert;
   }
 
   /** Fragment shader source. */
-  [[nodiscard]] virtual const char *frag_shader_src() const = 0;
+  [[nodiscard]] virtual const char *frag_shader_src() const noexcept = 0;
 
   /**
    * @brief Called by render() after textures and float uniforms are bound.
@@ -117,9 +117,9 @@ protected:
    * pin-based texture binding at unit 0 with the aux_target_ result.
    * Float pins and u_resolution are still bound from the node's input pins.
    */
-  void draw_pass(RenderTarget &target,
+  void draw_pass(RenderTarget & target,
                  ShaderProgram &prog,
-                 const GLuint tex_id_override = 0) const {
+                 const GLuint   tex_id_override = 0) const {
     target.clear();
     prog.use();
 

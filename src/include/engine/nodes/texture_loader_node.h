@@ -42,6 +42,8 @@ struct TextureLoaderNode : VisualNode {
 
   // ── Node interface ────────────────────────────────────────────────────────
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Texture Loader"; }
+
   void evaluate() override {
     if (path_dirty_) {
       reload_texture();

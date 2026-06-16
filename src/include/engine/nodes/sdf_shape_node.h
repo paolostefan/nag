@@ -39,8 +39,9 @@ struct SDFShapeNode : ShaderNode {
     name = "SDF Shape";
   }
 
-  [[nodiscard]] const char *shader_name() const override { return "sdf_shape"; }
-  [[nodiscard]] const char *frag_shader_src() const override { return ksdf_shape_frag; }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "SDF Shape"; }
+  [[nodiscard]] const char *shader_name() const noexcept override { return "sdf_shape"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return ksdf_shape_frag; }
 
   void bind_params() override {
     shader->set_uniform("u_position", position.x, position.y);

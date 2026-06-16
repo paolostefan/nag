@@ -29,23 +29,24 @@ struct ColorCorrectionNode : ShaderNode {
     name = "Color Correction";
   }
 
-  [[nodiscard]] const char *shader_name()     const override { return "color_correction"; }
-  [[nodiscard]] const char *frag_shader_src() const override { return kcolor_correction_frag; }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Color Correction"; }
+  [[nodiscard]] const char *shader_name() const noexcept override { return "color_correction"; }
+  [[nodiscard]] const char *frag_shader_src() const noexcept override { return kcolor_correction_frag; }
 
   void bind_params() override {
-    shader->set_uniform("u_brightness",  brightness);
-    shader->set_uniform("u_contrast",    contrast);
-    shader->set_uniform("u_saturation",  saturation);
-    shader->set_uniform("u_hue_shift",   hue_shift);
+    shader->set_uniform("u_brightness", brightness);
+    shader->set_uniform("u_contrast", contrast);
+    shader->set_uniform("u_saturation", saturation);
+    shader->set_uniform("u_hue_shift", hue_shift);
   }
 
   // ── get_param — bridge for bind_float_inputs() ────────────────────────────
 
   [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "brightness")  return brightness;
-    if (param_name == "contrast")    return contrast;
-    if (param_name == "saturation")  return saturation;
-    if (param_name == "hue_shift")   return hue_shift;
+    if (param_name == "brightness") return brightness;
+    if (param_name == "contrast") return contrast;
+    if (param_name == "saturation") return saturation;
+    if (param_name == "hue_shift") return hue_shift;
     return 0.f;
   }
 
@@ -54,9 +55,9 @@ struct ColorCorrectionNode : ShaderNode {
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
     j["brightness"] = brightness;
-    j["contrast"]   = contrast;
+    j["contrast"] = contrast;
     j["saturation"] = saturation;
-    j["hue_shift"]  = hue_shift;
+    j["hue_shift"] = hue_shift;
     return j;
   }
 
@@ -65,9 +66,9 @@ struct ColorCorrectionNode : ShaderNode {
       if (auto result = VisualNode::deserialize_params(j); !result) return result;
 
       if (j.contains("brightness")) brightness = j["brightness"];
-      if (j.contains("contrast"))   contrast   = j["contrast"];
+      if (j.contains("contrast")) contrast = j["contrast"];
       if (j.contains("saturation")) saturation = j["saturation"];
-      if (j.contains("hue_shift"))  hue_shift  = j["hue_shift"];
+      if (j.contains("hue_shift")) hue_shift = j["hue_shift"];
 
       return OperationResult::ok();
     } catch (const std::exception &e) {
@@ -80,47 +81,46 @@ struct ColorCorrectionNode : ShaderNode {
 
   void draw_properties(NodeGraph &graph, CommandHistory &history) override {
     PropertyWidget::SliderFloat("Brightness", id,
-      brightness,
-      [](Node &n, const float v) { dynamic_cast<ColorCorrectionNode &>(n).brightness = v; },
-      graph, history,
-      /*min=*/-1.f, /*max=*/1.f, /*format=*/"%.2f",
-      /*disabled=*/get_input("brightness")->connected);
+                                brightness,
+                                [](Node &n, const float v) { dynamic_cast<ColorCorrectionNode &>(n).brightness = v; },
+                                graph, history,
+                                /*min=*/-1.f, /*max=*/1.f, /*format=*/"%.2f",
+                                /*disabled=*/get_input("brightness")->connected);
 
     PropertyWidget::SliderFloat("Contrast", id,
-      contrast,
-      [](Node &n, const float v) { dynamic_cast<ColorCorrectionNode &>(n).contrast = v; },
-      graph, history,
-      /*min=*/0.f, /*max=*/4.f, /*format=*/"%.2f",
-      /*disabled=*/get_input("contrast")->connected);
+                                contrast,
+                                [](Node &n, const float v) { dynamic_cast<ColorCorrectionNode &>(n).contrast = v; },
+                                graph, history,
+                                /*min=*/0.f, /*max=*/4.f, /*format=*/"%.2f",
+                                /*disabled=*/get_input("contrast")->connected);
 
     PropertyWidget::SliderFloat("Saturation", id,
-      saturation,
-      [](Node &n, const float v) { dynamic_cast<ColorCorrectionNode &>(n).saturation = v; },
-      graph, history,
-      /*min=*/0.f, /*max=*/2.f, /*format=*/"%.2f",
-      /*disabled=*/get_input("saturation")->connected);
+                                saturation,
+                                [](Node &n, const float v) { dynamic_cast<ColorCorrectionNode &>(n).saturation = v; },
+                                graph, history,
+                                /*min=*/0.f, /*max=*/2.f, /*format=*/"%.2f",
+                                /*disabled=*/get_input("saturation")->connected);
 
     PropertyWidget::SliderFloat("Hue shift", id,
-      hue_shift,
-      [](Node &n, const float v) { dynamic_cast<ColorCorrectionNode &>(n).hue_shift = v; },
-      graph, history,
-      /*min=*/0.f, /*max=*/6.2832f, /*format=*/"%.2f",
-      /*disabled=*/get_input("hue_shift")->connected);
+                                hue_shift,
+                                [](Node &n, const float v) { dynamic_cast<ColorCorrectionNode &>(n).hue_shift = v; },
+                                graph, history,
+                                /*min=*/0.f, /*max=*/6.2832f, /*format=*/"%.2f",
+                                /*disabled=*/get_input("hue_shift")->connected);
   }
 
   // ── Factory ───────────────────────────────────────────────────────────────
 
   static std::unique_ptr<ColorCorrectionNode> create(
-      const float brightness = 0.f,
-      const float contrast   = 1.f,
-      const float saturation = 1.f,
-      const float hue_shift  = 0.f)
-  {
-    auto node        = std::make_unique<ColorCorrectionNode>();
+    const float brightness = 0.f,
+    const float contrast = 1.f,
+    const float saturation = 1.f,
+    const float hue_shift = 0.f) {
+    auto node = std::make_unique<ColorCorrectionNode>();
     node->brightness = brightness;
-    node->contrast   = contrast;
+    node->contrast = contrast;
     node->saturation = saturation;
-    node->hue_shift  = hue_shift;
+    node->hue_shift = hue_shift;
 
     node->add_input(DataType::Texture, "texture");
     node->add_input(DataType::Float, "brightness");
@@ -143,9 +143,9 @@ private:
     };
 
     read("brightness", brightness);
-    read("contrast",   contrast);
+    read("contrast", contrast);
     read("saturation", saturation);
-    read("hue_shift",  hue_shift);
+    read("hue_shift", hue_shift);
   }
 };
 

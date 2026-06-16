@@ -28,8 +28,9 @@ struct VintageCRTNode : ShaderNode {
     name = "Vintage CRT";
   }
 
-  [[nodiscard]] const char *shader_name() const override { return "vintage_crt"; }
-  [[nodiscard]] constexpr const char *frag_shader_src() const override { return kvintage_crt_frag; }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Vintage CRT"; }
+  [[nodiscard]] const char *shader_name() const noexcept override { return "vintage_crt"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kvintage_crt_frag; }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();

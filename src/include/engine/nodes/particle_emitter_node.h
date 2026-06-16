@@ -24,6 +24,8 @@ struct ParticleEmitterNode : Node {
     rng.seed(seed_);
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Particle Emitter"; }
+
   void evaluate() override {
     // Spawn particles based on the rate and elapsed time
     const float *in = inputs.empty() ? nullptr : inputs[0].get_float();

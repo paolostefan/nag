@@ -33,8 +33,9 @@ struct BlurNode : ShaderNode {
     name = "Blur";
   }
 
-  [[nodiscard]] const char *shader_name() const override { return "blur_gaussian"; }
-  [[nodiscard]] constexpr const char *frag_shader_src() const override { return kblur_frag; }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Blur"; }
+  [[nodiscard]] const char *shader_name() const noexcept override { return "blur_gaussian"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kblur_frag; }
 
   bool initialize(const int width, const int height) override {
     if (!ShaderNode::initialize(width, height)) return false;
@@ -118,7 +119,6 @@ struct BlurNode : ShaderNode {
     return 0.f;
   }
 
-private:
   void update_from_inputs() override {
     // If radius pin is connected, override the member variable with the input value.
     if (const Pin *radius_pin = get_input("radius");
@@ -129,7 +129,6 @@ private:
     }
   }
 
-public:
   [[nodiscard]] static std::unique_ptr<BlurNode> create(const float radius = 4.f) {
     auto node = std::make_unique<BlurNode>();
     node->radius = radius;
@@ -165,8 +164,9 @@ struct ChromaticAberrationNode : ShaderNode {
     name = "ChromaticAberration";
   }
 
-  [[nodiscard]] const char *shader_name() const override { return "chromatic_aberration"; }
-  [[nodiscard]] constexpr const char *frag_shader_src() const override { return kchromatic_aberration_frag; }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Chromatic Aberration"; }
+  [[nodiscard]] const char *shader_name() const noexcept override { return "chromatic_aberration"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kchromatic_aberration_frag; }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
@@ -234,8 +234,9 @@ struct PixelateNode : ShaderNode {
     name = "Pixelate";
   }
 
-  [[nodiscard]] const char *shader_name() const override { return "pixelate"; }
-  [[nodiscard]] constexpr const char *frag_shader_src() const override { return kpixelate_frag; }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Pixelate"; }
+  [[nodiscard]] const char *shader_name() const noexcept override { return "pixelate"; }
+  [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kpixelate_frag; }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();

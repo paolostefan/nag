@@ -25,21 +25,22 @@
  */
 struct DisplaceNode : ShaderNode {
   float strength{0.05f};
-  int   channel_x{0};   // R drives X
-  int   channel_y{1};   // G drives Y
+  int channel_x{0}; // R drives X
+  int channel_y{1}; // G drives Y
 
   DisplaceNode() {
     type = NodeType::Displace;
     name = "Displace";
   }
 
-  [[nodiscard]] const char *shader_name()     const override { return "displace"; }
-  [[nodiscard]] const char *frag_shader_src() const override { return kdisplace_frag; }
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Displace"; }
+  [[nodiscard]] const char *shader_name() const noexcept override { return "displace"; }
+  [[nodiscard]] const char *frag_shader_src() const noexcept override { return kdisplace_frag; }
 
   void bind_params() override {
-    shader->set_uniform("u_strength",   strength);
-    shader->set_uniform("u_channel_x",  static_cast<float>(channel_x));
-    shader->set_uniform("u_channel_y",  static_cast<float>(channel_y));
+    shader->set_uniform("u_strength", strength);
+    shader->set_uniform("u_channel_x", static_cast<float>(channel_x));
+    shader->set_uniform("u_channel_y", static_cast<float>(channel_y));
   }
 
   // ── get_param — bridge for bind_float_inputs() ────────────────────────────
@@ -53,7 +54,7 @@ struct DisplaceNode : ShaderNode {
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
-    j["strength"]  = strength;
+    j["strength"] = strength;
     j["channel_x"] = channel_x;
     j["channel_y"] = channel_y;
     return j;
@@ -63,7 +64,7 @@ struct DisplaceNode : ShaderNode {
     try {
       if (auto result = VisualNode::deserialize_params(j); !result) return result;
 
-      if (j.contains("strength"))  strength  = j["strength"];
+      if (j.contains("strength")) strength = j["strength"];
       if (j.contains("channel_x")) channel_x = j["channel_x"];
       if (j.contains("channel_y")) channel_y = j["channel_y"];
 
@@ -78,11 +79,11 @@ struct DisplaceNode : ShaderNode {
 
   void draw_properties(NodeGraph &graph, CommandHistory &history) override {
     PropertyWidget::SliderFloat("Strength", id,
-      strength,
-      [](Node &n, const float v) { dynamic_cast<DisplaceNode &>(n).strength = v; },
-      graph, history,
-      /*min=*/0.f, /*max=*/0.5f, /*format=*/"%.3f",
-      /*disabled=*/get_input("strength")->connected);
+                                strength,
+                                [](Node &n, const float v) { dynamic_cast<DisplaceNode &>(n).strength = v; },
+                                graph, history,
+                                /*min=*/0.f, /*max=*/0.5f, /*format=*/"%.3f",
+                                /*disabled=*/get_input("strength")->connected);
 
     // Channel selectors — GUI only, not animatable
     constexpr const char *kChannels[] = {"R", "G", "B"};
@@ -93,7 +94,7 @@ struct DisplaceNode : ShaderNode {
   // ── Factory ───────────────────────────────────────────────────────────────
 
   static std::unique_ptr<DisplaceNode> create(const float strength = 0.05f) {
-    auto node     = std::make_unique<DisplaceNode>();
+    auto node = std::make_unique<DisplaceNode>();
     node->strength = strength;
 
     node->add_input(DataType::Texture, "texture");

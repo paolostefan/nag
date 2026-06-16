@@ -19,6 +19,8 @@ struct ConstantFloatNode : Node {
     name = "Constant";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Constant"; }
+
   void evaluate() override {
     if (!outputs.empty()) {
       outputs[0].set_float(value);
@@ -71,6 +73,8 @@ struct TimeNode : Node {
     name = "Time";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Time"; }
+
   constexpr void evaluate() override {
     if (!outputs.empty()) {
       outputs[0].set_float(time);
@@ -103,6 +107,8 @@ struct NoiseNode : Node {
     type = NodeType::Noise;
     name = "Noise";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Noise"; }
 
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
@@ -225,6 +231,8 @@ struct RandomNode : Node {
     name = "Random";
   };
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Random"; }
+
   RandomNode(const float min_value_,
              const float max_value_,
              const int seed_) : RandomNode() {
@@ -302,6 +310,13 @@ struct RandomNode : Node {
       graph, history,
       0.f, 1.f, "%.2f"
     );
+    PropertyWidget::InputInt(
+      "Seed",
+      id,
+      seed,
+      [](Node &n, const int v) { dynamic_cast<RandomNode &>(n).set_seed(v); },
+      graph, history
+    );
   }
 
   static std::unique_ptr<RandomNode> create(
@@ -325,6 +340,8 @@ struct StepSequencerNode : Node {
     type = NodeType::StepSequencer;
     name = "StepSequencer";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Step Sequencer"; }
 
   void set_steps(const std::vector<float> &new_steps) {
     if (!new_steps.empty()) {

@@ -9,6 +9,7 @@
 #include "nlohmann/json.hpp"
 
 #include "engine/data_type.h"
+#include "engine/node_type.h"
 #include "engine/operation_result.h"
 #include "engine/stream.h"
 
@@ -18,84 +19,6 @@ struct NodeGraph;
 enum PinDirection : uint8_t {
   Input,
   Output
-};
-
-enum class NodeType : uint8_t {
-  Default,
-
-  // Generators
-  Constant,
-  Time,
-  Noise,
-  Random,
-  StepSequencer,
-  ParticleEmitter,
-  ParticleSystem,
-
-  // Unary math operators
-  Abs,
-  Floor,
-  Ceil,
-  Round,
-  Sqrt,
-  Negate,
-
-  // Trigonometric functions
-  Sin,
-  Cos,
-  Tan,
-
-  // Binary math operators
-  Subtract,
-  Multiply,
-  Divide,
-  Modulo,
-  Power,
-  Compare,
-
-  // N-ary math operators
-  Add,
-  Min,
-  Max,
-
-  // "Special" operators
-  Remap,
-  Clamp,
-  Lerp,
-  SmoothStep,
-
-  // Temporal modifiers
-  LFO,
-  Envelope,
-  Delay,
-  Smoother,
-
-  // Visual nodes
-  ClearColor,
-  Gradient,
-  Circle,
-  Ellipse,
-  Rectangle2D,
-  Polygon,
-  TextureLoader,
-  Tile,
-  ParticleRenderer,
-
-  // FX nodes
-  Blur,
-  ChromaticAberration,
-  ColorCorrection,
-  Composite,
-  Displace,
-  Pixelate,
-  SDFShape,
-  Transform,
-  VintageCRT,
-
-  // Sink
-  Output,
-
-  Count,
 };
 
 struct Pin {
@@ -112,70 +35,74 @@ struct Pin {
   [[nodiscard]] const Stream *get_stream() const { return static_cast<const Stream *>(stream.get()); }
 
   [[nodiscard]] float *get_float() {
-    auto *s = static_cast<Stream *>(stream.get());
+    auto *s = (Stream *) stream.get();
     return s ? s->as_float() : nullptr;
   }
 
   [[nodiscard]] const float *get_float() const {
-    auto *s = static_cast<const Stream *>(stream.get());
+    auto *s = (const Stream *) stream.get();
     return s ? s->as_float() : nullptr;
   }
 
   [[nodiscard]] bool *get_bool() {
-    auto *s = static_cast<Stream *>(stream.get());
+    auto *s = (Stream *) stream.get();
     return s ? s->as_bool() : nullptr;
   }
 
   [[nodiscard]] const bool *get_bool() const {
-    auto *s = static_cast<const Stream *>(stream.get());
+    auto *s = (const Stream *) stream.get();
     return s ? s->as_bool() : nullptr;
   }
 
   [[nodiscard]] Texture **get_texture() {
-    auto *s = static_cast<Stream *>(stream.get());
+    auto *s = (Stream *) stream.get();
     return s ? s->as_texture() : nullptr;
   }
 
   [[nodiscard]] Texture *const *get_texture() const {
-    auto *s = static_cast<const Stream *>(stream.get());
+    auto *s = (const Stream *) stream.get();
     return s ? s->as_texture() : nullptr;
   }
 
   [[nodiscard]] Particles2D *get_particles() {
-    auto *s = static_cast<Stream *>(stream.get());
+    auto *s = (Stream *) stream.get();
     return s ? s->as_particles() : nullptr;
   }
 
   [[nodiscard]] const Particles2D *get_particles() const {
-    auto *s = static_cast<const Stream *>(stream.get());
+    auto *s = (const Stream *) stream.get();
     return s ? s->as_particles() : nullptr;
   }
 
-  void set_float(const float v) {
-    if (auto *s = static_cast<Stream *>(stream.get())) {
+  void set_float(const float v) const {
+    if (auto *s = (Stream *) stream.get()) {
       s->update_float(v);
     }
   }
 
-  void set_bool(const bool v) {
-    if (auto *s = static_cast<Stream *>(stream.get())) {
+  void set_bool(const bool v) const {
+    if (auto *s = (Stream *) stream.get()) {
       s->update_bool(v);
     }
   }
 
-  void set_texture(Texture *const v) {
-    if (auto *s = static_cast<Stream *>(stream.get())) {
+  void set_texture(Texture *const v) const {
+    if (auto *s = (Stream *) stream.get()) {
       s->update_texture(v);
     }
   }
 
-  void set_particles(const Particles2D &v) {
-    if (auto *s = static_cast<Stream *>(stream.get())) {
+  void set_particles(const Particles2D &v) const {
+    if (auto *s = (Stream *) stream.get()) {
       s->update_particles(v);
     }
   }
 };
 
+/**
+ * @struct Node
+ * @brief Base class for all nodes in the graph.
+ */
 struct Node {
   std::string      name{"<unnamed>"};
   std::vector<Pin> inputs;
@@ -188,6 +115,8 @@ struct Node {
   virtual ~Node() = default;
 
   virtual void evaluate() = 0;
+
+  [[nodiscard]] virtual std::string_view type_name() const noexcept = 0;
 
   [[nodiscard]] bool needs_evaluation() const noexcept {
     for (auto const &pin: inputs) {

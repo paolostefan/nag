@@ -12,7 +12,7 @@
 // ===========================================================================
 
 /**
- *  Multiplies two input streams and writes the result to the output stream.
+ *  Multiplies two (or more) input streams and writes the result to the output stream.
  */
 struct MultiplyNode : MultiInputNode {
   explicit MultiplyNode() : MultiInputNode(2) {
@@ -20,15 +20,21 @@ struct MultiplyNode : MultiInputNode {
     name = "Multiply";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Multiply"; }
+
   void evaluate() override {
     if (inputs.size() < 2 || outputs.empty()) {
       return;
     }
 
-    const float *in_a = inputs[0].get_float();
-    const float *in_b = inputs[1].get_float();
-    if (!in_a || !in_b || !outputs[0].get_float()) { return; }
-    outputs[0].set_float((*in_a) * (*in_b));
+    float result = 1.f;
+    for (const auto &pin: inputs) {
+      if (const float *in = pin.get_float()) {
+        result *= *in;
+      } // invalid pins are ignored
+    }
+
+    outputs[0].set_float(result);
     mark_inputs_consumed();
   }
 
@@ -50,6 +56,8 @@ struct DivideNode : MultiInputNode {
     type = NodeType::Divide;
     name = "Divide";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Divide"; }
 
   void evaluate() override {
     if (inputs.size() < 2 || outputs.empty()) {
@@ -80,6 +88,8 @@ struct AddNode : MultiInputNode {
     type = NodeType::Add;
     name = "Add";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Add"; }
 
   /**
    * Sum all input streams and write the result to the output stream.
@@ -115,15 +125,22 @@ struct SubtractNode : MultiInputNode {
     name = "Subtract";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Subtract"; }
+
   void evaluate() override {
     if (inputs.size() < 2 || outputs.empty()) {
       return;
     }
 
-    const float *in_a = inputs[0].get_float();
-    const float *in_b = inputs[1].get_float();
-    if (!in_a || !in_b || !outputs[0].get_float()) { return; }
-    outputs[0].set_float((*in_a) - (*in_b));
+    float result = 0.f;
+
+    for (const auto &pin: inputs) {
+      if (const float *in = pin.get_float()) {
+        result += *in;
+      } // invalid pins are ignored
+    }
+
+    outputs[0].set_float(result);
     mark_inputs_consumed();
   }
 
@@ -142,6 +159,8 @@ struct ModuloNode : MultiInputNode {
     type = NodeType::Modulo;
     name = "Modulo";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Modulo"; }
 
   void evaluate() override {
     if (inputs.size() < 2 || outputs.empty()) {
@@ -171,6 +190,8 @@ struct PowerNode : MultiInputNode {
     name = "Power";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Power"; }
+
   void evaluate() override {
     if (inputs.size() < 2 || outputs.empty()) {
       return;
@@ -198,6 +219,8 @@ struct MinNode : MultiInputNode {
     type = NodeType::Min;
     name = "Min";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Min"; }
 
   void evaluate() override {
     if (inputs.size() < 2 || outputs.empty()) {
@@ -234,6 +257,8 @@ struct MaxNode : MultiInputNode {
     name = "Max";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Max"; }
+
   void evaluate() override {
     if (inputs.size() < 2 || outputs.empty()) {
       return;
@@ -269,6 +294,8 @@ struct CompareNode : MultiInputNode {
     name = "Compare";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Compare"; }
+
   void evaluate() override {
     if (inputs.size() < 2 || outputs.empty()) {
       return;
@@ -301,6 +328,8 @@ struct AbsNode : Node {
     name = "Abs";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Abs"; }
+
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
       return;
@@ -328,6 +357,8 @@ struct FloorNode : Node {
     type = NodeType::Floor;
     name = "Floor";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Floor"; }
 
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
@@ -357,6 +388,8 @@ struct CeilNode : Node {
     name = "Ceil";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Ceil"; }
+
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
       return;
@@ -384,6 +417,8 @@ struct RoundNode : Node {
     type = NodeType::Round;
     name = "Round";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Round"; }
 
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
@@ -414,6 +449,8 @@ struct SqrtNode : Node {
     name = "Sqrt";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Square root"; }
+
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
       return;
@@ -443,6 +480,8 @@ struct NegateNode : Node {
     name = "Negate";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Negate"; }
+
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
       return;
@@ -471,6 +510,8 @@ struct SinNode : Node {
     name = "Sin";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Sin"; }
+
   void evaluate() override {
     const float *in = inputs[0].get_float();
     if (!in || !outputs[0].get_float()) { return; }
@@ -495,6 +536,8 @@ struct CosNode : Node {
     type = NodeType::Cos;
     name = "Cos";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Cos"; }
 
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
@@ -523,6 +566,8 @@ struct TanNode : Node {
     type = NodeType::Tan;
     name = "Tan";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Tan"; }
 
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
@@ -560,6 +605,8 @@ struct RemapNode : Node {
     type = NodeType::Remap;
     name = "Remap";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Remap"; }
 
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
@@ -678,6 +725,8 @@ struct ClampNode : Node {
     name = "Clamp";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Clamp"; }
+
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
       return;
@@ -755,6 +804,8 @@ struct LerpNode : Node {
     name = "Lerp";
   }
 
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Lerp"; }
+
   void evaluate() override {
     if (inputs.size() < 3 || outputs.empty()) {
       return;
@@ -795,6 +846,8 @@ struct SmoothStepNode : Node {
     type = NodeType::SmoothStep;
     name = "SmoothStep";
   }
+
+  [[nodiscard]] std::string_view type_name() const noexcept override { return "Smooth Step"; }
 
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
