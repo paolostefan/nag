@@ -2,66 +2,53 @@
 
 A simple SDL2 demo engine.
 
-## What to do next
+## Known bugs 🐛
 
-### Bugs 🐛
+- Scene editor: the timeline crashes when trying to add a segment
 
-- Audio buzzing when the slider is moved while playing
-- audio track UI/info is cluttered and ugly
-- the timeline allows deleting all tracks, including the effects: it should not allow deletion of effects and link audio_tracks editor member to the corresponding timelines.
+## TODOs
 
-### New engine features 🚀
+- [ ] Nodes: add mandelbrot and julia set nodes
+- [ ] Graph editor: for texture-output nodes, add the texture size in pixels in the node body
+- [ ] Graph editor: add "preview" to the Output node, to show the resulting texture in the node body
+- [ ] Scene editor: the keyboard shortcuts are broken
+- [ ] Add an MCP server to allow remote control of the engine (e.g. for live coding)
+- [ ] Scene editor: time nodes are always running. They should get their values from the current timeline position.
 
-- Play!
-- Update Mandelbrot coloring (which now sucks)
-- Add some effects:
-  - Julia quaternions
-  - plasma
-  - fire
-  - noise
-
-### Editor Features
-
-#### WIP 🚧
-
-Here should go stuff which is currently developed, but not 100% ready.
-
-#### To be 🚀
-
-- Add titles to timeline tracks
-- keyframe handling
-- add keyframes to the timeline view
-- interactively set and edit keyframes on every effect parameter
-- interactively select tween keyframe method
-- set the start/end of an effect via UI
-- fine movements in mod-audio tracks: step forward/backward in the pattern
 
 ## Building the project
 
-So far (January 2026), the project is Linux-only.
+Linux-only (as tested so far).
 
-Some dependencies are loaded through the system package manager, some others through CMake.
-The latter don't need any intervention, as they will be downloaded from GitHub at the Cmake configure step.
+Dependencies split: system packages (APT) + CMake FetchContent (auto-downloaded at configure step).
 
-### System dependencies
+```bash
+sudo apt install libasound2-dev libglew-dev libfreetype-dev libmpg123-dev libopenmpt-dev pkg-config
+```
 
-The following packages are required under APT-based GNU/Linux distros (like Ubuntu and Debian):
+### System dependencies (APT)
 
-- libasound2-dev
-- libglew-dev
-- libfreetype-dev
-- libmpg123-dev
-- libopenmpt-dev
-- pkg-config
+| Package | Purpose |
+|---|---|
+| `libasound2-dev` | ALSA audio (SDL2 audio backend) |
+| `libglew-dev` | OpenGL extension wrangler (ShaderManager) |
+| `libfreetype-dev` | Font rendering (ImGui) |
+| `libmpg123-dev` | MP3 decoding |
+| `libopenmpt-dev` | Module tracking audio (OpenMPT) |
+| `pkg-config` | Build tool (locates system libs) |
 
-### CMake-managed deps
+### CMake-managed deps (FetchContent)
 
-These dependencies are automatically downloaded using the [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html) CMake module.
+Auto-downloaded from GitHub at configure — no manual steps:
 
-- SDL2
-- imgui
-- imguifiledialog
-- nlohmann/json
+- **SDL2** — windowing, input, audio
+- **imgui** (docking branch) — immediate-mode GUI
+- **ImGuiFileDialog** — file browser dialogs
+- **ImPlot** — plotting widgets for ImGui
+- **nlohmann/json** — JSON serialization
+- **spdlog** — logging
+- **IconFontCppHeaders** — icon font header maps
+- **stb** — single-header image/utility libs
 
 ---
 
@@ -80,5 +67,6 @@ the above, I learned that the English word "nag" has a completely different mean
 
 ## Credits
 
-The FontStruction “Amiga Topaz” (https://fontstruct.com/fontstructions/show/675155) by Patrick H. Lauke is licensed under a Creative Commons Attribution license (http://creativecommons.org/licenses/by/3.0/).
+The FontStruction “Amiga Topaz” (https://fontstruct.com/fontstructions/show/675155) by Patrick H. Lauke is licensed 
+under a Creative Commons Attribution license (http://creativecommons.org/licenses/by/3.0/).
 [ancestry]
