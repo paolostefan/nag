@@ -124,7 +124,9 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
     if (opened) {
       for (auto &graph_ref: folder->graphs) {
         constexpr ImGuiTreeNodeFlags kGraphFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_SpanAvailWidth;
-        if (&graph_ref == current_graph_ref) {
+
+        const bool is_selected = &graph_ref == current_graph_ref;
+        if (is_selected) {
           // Highlight the selected graph
           ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 0.6f, 1.0f, 1.0f)); // Bright blue
         }
@@ -152,7 +154,7 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
           ImGui::TreePop();
         }
 
-        if (&graph_ref == current_graph_ref) {
+        if (is_selected) {
           ImGui::PopStyleColor();
         }
       }
@@ -355,10 +357,13 @@ void SceneEditorUI::render_graph_library_panel() {
 
 void SceneEditorUI::render_timeline() {
   if(ImGui::Begin("Timeline")) {
+    ImGui::BeginDisabled(current_graph_ref == nullptr);
     if (ImGui::Button(ICON_FA_SQUARE_PLUS " Add Segment")) {
-      const TimelineSegment segment(0, 100, "");
+      const std::string_view selected_graph_id = current_graph_ref->id;
+      const TimelineSegment segment(0, 100, selected_graph_id);
       scene_->add_timeline_segment(segment);
     }
+    ImGui::EndDisabled();
 
     if (selected_segment_ >= 0) {
       ImGui::SameLine();

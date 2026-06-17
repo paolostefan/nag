@@ -25,7 +25,7 @@ struct GraphReference {
   }
 };
 
-struct  GraphFolder {
+struct GraphFolder {
   std::string id;
   std::string name;
   std::vector<GraphReference> graphs;
@@ -39,15 +39,15 @@ struct  GraphFolder {
 };
 
 struct TimelineSegment {
+  std::string graph_id;
   int frame_start{0};
   int frame_end{100};
-  std::string graph_id;
   ImU32 color{0xFF8080FF};
 
   TimelineSegment() = default;
 
-  TimelineSegment(const int start, const int end, std::string graph_id, const ImU32 color = 0xFF8080FF)
-    : frame_start(start), frame_end(end), graph_id(std::move(graph_id)), color(color) {
+  TimelineSegment(const int start, const int end, const std::string_view graph_id, const ImU32 color = 0xFF8080FF)
+    : graph_id(graph_id), frame_start(start), frame_end(end), color(color) {
   }
 };
 
