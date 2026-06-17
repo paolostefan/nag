@@ -1,6 +1,7 @@
 #ifndef NAG_ENGINE_NODE_REGISTRY_H
 #define NAG_ENGINE_NODE_REGISTRY_H
 
+#include <array>
 #include <functional>
 #include <memory>
 #include <string>
@@ -24,12 +25,12 @@ namespace node_registration {
 } // namespace node_registration
 
 struct NodeTypeInfo {
-  NodeType    type;
   std::string display_name;
   std::string category;
   std::string description;
 
   std::function<std::unique_ptr<Node>()> create_func;
+  bool registered = false;
 };
 
 class NodeRegistry {
@@ -57,24 +58,25 @@ public:
    * @param type A valid NodeType value (must be < NodeType::Count).
    * @return The string name, e.g. "Circle". Returns "Default" for out-of-range values.
    */
-  [[nodiscard]] std::string_view node_type_to_string(const NodeType type) {
-    const auto it = registry_.find(type);
-    return it != registry_.end() ? std::string_view(it->second.display_name) : "Default";
+  [[nodiscard]] std::string_view node_type_to_string(const NodeType type) const {
+    const auto &info = registry_[static_cast<size_t>(type)];
+    return info.registered ? std::string_view(info.display_name) : "Default";
   }
 
   [[nodiscard]] NodeType find_type_by_name(const std::string &name) const {
-    for (const auto &[type, info] : registry_) {
-      if (info.display_name == name) {
-        return type;
+    for (size_t i = 0; i < kNumNodeTypes; ++i) {
+      if (registry_[i].registered && registry_[i].display_name == name) {
+        return static_cast<NodeType>(i);
       }
     }
-    return NodeType::Default; // Return Default if not found
+    return NodeType::Default;
   }
 
 private:
   NodeRegistry() = default;
 
-  std::unordered_map<NodeType, NodeTypeInfo> registry_;
+  static constexpr size_t kNumNodeTypes = static_cast<size_t>(NodeType::Count);
+  std::array<NodeTypeInfo, kNumNodeTypes> registry_;
 };
 
 void register_all_builtin_nodes();

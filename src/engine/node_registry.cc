@@ -15,7 +15,8 @@ void NodeRegistry::register_node(
   const std::string &description,
   const std::function<std::unique_ptr<Node>()> create_func
 ) {
-  if (registry_.contains(type)) {
+  const auto idx = static_cast<size_t>(type);
+  if (registry_[idx].registered) {
     spdlog::warn("Node type {} already registered, overwriting",
                  static_cast<int>(type));
   }
@@ -27,12 +28,12 @@ void NodeRegistry::register_node(
     return;
   }
 
-  registry_[type] = {
-    type,
+  registry_[idx] = NodeTypeInfo{
     std::string(temp->type_name()),
     category,
     description,
-    create_func
+    create_func,
+    true
   };
 
   spdlog::debug("Registered node type: {} ({})",
@@ -41,18 +42,18 @@ void NodeRegistry::register_node(
 }
 
 std::unique_ptr<Node> NodeRegistry::create_node(const NodeType type) const {
-  const auto it = registry_.find(type);
-  if (it == registry_.end()) {
+  const auto &info = registry_[static_cast<size_t>(type)];
+  if (!info.registered) {
     spdlog::error("Node type {} not registered", static_cast<int>(type));
     return nullptr;
   }
 
-  return it->second.create_func();
+  return info.create_func();
 }
 
 const NodeTypeInfo *NodeRegistry::get_type_info(const NodeType type) const {
-  const auto it = registry_.find(type);
-  return it != registry_.end() ? &it->second : nullptr;
+  const auto &info = registry_[static_cast<size_t>(type)];
+  return info.registered ? &info : nullptr;
 }
 
 std::unordered_map<std::string, std::vector<NodeType> >
@@ -64,8 +65,9 @@ NodeRegistry::get_nodes_by_category() const {
     return result;
   }
 
-  for (const auto &[type, info]: registry_) {
-    result[info.category].push_back(type);
+  for (size_t i = 0; i < kNumNodeTypes; ++i) {
+    if (!registry_[i].registered) continue;
+    result[registry_[i].category].push_back(static_cast<NodeType>(i));
   }
 
   return result;
@@ -73,10 +75,9 @@ NodeRegistry::get_nodes_by_category() const {
 
 std::vector<NodeType> NodeRegistry::get_all_types() const {
   std::vector<NodeType> result;
-  result.reserve(registry_.size());
-
-  for (const auto &type: registry_ | std::views::keys) {
-    result.push_back(type);
+  for (size_t i = 0; i < kNumNodeTypes; ++i) {
+    if (registry_[i].registered)
+      result.push_back(static_cast<NodeType>(i));
   }
 
   return result;
