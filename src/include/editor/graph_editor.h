@@ -17,23 +17,6 @@ public:
   GraphEditor();
 
 protected:
-  NodeGraph graph;
-
-  TimeNode *time_node{};
-  OutputNode *output_node{};
-
-  /** True after a graph change (load/reset/undo). */
-  std::atomic<bool> node_pos_refresh{true};
-
-  /** If true, executed commands will be pushed to the command history for undo/redo support. */
-  std::atomic<bool> history_enabled{false};
-
-  /// Command history for undo/redo support. Graph actions should push commands to this history when appropriate.
-  CommandHistory command_history;
-
-  // ── Serialization ─────────────────────────────────────────────────────────
-  JsonGraphSerializer serializer;
-
   // ── Graph Actions ─────────────────────────────────────────────────────────
 
   /**
@@ -78,6 +61,23 @@ protected:
    * @brief Deletes selected links.
    */
   void delete_links(const std::unordered_set<int> &link_ids_to_delete);
+
+  NodeGraph graph;
+
+  /// Command history for undo/redo support. Graph actions should push commands to this history when appropriate.
+  CommandHistory command_history;
+
+  // ── Serialization ─────────────────────────────────────────────────────────
+  JsonGraphSerializer serializer;
+
+  TimeNode *time_node{};
+  OutputNode *output_node{};
+
+  /** True after a graph change (load/reset/undo). */
+  std::atomic<bool> node_pos_refresh{true};
+
+  /** If true, executed commands will be pushed to the command history for undo/redo support. */
+  std::atomic<bool> history_enabled{false};
 };
 
 #endif // NAG_EDITOR_GRAPH_EDITOR_H

@@ -48,22 +48,23 @@ protected:
   /// Duration to show status messages before fading out (in seconds).
   static constexpr float kStatusMessageDuration{3.f};
 
-  SDL_Window *window{nullptr};
-  SDL_GLContext gl_context{};
-
-  ImGuiIO *io{nullptr};
-
-  // Initial window parameters
   std::string title{};
-  int start_width{0};
-  int start_height{0};
 
   /// @brief General purpose feedback message.
   /// Empty string means no message to show.
   std::string status_message;
 
+  SDL_Window *window{nullptr};
+  SDL_GLContext gl_context{};
+
+  ImGuiIO *io{nullptr};
+
   /// Timestamp (ImGui time) when status_message was set.
   float status_message_time{0.f};
+
+  // Initial window parameters
+  int start_width{0};
+  int start_height{0};
 };
 
 
