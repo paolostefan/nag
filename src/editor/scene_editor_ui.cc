@@ -357,7 +357,6 @@ void SceneEditorUI::render_timeline() {
   ImGui::Begin("Timeline");
 
   ImGui::SetNextWindowSize(ImVec2(ImGui::GetContentRegionAvail().x, 150), ImGuiCond_Always);
-  ImGui::BeginChild("TimelineRegion", ImVec2(0, 150), true);
 
   if (ImGui::CollapsingHeader("Timeline", ImGuiTreeNodeFlags_DefaultOpen)) {
     if (ImGui::Button("Add Segment")) {
@@ -387,7 +386,6 @@ void SceneEditorUI::render_timeline() {
     }
   }
 
-  ImGui::EndChild();
   ImGui::End();
 }
 
