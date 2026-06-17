@@ -35,11 +35,12 @@ public:
 protected:
   void render_ui() override;
 
-
   void display_dialogs() override;
 
 private:
-  void render_menu_bar();
+  void handle_keyboard_shortcuts();
+
+  void render_menu_bar() override;
 
   void render_graph_library_panel();
 
@@ -57,7 +58,13 @@ private:
 
   void load_graph_from_library(GraphReference &graph_ref);
 
-  void render_folder_tree(const std::vector<std::unique_ptr<GraphFolder>> &folders);
+  void render_folder_tree(const std::vector<std::unique_ptr<GraphFolder> > &folders);
+
+  static constexpr float kStatusMessageDuration{3.f};
+  static constexpr auto kSaveSceneDialogKey{"SaveSceneDlg"};
+  static constexpr auto kOpenSceneDialogKey{"OpenSceneDialogKey"};
+
+  std::string current_scene_path_;
 
   /// @brief The currently loaded scene.
   /// The editor operates on this scene, and it can be replaced when loading a new scene or creating a new one.
@@ -69,17 +76,17 @@ private:
   /// The currently selected graph reference from the library panel. This is used to determine which graph to load into the editor when a graph is selected.
   GraphReference *current_graph_ref{nullptr};
 
-  std::string current_scene_path_;
+  ImNodesEditorContext *editor_context_{nullptr};
+
+  /// Stores the ID of the item being renamed (folder ID or graph ID)
+  const char *rename_target_id_{nullptr};
 
   int selected_segment_{-1};
+  int first_frame{0};
+
   int expanded_folders_[64]{};
   int expanded_folder_count_{0};
 
-  static constexpr float kStatusMessageDuration{3.f};
-  static constexpr auto kSaveSceneDialogKey{"SaveSceneDlg"};
-  static constexpr auto kOpenSceneDialogKey{"OpenSceneDialogKey"};
-
-  ImNodesEditorContext *editor_context_{nullptr};
 
   /// Used to prevent multiple rename popups from opening simultaneously
   std::atomic<bool> is_renaming_{false};
@@ -91,10 +98,6 @@ private:
     RenameTargetFolder,
     RenameTargetGraph
   } rename_target_{RenameTargetNone};
-
-  /// Stores the ID of the item being renamed (folder ID or graph ID)
-  const char *rename_target_id_{nullptr};
-
 };
 
 #endif // NAG_EDITOR_SCENE_EDITOR_UI_H

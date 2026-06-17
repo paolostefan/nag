@@ -28,6 +28,8 @@ SceneEditorUI::SceneEditorUI() : GraphEditorUI("Scene Editor", 1280, 800) {
 }
 
 void SceneEditorUI::render_ui() {
+  handle_keyboard_shortcuts();
+
   render_menu_bar();
 
   render_top_status_bar();
@@ -60,7 +62,6 @@ void SceneEditorUI::display_dialogs() {
         if (!scene_->root_folders.empty() && !scene_->root_folders[0]->graphs.empty()) {
           load_graph_from_library(scene_->root_folders[0]->graphs[0]);
         }
-
       } else {
         spdlog::error("Failed to load scene: {}", scene_path);
         set_status_message("Failed to load scene");
@@ -129,7 +130,7 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
         }
 
         if (ImGui::TreeNodeEx(graph_ref.id.c_str(), kGraphFlags,
-          "%s%s", graph_ref.name.c_str(), graph_ref.dirty ? " *" : "")) {
+                              "%s%s", graph_ref.name.c_str(), graph_ref.dirty ? " *" : "")) {
           if (ImGui::IsItemClicked() && &graph_ref != current_graph_ref) {
             load_graph_from_library(graph_ref);
           }
@@ -160,6 +161,36 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
       ImGui::TreePop();
     } // if opened
   } // for each folder
+}
+
+void SceneEditorUI::handle_keyboard_shortcuts() {
+  if (ImGui::IsAnyItemActive()) return;
+
+  if (!ImGui::IsKeyDown(ImGuiMod_Ctrl)) return;
+
+  if (ImGui::IsKeyPressed(ImGuiKey_N)) {
+    new_scene();
+  } else if (ImGui::IsKeyPressed(ImGuiKey_O)) {
+    open_scene();
+  } else if (ImGui::IsKeyPressed(ImGuiKey_S)) {
+    if (ImGui::IsKeyDown(ImGuiMod_Shift)) {
+      save_scene_as();
+    } else {
+      save_scene();
+    }
+  } else if (ImGui::IsKeyPressed(ImGuiKey_G)) {
+    save_current_graph();
+  } else if (ImGui::IsKeyPressed(ImGuiKey_Z)) {
+    if (command_history.can_undo()) {
+      command_history.undo(graph);
+      node_pos_refresh = true;
+    }
+  } else if (ImGui::IsKeyPressed(ImGuiKey_Y)) {
+    if (command_history.can_redo()) {
+      command_history.redo(graph);
+      node_pos_refresh = true;
+    }
+  }
 }
 
 void SceneEditorUI::render_menu_bar() {
@@ -331,7 +362,10 @@ void SceneEditorUI::render_timeline() {
 
     static int current_frame = 0;
     static bool expanded = true;
-    ImSequencer::Sequencer(this, &current_frame, &expanded, &selected_segment_, nullptr,
+    ImSequencer::Sequencer(this,
+                           &current_frame, &expanded,
+                           &selected_segment_,
+                           &first_frame,
                            ImSequencer::SEQUENCER_EDIT_ALL);
 
     if (selected_segment_ >= 0 && selected_segment_ < static_cast<int>(scene_->timeline.size())) {
@@ -350,7 +384,8 @@ void SceneEditorUI::render_top_status_bar() {
   // this is the right way to implement a statusbar.
   constexpr ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
                                             ImGuiWindowFlags_MenuBar;
-  if (const float height = ImGui::GetFrameHeight(); ImGui::BeginViewportSideBar("##TopStatusBar", nullptr, ImGuiDir_Up, height, window_flags)) {
+  if (const float height = ImGui::GetFrameHeight(); ImGui::BeginViewportSideBar(
+    "##TopStatusBar", nullptr, ImGuiDir_Up, height, window_flags)) {
     if (ImGui::BeginMenuBar()) {
       ImGui::TextUnformatted(scene_->name.c_str());
 
@@ -455,7 +490,6 @@ void SceneEditorUI::save_current_graph() {
 
 void SceneEditorUI::load_graph_from_library(GraphReference &graph_ref) {
   if (const auto loaded_graph = scene_library_->load_graph(graph_ref)) {
-
     current_graph_ref = &graph_ref;
 
     graph = std::move(*loaded_graph);
