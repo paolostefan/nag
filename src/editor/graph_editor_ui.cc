@@ -38,23 +38,21 @@ GraphEditorUI::GraphEditorUI(
 
 
 void GraphEditorUI::main_event_loop() {
-  bool      running = true;
   SDL_Event event;
 
-  // ReSharper disable once CppDFAConstantConditions
-  while (running) {
+  while (running.load(std::memory_order_acquire)) {
     while (SDL_PollEvent(&event)) {
       ImGui_ImplSDL2_ProcessEvent(&event);
 
       if (event.type == SDL_QUIT) {
-        running = false;
+        running.store(false, std::memory_order_release);
       }
 
       if (event.type == SDL_WINDOWEVENT &&
           event.window.event == SDL_WINDOWEVENT_CLOSE) {
         // Close main window → quit.
         if (event.window.windowID == SDL_GetWindowID(window)) {
-          running = false;
+        running.store(false, std::memory_order_release);
         }
 
         // ★ Close preview window → just close the preview, keep running.
@@ -65,7 +63,7 @@ void GraphEditorUI::main_event_loop() {
       }
     }
 
-    if (!running) {
+    if (!running.load(std::memory_order_acquire)) {
       break;
     }
 

@@ -1,6 +1,7 @@
 #ifndef NAG_UI_WINDOW_H
 #define NAG_UI_WINDOW_H
 
+#include <atomic>
 #include <string>
 
 #include "imgui.h"
@@ -40,6 +41,7 @@ protected:
     status_message_time = static_cast<float>(ImGui::GetTime());
   }
 
+  /// @brief Status Message (fade out after kStatusMessageDuration) ─────────────────
   void print_status_message();
 
   /// Font size for the UI. Adjust as needed for different screen DPIs.
@@ -65,6 +67,8 @@ protected:
   // Initial window parameters
   int start_width{0};
   int start_height{0};
+
+  std::atomic<bool> running{true};
 };
 
 

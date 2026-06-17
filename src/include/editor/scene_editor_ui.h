@@ -60,6 +60,9 @@ private:
 
   void render_folder_tree(const std::vector<std::unique_ptr<GraphFolder> > &folders);
 
+  // Quits the application
+  void quit();
+
   static constexpr float kStatusMessageDuration{3.f};
   static constexpr auto kSaveSceneDialogKey{"SaveSceneDlg"};
   static constexpr auto kOpenSceneDialogKey{"OpenSceneDialogKey"};

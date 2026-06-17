@@ -25,11 +25,10 @@ int UIWindow::run() {
 }
 
 void UIWindow::main_event_loop() {
-  bool running = true;
+
   SDL_Event event;
 
-  // ReSharper disable once CppDFAConstantConditions
-  while (running) {
+  while (running.load(std::memory_order_acquire)) {
     // Event handling
     while (SDL_PollEvent(&event)) {
       ImGui_ImplSDL2_ProcessEvent(&event);
@@ -38,10 +37,10 @@ void UIWindow::main_event_loop() {
           (event.type == SDL_WINDOWEVENT &&
            event.window.event == SDL_WINDOWEVENT_CLOSE &&
            event.window.windowID == SDL_GetWindowID(window)))
-        running = false;
+        running.store(false, std::memory_order_release);
     }
 
-    if (!running) {
+    if (!running.load(std::memory_order_acquire)) {
       break;
     }
 
@@ -154,7 +153,6 @@ bool UIWindow::initialize() {
 }
 
 void UIWindow::print_status_message() {
-  // ── Status Message (fade out after kStatusMessageDuration) ─────────────────
 
   if (!status_message.empty()) {
     if (const float elapsed = static_cast<float>(ImGui::GetTime()) - status_message_time;

@@ -163,6 +163,11 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
   } // for each folder
 }
 
+void SceneEditorUI::quit() {
+  // TODO: wait if there's something unsaved
+  running.store(false, std::memory_order_release);
+}
+
 void SceneEditorUI::handle_keyboard_shortcuts() {
   if (ImGui::IsAnyItemActive()) return;
 
@@ -190,6 +195,8 @@ void SceneEditorUI::handle_keyboard_shortcuts() {
       command_history.redo(graph);
       node_pos_refresh = true;
     }
+  }  else if (ImGui::IsKeyPressed(ImGuiKey_Q)) {
+    quit();
   }
 }
 
@@ -215,6 +222,11 @@ void SceneEditorUI::render_menu_bar() {
       if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK "  Save Current Graph", "Ctrl+G")) {
         save_current_graph();
       }
+
+      if (ImGui::MenuItem("Quit", "Ctrl+Q")) {
+        quit();
+      }
+
       ImGui::EndMenu();
     }
 
