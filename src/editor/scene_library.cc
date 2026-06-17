@@ -70,7 +70,7 @@ bool SceneLibrary::save_graph(const NodeGraph &graph, const GraphReference &refe
   return true;
 }
 
-std::unique_ptr<NodeGraph> SceneLibrary::load_graph(const std::string &graph_id) {
+std::unique_ptr<NodeGraph> SceneLibrary::load_graph(const std::string &graph_id) const {
   std::function<std::optional<std::filesystem::path>(const std::filesystem::path &)> find_graph_file;
   find_graph_file = [&find_graph_file, &graph_id](const std::filesystem::path &dir) -> std::optional<std::filesystem::path> {
     for (const auto &entry : std::filesystem::directory_iterator(dir)) {

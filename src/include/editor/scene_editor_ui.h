@@ -42,6 +42,8 @@ private:
 
   void render_menu_bar() override;
 
+  GraphReference *add_graph_in_folder(GraphFolder &folder, std::string_view graph_name = "New Graph");
+
   void render_graph_library_panel();
 
   void render_timeline();
@@ -79,8 +81,6 @@ private:
   /// The currently selected graph reference from the library panel. This is used to determine which graph to load into the editor when a graph is selected.
   GraphReference *current_graph_ref{nullptr};
 
-  ImNodesEditorContext *editor_context_{nullptr};
-
   /// Stores the ID of the item being renamed (folder ID or graph ID)
   const char *rename_target_id_{nullptr};
 
@@ -89,7 +89,6 @@ private:
 
   int expanded_folders_[64]{};
   int expanded_folder_count_{0};
-
 
   /// Used to prevent multiple rename popups from opening simultaneously
   std::atomic<bool> is_renaming_{false};

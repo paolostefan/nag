@@ -20,8 +20,8 @@ struct GraphReference {
 
   GraphReference() = default;
 
-  GraphReference(std::string id, std::string name, std::filesystem::path path)
-    : id(std::move(id)), name(std::move(name)), path(std::move(path)) {
+  GraphReference(const std::string_view id_, const std::string_view name_, std::filesystem::path path_)
+    : id(std::move(id_)), name(std::move(name_)), path(std::move(path_)) {
   }
 };
 
@@ -33,8 +33,8 @@ struct GraphFolder {
 
   GraphFolder() = default;
 
-  GraphFolder(std::string id, std::string name)
-    : id(std::move(id)), name(std::move(name)) {
+  GraphFolder(const std::string_view id_, const std::string_view name_)
+    : id(id_), name(name_) {
   }
 };
 
@@ -100,12 +100,12 @@ public:
    *  the scene's folder structure. The caller is responsible for saving the
    *  graph to disk using the SceneLibrary after adding it to the scene.
    *
-   * @param folder_id
+   * @param folder
    * @param graph_name
    * @return
    */
-  [[nodiscard]] GraphReference *add_graph(const std::string &folder_id,
-                                          const std::string &graph_name);
+  [[nodiscard]] GraphReference *add_graph(GraphFolder &folder,
+                                          const std::string_view graph_name);
 
   bool remove_graph(const std::string &graph_id);
 

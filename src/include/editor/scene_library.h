@@ -29,10 +29,10 @@ public:
 
   /// Loads a graph from disk using the given graph ID.
   /// The method will search for a graph file with the specified ID within the scenes directory and its subdirectories.
-  [[nodiscard]] std::unique_ptr<NodeGraph> load_graph(const std::string &graph_id);
+  [[nodiscard]] std::unique_ptr<NodeGraph> load_graph(const std::string &graph_id) const;
 
   /// Loads a graph from disk using the path specified in the reference.
-  [[nodiscard]] std::unique_ptr<NodeGraph> load_graph(const GraphReference &reference) {
+  [[nodiscard]] std::unique_ptr<NodeGraph> load_graph(const GraphReference &reference) const {
     return load_graph(reference.id);
   }
 

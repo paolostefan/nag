@@ -14,9 +14,9 @@ SceneEditorUI::SceneEditorUI() : GraphEditorUI("Scene Editor", 1280, 800) {
   // Create a new empty scene
   new_scene();
 
-  // Start with at least a "Default" folder and a default graph in it for better UX
-  const auto *default_folder = scene_->add_folder(nullptr, "Default");
-  current_graph_ref = scene_->add_graph(default_folder->id, "Unnamed graph");
+  // Start with at least a default folder and a default graph in it for better UX
+  auto *default_folder = scene_->add_folder(nullptr, "Root");
+  current_graph_ref = add_graph_in_folder(*default_folder);
   current_graph_ref->dirty = true;
 
   // Add a time node and an output node to the default graph to avoid starting with an empty graph
@@ -100,7 +100,7 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
         [[maybe_unused]] auto *subfolder = scene_->add_folder(folder->id, "New Subfolder");
       }
       if (ImGui::MenuItem(ICON_FA_DIAGRAM_PROJECT "  Add Graph Here")) {
-        [[maybe_unused]] auto *subgraph = scene_->add_graph(folder->id, "New Graph");
+        [[maybe_unused]] auto *subgraph = add_graph_in_folder(*folder);
       }
 
       if (ImGui::MenuItem(ICON_FA_I_CURSOR "  Rename")) {
@@ -268,6 +268,17 @@ void SceneEditorUI::render_menu_bar() {
   }
 }
 
+GraphReference *SceneEditorUI::add_graph_in_folder(GraphFolder &folder,
+                                                   const std::string_view graph_name) {
+  auto *ref = scene_->add_graph(folder, graph_name);
+  NodeGraph new_node_graph;
+  if (!scene_library_->save_graph(new_node_graph, *ref)) {
+    status_message = "Cannot save graph!";
+    print_status_message();
+  }
+  return ref;
+}
+
 void SceneEditorUI::render_graph_library_panel() {
   if (ImGui::Begin("Graph Library")) {
     if (ImGui::Button(ICON_FA_FOLDER_PLUS "  New folder")) {
@@ -277,12 +288,13 @@ void SceneEditorUI::render_graph_library_panel() {
     ImGui::SameLine();
 
     if (ImGui::Button(ICON_FA_DIAGRAM_PROJECT "  New graph")) {
-      const GraphFolder *folder = nullptr;
+      GraphFolder *folder = nullptr;
       if (!scene_->root_folders.empty()) {
         folder = scene_->root_folders[0].get();
       }
+
       if (folder) {
-        [[maybe_unused]] auto *ref = scene_->add_graph(folder->id, "New Graph");
+        [[maybe_unused]] auto *ref = add_graph_in_folder(*folder);
       }
     }
 
@@ -356,7 +368,7 @@ void SceneEditorUI::render_graph_library_panel() {
 }
 
 void SceneEditorUI::render_timeline() {
-  if(ImGui::Begin("Timeline")) {
+  if (ImGui::Begin("Timeline")) {
     ImGui::BeginDisabled(current_graph_ref == nullptr);
     if (ImGui::Button(ICON_FA_SQUARE_PLUS " Add Segment")) {
       const std::string_view selected_graph_id = current_graph_ref->id;
@@ -508,6 +520,8 @@ void SceneEditorUI::load_graph_from_library(GraphReference &graph_ref) {
   if (const auto loaded_graph = scene_library_->load_graph(graph_ref)) {
     current_graph_ref = &graph_ref;
 
+    command_history.clear();
+
     graph = std::move(*loaded_graph);
     node_pos_refresh = true;
 
@@ -527,5 +541,7 @@ void SceneEditorUI::load_graph_from_library(GraphReference &graph_ref) {
     }
 
     set_status_message("Loaded: " + graph_ref.name);
+  } else {
+    set_status_message("Failed to load graph " + graph_ref.name);
   }
 }

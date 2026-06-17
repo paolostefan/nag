@@ -113,21 +113,15 @@ bool Scene::remove_folder(const std::string &folder_id) {
   return false;
 }
 
-GraphReference *Scene::add_graph(const std::string &folder_id,
-                                 const std::string &graph_name) {
-  GraphFolder *folder = find_folder(folder_id);
-  if (!folder) {
-    spdlog::error("Folder not found: {}", folder_id);
-    return nullptr;
-  }
+GraphReference *Scene::add_graph(GraphFolder &folder,
+                                 const std::string_view graph_name) {
+  const std::string graph_id = generate_id();
+  const std::string filename = graph_id + ".nag";
+  const std::filesystem::path nag_path = std::filesystem::path(folder.id) / filename;
 
-  std::string id = generate_id();
-  const std::string filename = id + ".nag";
-  std::filesystem::path nag_path = std::filesystem::path(folder_id) / filename;
-
-  folder->graphs.emplace_back(id, graph_name, nag_path);
+  folder.graphs.emplace_back(graph_id, graph_name, nag_path);
   pristine = false;
-  return &folder->graphs.back();
+  return &folder.graphs.back();
 }
 
 bool Scene::remove_graph(const std::string &graph_id) {
