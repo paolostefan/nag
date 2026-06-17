@@ -44,6 +44,9 @@ protected:
   /// @brief Status Message (fade out after kStatusMessageDuration) ─────────────────
   void print_status_message();
 
+
+  static constexpr ImVec4 kDangerButton{1.f, 0.3f, 0.3f, 1.f};
+
   /// Font size for the UI. Adjust as needed for different screen DPIs.
   static constexpr float kUIFontSize = 14.f;
 

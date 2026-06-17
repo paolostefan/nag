@@ -195,7 +195,7 @@ void SceneEditorUI::handle_keyboard_shortcuts() {
       command_history.redo(graph);
       node_pos_refresh = true;
     }
-  }  else if (ImGui::IsKeyPressed(ImGuiKey_Q)) {
+  } else if (ImGui::IsKeyPressed(ImGuiKey_Q)) {
     quit();
   }
 }
@@ -354,19 +354,20 @@ void SceneEditorUI::render_graph_library_panel() {
 }
 
 void SceneEditorUI::render_timeline() {
-  ImGui::Begin("Timeline");
-
-  ImGui::SetNextWindowSize(ImVec2(ImGui::GetContentRegionAvail().x, 150), ImGuiCond_Always);
-
-  if (ImGui::CollapsingHeader("Timeline", ImGuiTreeNodeFlags_DefaultOpen)) {
-    if (ImGui::Button("Add Segment")) {
+  if(ImGui::Begin("Timeline")) {
+    if (ImGui::Button(ICON_FA_SQUARE_PLUS " Add Segment")) {
       const TimelineSegment segment(0, 100, "");
       scene_->add_timeline_segment(segment);
     }
-    ImGui::SameLine();
-    if (ImGui::Button("Remove Selected") && selected_segment_ >= 0) {
-      scene_->remove_timeline_segment(static_cast<size_t>(selected_segment_));
-      selected_segment_ = -1;
+
+    if (selected_segment_ >= 0) {
+      ImGui::SameLine();
+      ImGui::PushStyleColor(ImGuiCol_Button, kDangerButton);
+      if (ImGui::Button(ICON_FA_BAN " Remove Selected")) {
+        scene_->remove_timeline_segment(static_cast<size_t>(selected_segment_));
+        selected_segment_ = -1;
+      }
+      ImGui::PopStyleColor();
     }
 
     ImGui::Separator();
