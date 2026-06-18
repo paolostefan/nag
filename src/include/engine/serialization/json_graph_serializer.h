@@ -16,7 +16,7 @@
  */
 class JsonGraphSerializer : public IGraphSerializer {
 public:
-  static constexpr auto kFormatVersion = "1.0";
+  static constexpr auto kFormatVersion = "0.9";
 
   [[nodiscard]] OperationResult save(const NodeGraph &graph,
                                      const std::string &path) const override;
@@ -46,6 +46,24 @@ public:
    * @return Unique pointer to created node, or nullptr on error
    */
   [[nodiscard]] static std::unique_ptr<Node> deserialize_node(const nlohmann::json &j);
+
+  /**
+   * @brief Serialize an entire graph to a JSON object (in-memory).
+   *
+   * @param graph Graph to serialize
+   * @return JSON object with version, metadata, nodes, and links
+   */
+  [[nodiscard]] static nlohmann::json serialize_graph(const NodeGraph &graph);
+
+  /**
+   * @brief Deserialize an entire graph from a JSON object (in-memory).
+   *
+   * @param graph Graph to load into (will be cleared before loading)
+   * @param j JSON object to deserialize from
+   * @return OperationResult indicating success or failure
+   */
+  [[nodiscard]] static OperationResult deserialize_graph(NodeGraph &graph,
+                                                         const nlohmann::json &j);
 
 private:
 

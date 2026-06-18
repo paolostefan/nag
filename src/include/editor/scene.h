@@ -1,10 +1,9 @@
 #ifndef NAG_EDITOR_SCENE_H
 #define NAG_EDITOR_SCENE_H
 
-#include <filesystem>
 #include <memory>
-#include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "imgui.h"
@@ -15,13 +14,12 @@
 struct GraphReference {
   std::string id;
   std::string name;
-  std::filesystem::path path;
   bool dirty{false};
 
   GraphReference() = default;
 
-  GraphReference(const std::string_view id_, const std::string_view name_, std::filesystem::path path_)
-    : id(std::move(id_)), name(std::move(name_)), path(std::move(path_)) {
+  GraphReference(std::string id_, std::string name_)
+    : id(std::move(id_)), name(std::move(name_)) {
   }
 };
 
@@ -54,12 +52,13 @@ struct TimelineSegment {
 class Scene {
 public:
   // Format version for compatibility checks during loading
-  static constexpr auto kFormatVersion = "1.0";
+  static constexpr auto kFormatVersion = "0.9";
 
   std::string name{"Untitled Scene"};
   std::filesystem::path path{};
   std::vector<std::unique_ptr<GraphFolder> > root_folders;
   std::vector<TimelineSegment> timeline;
+  std::unordered_map<std::string, nlohmann::json> graph_data;
   int fps{60};
   int total_frames{1000};
   bool pristine{true};
@@ -105,7 +104,7 @@ public:
    * @return
    */
   [[nodiscard]] GraphReference *add_graph(GraphFolder &folder,
-                                          const std::string_view graph_name);
+                                          const std::string &graph_name);
 
   bool remove_graph(const std::string &graph_id);
 
@@ -130,7 +129,6 @@ inline void to_json(nlohmann::json &j, const GraphReference &ref) {
   j = nlohmann::json{
     {"id", ref.id},
     {"name", ref.name},
-    {"path", ref.path.string()},
     {"dirty", ref.dirty}
   };
 }
@@ -138,7 +136,6 @@ inline void to_json(nlohmann::json &j, const GraphReference &ref) {
 inline void from_json(const nlohmann::json &j, GraphReference &ref) {
   j.at("id").get_to(ref.id);
   j.at("name").get_to(ref.name);
-  ref.path = j.at("path").get<std::filesystem::path>();
   if (j.contains("dirty"))
     j.at("dirty").get_to(ref.dirty);
 }
@@ -193,6 +190,9 @@ inline void to_json(nlohmann::json &j, const Scene &scene) {
   for (const auto &folder: scene.root_folders) {
     j["folders"].push_back(*folder);
   }
+  if (!scene.graph_data.empty()) {
+    j["graph_data"] = scene.graph_data;
+  }
 }
 
 inline void from_json(const nlohmann::json &j, Scene &scene) {
@@ -214,6 +214,11 @@ inline void from_json(const nlohmann::json &j, Scene &scene) {
       folder_json.get_to(*folder);
       scene.root_folders.push_back(std::move(folder));
     }
+  }
+
+  scene.graph_data.clear();
+  if (j.contains("graph_data")) {
+    j.at("graph_data").get_to(scene.graph_data);
   }
 }
 

@@ -114,12 +114,10 @@ bool Scene::remove_folder(const std::string &folder_id) {
 }
 
 GraphReference *Scene::add_graph(GraphFolder &folder,
-                                 const std::string_view graph_name) {
+                                 const std::string &graph_name) {
   const std::string graph_id = generate_id();
-  const std::string filename = graph_id + ".nag";
-  const std::filesystem::path nag_path = std::filesystem::path(folder.id) / filename;
 
-  folder.graphs.emplace_back(graph_id, graph_name, nag_path);
+  folder.graphs.emplace_back(graph_id, graph_name);
   pristine = false;
   return &folder.graphs.back();
 }
@@ -143,6 +141,7 @@ bool Scene::remove_graph(const std::string &graph_id) {
   };
 
   if (remove_from_vector(root_folders, graph_id)) {
+    graph_data.erase(graph_id);
     pristine = false;
     return true;
   }

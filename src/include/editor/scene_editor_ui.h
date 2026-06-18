@@ -40,11 +40,11 @@ protected:
 private:
   void handle_keyboard_shortcuts();
 
-  void render_menu_bar() override;
-
-  GraphReference *add_graph_in_folder(GraphFolder &folder, std::string_view graph_name = "New Graph");
+  void render_folder_tree(const std::vector<std::unique_ptr<GraphFolder> > &folders);
 
   void render_graph_library_panel();
+
+  void render_menu_bar() override;
 
   void render_timeline();
 
@@ -60,7 +60,9 @@ private:
 
   void load_graph_from_library(GraphReference &graph_ref);
 
-  void render_folder_tree(const std::vector<std::unique_ptr<GraphFolder> > &folders);
+  GraphReference *add_graph_in_folder(GraphFolder &folder, std::string_view graph_name = "New Graph");
+
+  void select_first_available_graph();
 
   // Quits the application
   void quit();
@@ -70,6 +72,9 @@ private:
   static constexpr auto kOpenSceneDialogKey{"OpenSceneDialogKey"};
 
   std::string current_scene_path_;
+
+  /// Graph ID pending confirmation for deletion
+  std::string pending_delete_graph_id_;
 
   /// @brief The currently loaded scene.
   /// The editor operates on this scene, and it can be replaced when loading a new scene or creating a new one.
@@ -83,6 +88,8 @@ private:
 
   /// Stores the ID of the item being renamed (folder ID or graph ID)
   const char *rename_target_id_{nullptr};
+
+  IdGenerator graph_id_generator;
 
   int selected_segment_{-1};
   int first_frame{0};
@@ -100,6 +107,7 @@ private:
     RenameTargetFolder,
     RenameTargetGraph
   } rename_target_{RenameTargetNone};
+
 };
 
 #endif // NAG_EDITOR_SCENE_EDITOR_UI_H

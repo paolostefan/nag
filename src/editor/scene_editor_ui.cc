@@ -9,7 +9,7 @@
 #include "spdlog/spdlog.h"
 
 SceneEditorUI::SceneEditorUI() : GraphEditorUI("Scene Editor", 1280, 800) {
-  scene_library_ = std::make_unique<SceneLibrary>("./scenes");
+  scene_library_ = std::make_unique<SceneLibrary>();
 
   // Create a new empty scene
   new_scene();
@@ -82,6 +82,52 @@ void SceneEditorUI::display_dialogs() {
     }
     ImGuiFileDialog::Instance()->Close();
   }
+
+  // ── Confirm Delete Graph ──────────────────────────────────────────────────
+  if (!pending_delete_graph_id_.empty()) {
+    ImGui::OpenPopup("Delete Graph##Modal");
+    // ImGui::SetNextWindowSize(ImVec2(300, 0));
+    if (ImGui::BeginPopupModal("Delete Graph##Modal", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+      const auto *graph = scene_->find_graph(pending_delete_graph_id_);
+      ImGui::Text("Delete graph \"%s\"?", graph ? graph->name.c_str() : "(unknown)");
+      ImGui::Separator();
+
+      if (ImGui::Button("Delete", ImVec2(100, 0))) {
+        scene_->remove_graph(pending_delete_graph_id_);
+        pending_delete_graph_id_.clear();
+        select_first_available_graph();
+        ImGui::CloseCurrentPopup();
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Cancel", ImVec2(100, 0))) {
+        pending_delete_graph_id_.clear();
+        ImGui::CloseCurrentPopup();
+      }
+      ImGui::EndPopup();
+    }
+  }
+}
+
+void SceneEditorUI::select_first_available_graph() {
+  std::function<GraphReference *(const std::vector<std::unique_ptr<GraphFolder> > &)> find_first;
+  find_first = [&find_first](const std::vector<std::unique_ptr<GraphFolder> > &folders) -> GraphReference * {
+    for (const auto &folder: folders) {
+      if (!folder->graphs.empty()) {
+        return &folder->graphs.front();
+      }
+      if (auto *found = find_first(folder->children)) {
+        return found;
+      }
+    }
+    return nullptr;
+  };
+
+  if (auto *first = find_first(scene_->root_folders)) {
+    load_graph_from_library(*first);
+  } else {
+    current_graph_ref = nullptr;
+    reset_graph();
+  }
 }
 
 void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFolder> > &folders) {
@@ -147,7 +193,8 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
             ImGui::Separator();
 
             if (ImGui::MenuItem(ICON_FA_TRASH "  Delete")) {
-              scene_->remove_graph(graph_ref.id);
+              pending_delete_graph_id_ = graph_ref.id;
+              ImGui::OpenPopup("Delete Graph##Modal");
             }
             ImGui::EndPopup();
           }
@@ -266,17 +313,6 @@ void SceneEditorUI::render_menu_bar() {
 
     ImGui::EndMainMenuBar();
   }
-}
-
-GraphReference *SceneEditorUI::add_graph_in_folder(GraphFolder &folder,
-                                                   const std::string_view graph_name) {
-  auto *ref = scene_->add_graph(folder, graph_name);
-  NodeGraph new_node_graph;
-  if (!scene_library_->save_graph(new_node_graph, *ref)) {
-    status_message = "Cannot save graph!";
-    print_status_message();
-  }
-  return ref;
 }
 
 void SceneEditorUI::render_graph_library_panel() {
@@ -510,38 +546,58 @@ void SceneEditorUI::save_scene_as() {
 }
 
 void SceneEditorUI::save_current_graph() {
-  if (current_graph_ref && scene_library_->save_graph(graph, *current_graph_ref)) {
+  if (current_graph_ref) {
+    scene_->graph_data[current_graph_ref->id] = JsonGraphSerializer::serialize_graph(graph);
     current_graph_ref->dirty = false;
     set_status_message("Graph saved: " + current_graph_ref->name);
   }
 }
 
 void SceneEditorUI::load_graph_from_library(GraphReference &graph_ref) {
-  if (const auto loaded_graph = scene_library_->load_graph(graph_ref)) {
-    current_graph_ref = &graph_ref;
+  current_graph_ref = &graph_ref;
 
-    command_history.clear();
-
-    graph = std::move(*loaded_graph);
-    node_pos_refresh = true;
-
-    // Find time and output nodes in the loaded graph
-    time_node = nullptr;
-    output_node = nullptr;
-    for (const auto &node: graph.nodes) {
-      if (auto *t = dynamic_cast<TimeNode *>(node.get())) {
-        time_node = t;
-      }
-      if (auto *o = dynamic_cast<OutputNode *>(node.get())) {
-        output_node = o;
-      }
-    }
-    if (!output_node) {
-      spdlog::warn("Graph '{}' has no output node", graph_ref.name);
-    }
-
-    set_status_message("Loaded: " + graph_ref.name);
-  } else {
-    set_status_message("Failed to load graph " + graph_ref.name);
+  auto it = scene_->graph_data.find(graph_ref.id);
+  if (it == scene_->graph_data.end() || it->second.is_null()) {
+    reset_graph();
+    set_status_message("Empty graph: " + graph_ref.name);
+    return;
   }
+
+  NodeGraph loaded_graph;
+  const auto result = JsonGraphSerializer::deserialize_graph(loaded_graph, it->second);
+  if (!result) {
+    spdlog::error("Failed to deserialize graph '{}': {}", graph_ref.name, result.error_message);
+    set_status_message("Failed to load graph " + graph_ref.name);
+    return;
+  }
+
+  command_history.clear();
+  graph = std::move(loaded_graph);
+  node_pos_refresh = true;
+
+  // Find time and output nodes in the loaded graph
+  time_node = nullptr;
+  output_node = nullptr;
+  for (const auto &node: graph.nodes) {
+    if (auto *t = dynamic_cast<TimeNode *>(node.get())) {
+      time_node = t;
+    }
+    if (auto *o = dynamic_cast<OutputNode *>(node.get())) {
+      output_node = o;
+    }
+  }
+  if (!output_node) {
+    spdlog::warn("Graph '{}' has no output node", graph_ref.name);
+  }
+
+  set_status_message("Loaded: " + graph_ref.name);
+}
+
+
+GraphReference *SceneEditorUI::add_graph_in_folder(GraphFolder &folder,
+                                                    const std::string_view graph_name) {
+  auto *ref = scene_->add_graph(folder, std::string(graph_name));
+  scene_->graph_data[ref->id] = nullptr;
+  load_graph_from_library(*ref);
+  return ref;
 }

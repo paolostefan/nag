@@ -30,72 +30,7 @@ OperationResult JsonGraphSerializer::save(
   const std::string &path
 ) const {
   try {
-    json j;
-
-    // Metadata
-    j["version"] = kFormatVersion;
-    j["metadata"] = {
-      {"created", get_iso_timestamp()},
-      {"node_count", graph.nodes.size()},
-      {"link_count", graph.links.size()}
-    };
-
-    // Serialize nodes
-    j["nodes"] = json::array();
-    for (const auto &node: graph.nodes) {
-      j["nodes"].push_back(serialize_node(node.get()));
-    }
-
-    // Serialize links
-    j["links"] = json::array();
-    for (const auto &link: graph.links) {
-      // Find start pin index
-      const Node *start_node = nullptr;
-      size_t start_pin_index = 0;
-      bool start_found = false;
-
-      for (const auto &node: graph.nodes) {
-        for (size_t i = 0; i < node->outputs.size(); ++i) {
-          if (node->outputs[i].id == link.start_pin_id) {
-            start_node = node.get();
-            start_pin_index = i;
-            start_found = true;
-            break;
-          }
-        }
-        if (start_found) break;
-      }
-
-      // Find end pin index
-      const Node *end_node = nullptr;
-      size_t end_pin_index = 0;
-      bool end_found = false;
-
-      for (const auto &node: graph.nodes) {
-        for (size_t i = 0; i < node->inputs.size(); ++i) {
-          if (node->inputs[i].id == link.end_pin_id) {
-            end_node = node.get();
-            end_pin_index = i;
-            end_found = true;
-            break;
-          }
-        }
-        if (end_found) break;
-      }
-
-      if (!start_found || !end_found) {
-        spdlog::warn("Link {} has invalid pin references, skipping", link.id);
-        continue;
-      }
-
-      j["links"].push_back({
-        {"id", link.id},
-        {"start_node_id", start_node->id},
-        {"start_pin_index", start_pin_index},
-        {"end_node_id", end_node->id},
-        {"end_pin_index", end_pin_index}
-      });
-    }
+    const json j = serialize_graph(graph);
 
     // Write to file
     std::ofstream file(path);
@@ -130,74 +65,8 @@ OperationResult JsonGraphSerializer::load(
     file >> j;
     file.close();
 
-    // Check version
-    if (!j.contains("version") || j["version"] != kFormatVersion) {
-      return OperationResult::error(
-        "Unsupported or missing format version in file"
-      );
-    }
-
-    // Clear existing graph
-    graph.nodes.clear();
-    graph.links.clear();
-
-    // ID remapping: old_id -> new_id
-    std::unordered_map<int, int> id_remap;
-
-    // Deserialize nodes
-    if (!j.contains("nodes") || !j["nodes"].is_array()) {
-      return OperationResult::error("Missing or invalid 'nodes' array");
-    }
-
-    for (const auto &node_json: j["nodes"]) {
-      auto node = deserialize_node(node_json);
-      if (!node) {
-        return OperationResult::error(
-          "Failed to deserialize node with id " +
-          std::to_string(node_json.value("id", 0))
-        );
-      }
-
-      const auto node_ptr = graph.add_node(std::move(node));
-      // Track ID remapping (old -> new)
-      id_remap[node_json.value("id", 0)] = node_ptr->id;
-    }
-
-    // Deserialize links
-    if (!j.contains("links") || !j["links"].is_array()) {
-      return OperationResult::error("Missing or invalid 'links' array");
-    }
-
-    for (const auto &link_json: j["links"]) {
-      // Get remapped node IDs
-      int old_start_node_id = link_json.value("start_node_id", 0);
-      int old_end_node_id = link_json.value("end_node_id", 0);
-
-      auto start_it = id_remap.find(old_start_node_id);
-      auto end_it = id_remap.find(old_end_node_id);
-
-      if (start_it == id_remap.end() || end_it == id_remap.end()) {
-        spdlog::warn("Link references non-existent node, skipping");
-        continue;
-      }
-
-      int new_start_node_id = start_it->second;
-      int new_end_node_id = end_it->second;
-
-      // Find pins
-      size_t start_pin_index = link_json.value("start_pin_index", 0);
-      size_t end_pin_index = link_json.value("end_pin_index", 0);
-
-      Pin *start_pin = find_pin(graph, new_start_node_id, start_pin_index, true);
-      Pin *end_pin = find_pin(graph, new_end_node_id, end_pin_index, false);
-
-      if (!start_pin || !end_pin) {
-        spdlog::warn("Link references invalid pin indices, skipping");
-        continue;
-      }
-
-      // Create link
-      graph.add_link(start_pin, end_pin);
+    if (auto result = deserialize_graph(graph, j); !result) {
+      return result;
     }
 
     spdlog::info("Loaded graph from {} ({} nodes, {} links)",
@@ -208,6 +77,152 @@ OperationResult JsonGraphSerializer::load(
       std::string("Exception during load: ") + e.what()
     );
   }
+}
+
+nlohmann::json JsonGraphSerializer::serialize_graph(const NodeGraph &graph) {
+  json j;
+
+  // Metadata
+  j["version"] = kFormatVersion;
+  j["metadata"] = {
+    {"created", get_iso_timestamp()},
+    {"node_count", graph.nodes.size()},
+    {"link_count", graph.links.size()}
+  };
+
+  // Serialize nodes
+  j["nodes"] = json::array();
+  for (const auto &node: graph.nodes) {
+    j["nodes"].push_back(serialize_node(node.get()));
+  }
+
+  // Serialize links
+  j["links"] = json::array();
+  for (const auto &link: graph.links) {
+    // Find start pin index
+    const Node *start_node = nullptr;
+    size_t start_pin_index = 0;
+    bool start_found = false;
+
+    for (const auto &node: graph.nodes) {
+      for (size_t i = 0; i < node->outputs.size(); ++i) {
+        if (node->outputs[i].id == link.start_pin_id) {
+          start_node = node.get();
+          start_pin_index = i;
+          start_found = true;
+          break;
+        }
+      }
+      if (start_found) break;
+    }
+
+    // Find end pin index
+    const Node *end_node = nullptr;
+    size_t end_pin_index = 0;
+    bool end_found = false;
+
+    for (const auto &node: graph.nodes) {
+      for (size_t i = 0; i < node->inputs.size(); ++i) {
+        if (node->inputs[i].id == link.end_pin_id) {
+          end_node = node.get();
+          end_pin_index = i;
+          end_found = true;
+          break;
+        }
+      }
+      if (end_found) break;
+    }
+
+    if (!start_found || !end_found) {
+      spdlog::warn("Link {} has invalid pin references, skipping", link.id);
+      continue;
+    }
+
+    j["links"].push_back({
+      {"id", link.id},
+      {"start_node_id", start_node->id},
+      {"start_pin_index", start_pin_index},
+      {"end_node_id", end_node->id},
+      {"end_pin_index", end_pin_index}
+    });
+  }
+
+  return j;
+}
+
+OperationResult JsonGraphSerializer::deserialize_graph(NodeGraph &graph,
+                                                       const nlohmann::json &j) {
+  // Check version
+  if (!j.contains("version") || j["version"] != kFormatVersion) {
+    return OperationResult::error(
+      "Unsupported or missing format version in graph data"
+    );
+  }
+
+  // Clear existing graph
+  graph.nodes.clear();
+  graph.links.clear();
+
+  // ID remapping: old_id -> new_id
+  std::unordered_map<int, int> id_remap;
+
+  // Deserialize nodes
+  if (!j.contains("nodes") || !j["nodes"].is_array()) {
+    return OperationResult::error("Missing or invalid 'nodes' array");
+  }
+
+  for (const auto &node_json: j["nodes"]) {
+    auto node = deserialize_node(node_json);
+    if (!node) {
+      return OperationResult::error(
+        "Failed to deserialize node with id " +
+        std::to_string(node_json.value("id", 0))
+      );
+    }
+
+    const auto node_ptr = graph.add_node(std::move(node));
+    // Track ID remapping (old -> new)
+    id_remap[node_json.value("id", 0)] = node_ptr->id;
+  }
+
+  // Deserialize links
+  if (!j.contains("links") || !j["links"].is_array()) {
+    return OperationResult::error("Missing or invalid 'links' array");
+  }
+
+  for (const auto &link_json: j["links"]) {
+    // Get remapped node IDs
+    int old_start_node_id = link_json.value("start_node_id", 0);
+    int old_end_node_id = link_json.value("end_node_id", 0);
+
+    auto start_it = id_remap.find(old_start_node_id);
+    auto end_it = id_remap.find(old_end_node_id);
+
+    if (start_it == id_remap.end() || end_it == id_remap.end()) {
+      spdlog::warn("Link references non-existent node, skipping");
+      continue;
+    }
+
+    int new_start_node_id = start_it->second;
+    int new_end_node_id = end_it->second;
+
+    // Find pins
+    size_t start_pin_index = link_json.value("start_pin_index", 0);
+    size_t end_pin_index = link_json.value("end_pin_index", 0);
+
+    Pin *start_pin = find_pin(graph, new_start_node_id, start_pin_index, true);
+    Pin *end_pin = find_pin(graph, new_end_node_id, end_pin_index, false);
+
+    if (!start_pin || !end_pin) {
+      spdlog::warn("Link references invalid pin indices, skipping");
+      continue;
+    }
+
+    // Create link
+    graph.add_link(start_pin, end_pin);
+  }
+
+  return OperationResult::ok();
 }
 
 json JsonGraphSerializer::serialize_node(const Node *node) {
