@@ -9,10 +9,12 @@ A simple SDL2 demo engine.
 - [ ] Graph editor: for texture-output nodes, add the texture size in pixels in the node body
 - [ ] Graph editor: add "preview" to the Output node, to show the resulting texture in the node body
 - [ ] Add an MCP server to allow remote control of the engine (e.g. for live coding)
-- [ ] Scene editor: time nodes are always running. They should get their values from the current timeline position.
+- [ ] Scene editor: duplicate node
+- [ ] Scene editor: time nodes should get their values from the current timeline position
 - [ ] Scene editor: add a "Recent scenes" submenu
 - [ ] Scene editor: add audio tracks
 - [ ] Scene editor: associate graph <-> timeline and set initial time 
+- [ ] Scene editor: warn if quitting with unsaved changes 
 - [ ] Timeline: set/save to disk initial particle system state  
 
 ## Building the project

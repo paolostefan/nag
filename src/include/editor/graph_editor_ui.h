@@ -53,6 +53,24 @@ protected:
   void display_dialogs() override;
 
   /**
+ * @brief Deletes selected nodes and their associated links.
+ *
+ * Safely removes nodes from the graph and cleans up any links
+ * that reference the deleted nodes.
+ */
+  void delete_selected_nodes();
+
+  /**
+   *  @brief Clones the selected nodes
+   */
+  void duplicate_selected_nodes();
+
+  /**
+   * @brief Deletes selected links.
+   */
+  void delete_selected_links();
+
+  /**
    * @brief Preview window for displaying visual node outputs.
    */
   PreviewWindow preview_window;
@@ -89,18 +107,7 @@ private:
    */
   void save_graph(const std::string &path);
 
-  /**
-   * @brief Deletes selected nodes and their associated links.
-   *
-   * Safely removes nodes from the graph and cleans up any links
-   * that reference the deleted nodes.
-   */
-  void delete_selected_nodes();
 
-  /**
-   * @brief Deletes selected links.
-   */
-  void delete_selected_links();
 
   // ── ImNodes State ─────────────────────────────────────────────────────────
   ImNodesEditorContext *editor_context{nullptr};
@@ -112,6 +119,7 @@ private:
    */
   NodePropertiesPanel node_properties_panel_;
 
+  static constexpr auto kSelNodePopup{"selected_node_popup"};
   static constexpr auto kSaveGraphDialogKey{"SaveGraphDlg"};
   static constexpr auto kLoadGraphDialogKey{"LoadGraphDlg"};
   static constexpr auto kFileFilter{"JSON files{.json},All files{.*}"};

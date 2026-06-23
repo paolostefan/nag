@@ -203,15 +203,15 @@ OperationResult JsonGraphSerializer::deserialize_graph(NodeGraph &graph,
       continue;
     }
 
-    int new_start_node_id = start_it->second;
-    int new_end_node_id = end_it->second;
+    const int new_start_node_id = start_it->second;
+    const int new_end_node_id = end_it->second;
 
     // Find pins
-    size_t start_pin_index = link_json.value("start_pin_index", 0);
-    size_t end_pin_index = link_json.value("end_pin_index", 0);
+    const size_t start_pin_index = link_json.value("start_pin_index", 0);
+    const size_t end_pin_index = link_json.value("end_pin_index", 0);
 
-    Pin *start_pin = find_pin(graph, new_start_node_id, start_pin_index, true);
-    Pin *end_pin = find_pin(graph, new_end_node_id, end_pin_index, false);
+    const Pin *start_pin = find_pin(graph, new_start_node_id, start_pin_index, true);
+    const Pin *end_pin = find_pin(graph, new_end_node_id, end_pin_index, false);
 
     if (!start_pin || !end_pin) {
       spdlog::warn("Link references invalid pin indices, skipping");

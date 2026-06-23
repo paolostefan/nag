@@ -28,12 +28,12 @@ GraphEditorUI::GraphEditorUI(
   // Configure ImNodes
   ImNodes::PushAttributeFlag(ImNodesAttributeFlags_EnableLinkDetachWithDragClick);
 
-  ImNodesIO &io                           = ImNodes::GetIO();
+  ImNodesIO &io = ImNodes::GetIO();
   io.LinkDetachWithModifierClick.Modifier = &ImGui::GetIO().KeyCtrl;
-  io.MultipleSelectModifier.Modifier      = &ImGui::GetIO().KeyCtrl;
+  io.MultipleSelectModifier.Modifier = &ImGui::GetIO().KeyCtrl;
 
   ImNodesStyle &style = ImNodes::GetStyle();
-  style.Flags         |= ImNodesStyleFlags_GridLinesPrimary | ImNodesStyleFlags_GridSnapping;
+  style.Flags |= ImNodesStyleFlags_GridLinesPrimary | ImNodesStyleFlags_GridSnapping;
 }
 
 
@@ -52,7 +52,7 @@ void GraphEditorUI::main_event_loop() {
           event.window.event == SDL_WINDOWEVENT_CLOSE) {
         // Close main window → quit.
         if (event.window.windowID == SDL_GetWindowID(window)) {
-        running.store(false, std::memory_order_release);
+          running.store(false, std::memory_order_release);
         }
 
         // ★ Close preview window → just close the preview, keep running.
@@ -114,26 +114,73 @@ void GraphEditorUI::save_graph(const std::string &path) {
   }
 }
 
-// ============================================================================
+// ----------------------------------------------------------------------------
 // delete_selected_nodes
-// ============================================================================
+// ----------------------------------------------------------------------------
 
 void GraphEditorUI::delete_selected_nodes() {
   // Get selected node IDs from ImNodes
   const int num_selected = ImNodes::NumSelectedNodes();
   if (num_selected == 0) return;
 
-  std::vector<int> selected_nodes(num_selected);
-  ImNodes::GetSelectedNodes(selected_nodes.data());
+  int selected_nodes[num_selected + 1];
+  ImNodes::GetSelectedNodes(selected_nodes);
 
-  // Convert to set for faster lookup
-  std::unordered_set<int> nodes_to_delete;
+  // Convert to set to avoid errors
+  const std::unordered_set nodes_to_delete(selected_nodes, selected_nodes + num_selected);
+  delete_nodes(nodes_to_delete);
 
-  for (const int id: selected_nodes) {
-    nodes_to_delete.insert(id);
+  ImNodes::ClearNodeSelection();
+}
+
+// ----------------------------------------------------------------------------
+// duplicate_selected_nodes
+// ----------------------------------------------------------------------------
+
+void GraphEditorUI::duplicate_selected_nodes() {
+  // Get selected node IDs from ImNodes
+  const int num_selected = ImNodes::NumSelectedNodes();
+  if (num_selected == 0) return;
+
+  int selected_nodes[num_selected + 1];
+  ImNodes::GetSelectedNodes(selected_nodes);
+
+  // Convert to set to avoid errors
+  const std::unordered_set nodes_to_copy(selected_nodes, selected_nodes + num_selected);
+
+  // Offset position
+
+  // Create duplicated nodes
+  for (const int old_id: nodes_to_copy) {
+    constexpr float kOffset = 50.f;
+    Node *old_node = graph.find_node(old_id);
+    if (!old_node) continue;
+
+    auto new_node = NodeRegistry::instance().create_node(old_node->type);
+    if (!new_node) continue;
+
+    [[maybe_unused]] auto res = new_node->deserialize_params(old_node->serialize_params());
+    new_node->name = old_node->name;
+    new_node->position.x = old_node->position.x + kOffset;
+    new_node->position.y = old_node->position.y + kOffset;
+
+    if (auto *vis = dynamic_cast<VisualNode *>(new_node.get())) {
+      if (auto *old_vis = dynamic_cast<VisualNode *>(old_node)) {
+        if (old_vis->render_target &&
+            old_vis->render_target->is_valid()) {
+          vis->initialize(
+            old_vis->render_target->get_width(),
+            old_vis->render_target->get_height()
+          );
+        }
+      }
+    } // if visual node
+
+    Node *added_node = graph.add_node(std::move(new_node));
+      // Todo keep a map of old->new to recreate links
   }
 
-  delete_nodes(nodes_to_delete);
+  ImNodes::ClearNodeSelection();
 }
 
 // ============================================================================
@@ -172,7 +219,7 @@ void GraphEditorUI::render_node_editor() {
     ImNodes::BeginNodeEditor();
 
     const bool refresh_positions = node_pos_refresh.exchange(false);
-    const bool flowing           = is_time_flowing.load(std::memory_order_acquire);
+    const bool flowing = is_time_flowing.load(std::memory_order_acquire);
 
     // ── Nodes ──────────────────────────────────────────────────────────────────
     for (const auto &node: graph.nodes) {
@@ -231,7 +278,7 @@ void GraphEditorUI::render_node_editor() {
 
         case NodeType::ParticleEmitter: {
           ImGui::TextDisabled(
-            "%0.01f p/s", node.get()->get_param("rate"));
+            "%0.01f p/s", node->get_param("rate"));
         }
         break;
 
@@ -308,7 +355,7 @@ void GraphEditorUI::render_node_editor() {
         ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
       if (ImNodes::NumSelectedNodes() > 0 ||
           ImNodes::NumSelectedLinks() > 0) {
-        ImGui::OpenPopup("delete_selection_popup");
+        ImGui::OpenPopup(kSelNodePopup);
       }
     }
 
@@ -332,34 +379,6 @@ void GraphEditorUI::render_node_editor() {
 
       command_history.execute(graph, std::move(delete_links_command));
     }
-
-    // ==========================================================================
-    // ---- Keyboard Shortcuts --------------------------------------------------
-    // ==========================================================================
-
-    // Delete selected nodes/links with Delete or Backspace key
-    if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) {
-      if (ImGui::IsKeyPressed(ImGuiKey_Delete) ||
-          ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
-        const auto node_no = ImNodes::NumSelectedNodes();
-        const auto link_no = ImNodes::NumSelectedLinks();
-
-        // Try deleting nodes first (higher priority)
-        if (node_no > 0) {
-          delete_selected_nodes();
-        }
-        // Otherwise delete selected links
-        else if (link_no > 0) {
-          delete_selected_links();
-        }
-
-        if (node_no + link_no > 0) {
-          set_status_message(ICON_FA_TRASH "  Deleted " + std::to_string(node_no) +
-                             (node_no == 1 ? " node" : " nodes") + " and " + std::to_string(link_no) +
-                             (link_no == 1 ? " link" : " links"));
-        }
-      }
-    }
   }
 
   ImGui::End(); // Node editor
@@ -380,9 +399,9 @@ void GraphEditorUI::render_menu_bar() {
   if (ImGui::BeginMenu(ICON_FA_FILE "  File")) {
     if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK "  Save Graph", "Ctrl+S")) {
       IGFD::FileDialogConfig cfg;
-      cfg.path     = ".";
+      cfg.path = ".";
       cfg.fileName = "graph.json";
-      cfg.flags    = ImGuiFileDialogFlags_ConfirmOverwrite;
+      cfg.flags = ImGuiFileDialogFlags_ConfirmOverwrite;
       ImGuiFileDialog::Instance()->OpenDialog(
         kSaveGraphDialogKey, "Save Graph", kFileFilter, cfg
       );
@@ -567,18 +586,29 @@ void GraphEditorUI::render_context_menu() {
     ImGui::EndPopup();
   } // add node popup
 
-  if (ImGui::BeginPopup("delete_selection_popup")) {
+  if (ImGui::BeginPopup(kSelNodePopup)) {
     const int num_nodes = ImNodes::NumSelectedNodes();
     const int num_links = ImNodes::NumSelectedLinks();
 
     if (num_nodes > 0) {
-      const std::string label = num_nodes == 1
-                                  ? ICON_FA_TRASH "  Delete Node"
-                                  : ICON_FA_TRASH "  Delete " + std::to_string(num_nodes) + " Nodes";
+      std::string label = num_nodes == 1
+                            ? ICON_FA_COPY "  Duplicate Node"
+                            : ICON_FA_COPY "  Duplicate " + std::to_string(num_nodes) + " Nodes";
+
+      if (ImGui::MenuItem(label.c_str(), "Ctrl+D")) {
+        duplicate_selected_nodes();
+        set_status_message(
+          ICON_FA_COPY " Duplicated " + std::to_string(num_nodes) + (num_nodes == 1 ? " node" : " nodes"));
+      }
+
+      label = num_nodes == 1
+                ? ICON_FA_TRASH "  Delete Node"
+                : ICON_FA_TRASH "  Delete " + std::to_string(num_nodes) + " Nodes";
 
       if (ImGui::MenuItem(label.c_str(), "Del")) {
         delete_selected_nodes();
-        set_status_message("Deleted " + std::to_string(num_nodes) + (num_nodes == 1 ? " node" : " nodes"));
+        set_status_message(
+          ICON_FA_TRASH " Deleted " + std::to_string(num_nodes) + (num_nodes == 1 ? " node" : " nodes"));
       }
     }
 
@@ -611,7 +641,7 @@ void GraphEditorUI::render_visual_node_body(
   }
 
   constexpr float kPreviewWidth = 150.f;
-  const float     aspect        =
+  const float aspect =
       static_cast<float>(visual_node->render_target->get_height()) /
       static_cast<float>(visual_node->render_target->get_width());
 

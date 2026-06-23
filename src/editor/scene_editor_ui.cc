@@ -220,6 +220,29 @@ void SceneEditorUI::quit() {
 void SceneEditorUI::handle_keyboard_shortcuts() {
   if (ImGui::IsAnyItemActive()) return;
 
+  // Delete selected nodes/links with Delete or Backspace key
+  if (ImGui::IsKeyPressed(ImGuiKey_Delete) ||
+      ImGui::IsKeyPressed(ImGuiKey_Backspace)) {
+    const auto node_no = ImNodes::NumSelectedNodes();
+    const auto link_no = ImNodes::NumSelectedLinks();
+
+    // Try deleting nodes first: this will also delete their links
+    if (node_no > 0) {
+      // todo: this will probably delete additional links, link_no needs update
+      delete_selected_nodes();
+    }
+    // Otherwise delete selected links
+    else if (link_no > 0) {
+      delete_selected_links();
+    }
+
+    if (node_no + link_no > 0) {
+      set_status_message(ICON_FA_TRASH "  Deleted " + std::to_string(node_no) +
+                         (node_no == 1 ? " node" : " nodes") + " and " + std::to_string(link_no) +
+                         (link_no == 1 ? " link" : " links"));
+    }
+  }
+
   if (!ImGui::IsKeyDown(ImGuiMod_Ctrl)) return;
 
   if (ImGui::IsKeyPressed(ImGuiKey_N)) {
@@ -408,7 +431,7 @@ void SceneEditorUI::render_timeline() {
     ImGui::BeginDisabled(current_graph_ref == nullptr);
 
     const bool flowing = is_time_flowing.load(std::memory_order_acquire);
-    if (ImGui::Button(flowing? ICON_FA_PAUSE " Pause": ICON_FA_PLAY " Play")) {
+    if (ImGui::Button(flowing ? ICON_FA_PAUSE " Pause" : ICON_FA_PLAY " Play")) {
       is_time_flowing.store(!flowing, std::memory_order_release);
     }
 
@@ -564,7 +587,7 @@ void SceneEditorUI::save_current_graph() {
 void SceneEditorUI::load_graph_from_library(GraphReference &graph_ref) {
   current_graph_ref = &graph_ref;
 
-  auto it = scene_->graph_data.find(graph_ref.id);
+  const auto it = scene_->graph_data.find(graph_ref.id);
   if (it == scene_->graph_data.end() || it->second.is_null()) {
     reset_graph();
     set_status_message("Empty graph: " + graph_ref.name);
@@ -603,7 +626,7 @@ void SceneEditorUI::load_graph_from_library(GraphReference &graph_ref) {
 
 
 GraphReference *SceneEditorUI::add_graph_in_folder(GraphFolder &folder,
-                                                    const std::string_view graph_name) {
+                                                   const std::string_view graph_name) {
   auto *ref = scene_->add_graph(folder, std::string(graph_name));
   scene_->graph_data[ref->id] = nullptr;
   load_graph_from_library(*ref);

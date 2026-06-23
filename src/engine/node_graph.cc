@@ -20,7 +20,10 @@ Node *NodeGraph::add_node(std::unique_ptr<Node> &&node) {
     }
   }
 
+  spdlog::debug("add_node(): adding node with id {}", node->id);
+
   nodes.emplace_back(std::move(node));
+
   return nodes.back().get();
 }
 
