@@ -12,7 +12,8 @@ A simple SDL2 demo engine.
 - [ ] Scene editor: time nodes are always running. They should get their values from the current timeline position.
 - [ ] Scene editor: add a "Recent scenes" submenu
 - [ ] Scene editor: add audio tracks
-- [ ] Scene editor: 
+- [ ] Scene editor: associate graph <-> timeline and set initial time 
+- [ ] Timeline: set/save to disk initial particle system state  
 
 ## Building the project
 

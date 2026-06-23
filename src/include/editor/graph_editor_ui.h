@@ -57,6 +57,8 @@ protected:
    */
   PreviewWindow preview_window;
 
+  std::atomic<bool> is_time_flowing{true};
+
 private:
   /**
    * @brief Renders the menu bar with File, Edit, and View menus.
@@ -113,8 +115,6 @@ private:
   static constexpr auto kSaveGraphDialogKey{"SaveGraphDlg"};
   static constexpr auto kLoadGraphDialogKey{"LoadGraphDlg"};
   static constexpr auto kFileFilter{"JSON files{.json},All files{.*}"};
-
-  std::atomic<bool> is_time_flowing{true};
 };
 
 

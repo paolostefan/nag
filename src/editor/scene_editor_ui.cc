@@ -406,6 +406,14 @@ void SceneEditorUI::render_graph_library_panel() {
 void SceneEditorUI::render_timeline() {
   if (ImGui::Begin("Timeline")) {
     ImGui::BeginDisabled(current_graph_ref == nullptr);
+
+    const bool flowing = is_time_flowing.load(std::memory_order_acquire);
+    if (ImGui::Button(flowing? ICON_FA_PAUSE " Pause": ICON_FA_PLAY " Play")) {
+      is_time_flowing.store(!flowing, std::memory_order_release);
+    }
+
+    ImGui::SameLine();
+
     if (ImGui::Button(ICON_FA_SQUARE_PLUS " Add Segment")) {
       const std::string_view selected_graph_id = current_graph_ref->id;
       const TimelineSegment segment(0, 100, selected_graph_id);
