@@ -177,7 +177,7 @@ void GraphEditorUI::duplicate_selected_nodes() {
     } // if visual node
 
     Node *added_node = graph.add_node(std::move(new_node));
-      // Todo keep a map of old->new to recreate links
+    // Todo keep a map of old->new to recreate links
   }
 
   ImNodes::ClearNodeSelection();
@@ -254,6 +254,27 @@ void GraphEditorUI::render_node_editor() {
         case NodeType::Time:
           ImGui::TextDisabled("%.02f s", ((TimeNode *) node.get())->time);
           break;
+
+        case NodeType::Output: {
+          const auto *out_node = (OutputNode *) node.get();
+
+          const auto *tx = out_node->get_texture();
+          if (!tx) {
+            ImGui::TextColored(kWarningTextCol, "No output texture");
+            break;
+          }
+
+          constexpr float kPreviewWidth = 150.f;
+          const float aspect =
+              static_cast<float>(tx->height) /
+              static_cast<float>(tx->width);
+
+          ImGui::Image(tx->texture_id,
+            ImVec2(kPreviewWidth, kPreviewWidth * aspect),
+            ImVec2(0, 1), ImVec2(1, 0)
+          );
+        }
+        break;
 
         case NodeType::Abs:
         case NodeType::Add:
@@ -634,8 +655,7 @@ void GraphEditorUI::render_context_menu() {
 // Helpers
 // ============================================================================
 
-void GraphEditorUI::render_visual_node_body(
-  const VisualNode *visual_node) {
+void GraphEditorUI::render_visual_node_body(const VisualNode *visual_node) {
   if (!visual_node ||
       !visual_node->render_target ||
       !visual_node->render_target->is_valid()) {
