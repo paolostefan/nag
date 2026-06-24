@@ -108,7 +108,6 @@ private:
   void save_graph(const std::string &path);
 
 
-
   // ── ImNodes State ─────────────────────────────────────────────────────────
   ImNodesEditorContext *editor_context{nullptr};
 
@@ -119,7 +118,8 @@ private:
    */
   NodePropertiesPanel node_properties_panel_;
 
-  static constexpr auto kSelNodePopup{"selected_node_popup"};
+  static constexpr auto kAddNodePopup{"AddNodePopup"};
+  static constexpr auto kSelNodePopup{"SelectedNodePopup"};
   static constexpr auto kSaveGraphDialogKey{"SaveGraphDlg"};
   static constexpr auto kLoadGraphDialogKey{"LoadGraphDlg"};
   static constexpr auto kFileFilter{"JSON files{.json},All files{.*}"};

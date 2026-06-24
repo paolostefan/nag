@@ -181,6 +181,7 @@ void GraphEditorUI::duplicate_selected_nodes() {
   }
 
   ImNodes::ClearNodeSelection();
+  node_pos_refresh.store(true, std::memory_order_release);
 }
 
 // ============================================================================
@@ -347,7 +348,7 @@ void GraphEditorUI::render_node_editor() {
         !ImNodes::IsNodeHovered(&hovered_node_id) &&
         !ImNodes::IsLinkHovered(&hovered_link_id);
     if (should_open_add_menu) {
-      ImGui::OpenPopup("add_node_popup");
+      ImGui::OpenPopup(kAddNodePopup);
     }
 
     // ── Node/Link Context Menu (right click on selected) ───────────────────────
@@ -509,7 +510,7 @@ void GraphEditorUI::display_dialogs() {
 // ============================================================================
 
 void GraphEditorUI::render_context_menu() {
-  if (ImGui::BeginPopup("add_node_popup")) {
+  if (ImGui::BeginPopup(kAddNodePopup)) {
     // Screen space
     const ImVec2 spawn_pos = ImGui::GetMousePosOnOpeningCurrentPopup();
 
@@ -560,6 +561,8 @@ void GraphEditorUI::render_context_menu() {
         // Menu item Tooltip
         if (ImGui::MenuItem(info->display_name.c_str())) {
           spawn_node(type, spawn_pos);
+          ImNodes::ClearNodeSelection();
+          node_pos_refresh.store(true, std::memory_order_release);
         }
 
         if (ImGui::IsItemHovered() && !info->description.empty()) {
