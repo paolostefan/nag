@@ -1,8 +1,7 @@
 #ifndef NAG_ENGINE_NODES_OUTPUT_NODE_H
 #define NAG_ENGINE_NODES_OUTPUT_NODE_H
 
-#include "engine/nodes/node.h"
-#include "engine/render_target.h"
+#include "node.h"
 
 /**
  * @class OutputNode
@@ -12,8 +11,7 @@
  * Does NOT own the texture; it only observes the pointer received via stream.
  * Use get_texture() to retrieve the current frame's result after evaluate().
  */
-class OutputNode : public Node {
-public:
+struct OutputNode : Node {
   OutputNode() {
     name = "Output";
     type = NodeType::Output;

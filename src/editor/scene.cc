@@ -237,3 +237,30 @@ const GraphReference *Scene::get_graph_at_frame(const int frame) const {
   }
   return find_graph(timeline[static_cast<size_t>(segment_index)].graph_id);
 }
+
+size_t Scene::add_audio_track(AudioTrack &&track) {
+  audio_tracks.push_back(std::move(track));
+  pristine = false;
+  return audio_tracks.size() - 1;
+}
+
+bool Scene::remove_audio_track(const size_t index) {
+  if (index >= audio_tracks.size()) return false;
+  audio_tracks.erase(audio_tracks.begin() + static_cast<long>(index));
+  for (auto &seg: timeline) {
+    if (seg.type == SegmentType::AUDIO && seg.audio_track_index > static_cast<int>(index)) {
+      seg.audio_track_index--;
+    }
+  }
+  pristine = false;
+  return true;
+}
+
+AudioTrack *Scene::get_audio_track(const size_t index) {
+  return const_cast<AudioTrack *>(static_cast<const Scene *>(this)->get_audio_track(index));
+}
+
+const AudioTrack *Scene::get_audio_track(const size_t index) const {
+  if (index >= audio_tracks.size()) return nullptr;
+  return &audio_tracks[index];
+}

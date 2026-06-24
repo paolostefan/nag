@@ -9,7 +9,10 @@
 #include "imgui.h"
 #include "nlohmann/json.hpp"
 
+#include "engine/audio_track.h"
 #include "engine/node_graph.h"
+
+enum class SegmentType : uint8_t { GRAPH, AUDIO };
 
 struct GraphReference {
   std::string id;
@@ -37,7 +40,9 @@ struct GraphFolder {
 };
 
 struct TimelineSegment {
+  SegmentType type{SegmentType::GRAPH};
   std::string graph_id;
+  int audio_track_index{-1};
   int frame_start{0};
   int frame_end{100};
   ImU32 color{0xFF8080FF};
@@ -45,7 +50,11 @@ struct TimelineSegment {
   TimelineSegment() = default;
 
   TimelineSegment(const int start, const int end, const std::string_view graph_id, const ImU32 color = 0xFF8080FF)
-    : graph_id(graph_id), frame_start(start), frame_end(end), color(color) {
+    : type(SegmentType::GRAPH), graph_id(graph_id), frame_start(start), frame_end(end), color(color) {
+  }
+
+  TimelineSegment(const int start, const int end, const int audio_idx, const ImU32 color = 0xFF80FF80)
+    : type(SegmentType::AUDIO), audio_track_index(audio_idx), frame_start(start), frame_end(end), color(color) {
   }
 };
 
@@ -58,6 +67,7 @@ public:
   std::filesystem::path path{};
   std::vector<std::unique_ptr<GraphFolder> > root_folders;
   std::vector<TimelineSegment> timeline;
+  std::vector<AudioTrack> audio_tracks;
   std::unordered_map<std::string, nlohmann::json> graph_data;
   int fps{60};
   int total_frames{1000};
@@ -123,6 +133,14 @@ public:
   [[nodiscard]] int get_frame_at(int frame) const;
 
   [[nodiscard]] const GraphReference *get_graph_at_frame(int frame) const;
+
+  size_t add_audio_track(AudioTrack &&track);
+
+  bool remove_audio_track(size_t index);
+
+  [[nodiscard]] AudioTrack *get_audio_track(size_t index);
+
+  [[nodiscard]] const AudioTrack *get_audio_track(size_t index) const;
 };
 
 inline void to_json(nlohmann::json &j, const GraphReference &ref) {
@@ -161,19 +179,30 @@ inline void from_json(const nlohmann::json &j, GraphFolder &folder) {
   }
 }
 
+NLOHMANN_JSON_SERIALIZE_ENUM(SegmentType, {
+  {SegmentType::GRAPH, "Graph"},
+  {SegmentType::AUDIO, "Audio"},
+});
+
 inline void to_json(nlohmann::json &j, const TimelineSegment &segment) {
   j = nlohmann::json{
+    {"type", segment.type},
     {"frame_start", segment.frame_start},
     {"frame_end", segment.frame_end},
     {"graph_id", segment.graph_id},
+    {"audio_track_index", segment.audio_track_index},
     {"color", segment.color}
   };
 }
 
 inline void from_json(const nlohmann::json &j, TimelineSegment &segment) {
+  if (j.contains("type"))
+    j.at("type").get_to(segment.type);
   j.at("frame_start").get_to(segment.frame_start);
   j.at("frame_end").get_to(segment.frame_end);
   j.at("graph_id").get_to(segment.graph_id);
+  if (j.contains("audio_track_index"))
+    j.at("audio_track_index").get_to(segment.audio_track_index);
   if (j.contains("color"))
     j.at("color").get_to(segment.color);
 }
@@ -185,7 +214,8 @@ inline void to_json(nlohmann::json &j, const Scene &scene) {
     {"name", scene.name},
     {"fps", scene.fps},
     {"total_frames", scene.total_frames},
-    {"timeline", scene.timeline}
+    {"timeline", scene.timeline},
+    {"audio_tracks", scene.audio_tracks}
   };
   for (const auto &folder: scene.root_folders) {
     j["folders"].push_back(*folder);
@@ -206,6 +236,9 @@ inline void from_json(const nlohmann::json &j, Scene &scene) {
     j.at("total_frames").get_to(scene.total_frames);
   if (j.contains("timeline"))
     j.at("timeline").get_to(scene.timeline);
+
+  if (j.contains("audio_tracks"))
+    j.at("audio_tracks").get_to(scene.audio_tracks);
 
   scene.root_folders.clear();
   if (j.contains("folders")) {

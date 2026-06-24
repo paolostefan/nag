@@ -1,9 +1,12 @@
 #ifndef NAG_ENGINE_INTERFACE_AUDIO_PLAYER_H
 #define NAG_ENGINE_INTERFACE_AUDIO_PLAYER_H
 
+#include <atomic>
 #include <cstdint>
 #include <filesystem>
 #include <string>
+
+#include "SDL.h"
 
 enum class PlaybackState : uint8_t
 {

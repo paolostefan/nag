@@ -46,6 +46,7 @@ protected:
 
 
   static constexpr ImVec4 kDangerButton{1.f, 0.3f, 0.3f, 1.f};
+  static constexpr ImVec4 kWarningTextCol{.9f, .9f, 0.3f, 1.f};
 
   /// Font size for the UI. Adjust as needed for different screen DPIs.
   static constexpr float kUIFontSize = 14.f;

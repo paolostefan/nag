@@ -83,6 +83,25 @@ void SceneEditorUI::display_dialogs() {
     ImGuiFileDialog::Instance()->Close();
   }
 
+  // ── File Dialog: Import Audio Track ──────────────────────────────────────
+  if (ImGuiFileDialog::Instance()->Display(
+    kImportAudioDialogKey, ImGuiWindowFlags_NoCollapse, kDialogSize)) {
+    if (ImGuiFileDialog::Instance()->IsOk()) {
+      const auto file_path = ImGuiFileDialog::Instance()->GetFilePathName();
+      try {
+        AudioTrack track{std::filesystem::path(file_path)};
+        const size_t idx = scene_->add_audio_track(std::move(track));
+        const TimelineSegment segment(0, 100, static_cast<int>(idx));
+        scene_->add_timeline_segment(segment);
+        set_status_message("Audio track imported: " + track.title);
+      } catch (const std::exception &e) {
+        spdlog::error("Failed to import audio track: {}", e.what());
+        set_status_message("Failed to import audio track");
+      }
+    }
+    ImGuiFileDialog::Instance()->Close();
+  }
+
   // ── Confirm Delete Graph ──────────────────────────────────────────────────
   if (!pending_delete_graph_id_.empty()) {
     ImGui::OpenPopup("Delete Graph##Modal");
@@ -426,6 +445,9 @@ void SceneEditorUI::render_graph_library_panel() {
   }
 }
 
+static constexpr auto kAudioFileFilter =
+  ".mod,.xm,.mp3";
+
 void SceneEditorUI::render_timeline() {
   if (ImGui::Begin("Timeline")) {
     ImGui::BeginDisabled(current_graph_ref == nullptr);
@@ -442,6 +464,12 @@ void SceneEditorUI::render_timeline() {
       const TimelineSegment segment(0, 100, selected_graph_id);
       scene_->add_timeline_segment(segment);
     }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button(ICON_FA_FILE_AUDIO " Import Audio")) {
+      open_audio_track_dialog();
+    }
     ImGui::EndDisabled();
 
     if (selected_segment_ >= 0) {
@@ -454,24 +482,73 @@ void SceneEditorUI::render_timeline() {
       ImGui::PopStyleColor();
     }
 
+    if (flowing) {
+      current_frame_ += static_cast<int>(ImGui::GetIO().DeltaTime * scene_->fps);
+      if (current_frame_ >= scene_->total_frames) {
+        current_frame_ = 0;
+      }
+    }
+
+    sync_audio_playback();
+
     ImGui::Separator();
 
-    static int current_frame = 0;
     static bool expanded = true;
     ImSequencer::Sequencer(this,
-                           &current_frame, &expanded,
+                           &current_frame_, &expanded,
                            &selected_segment_,
                            &first_frame,
                            ImSequencer::SEQUENCER_EDIT_ALL);
 
     if (selected_segment_ >= 0 && selected_segment_ < static_cast<int>(scene_->timeline.size())) {
-      const auto &segment = scene_->timeline[static_cast<size_t>(selected_segment_)];
-      ImGui::Text("Selected: frames %d - %d, graph: %s", segment.frame_start, segment.frame_end,
-                  segment.graph_id.empty() ? "(none)" : segment.graph_id.c_str());
+      const auto &seg = scene_->timeline[static_cast<size_t>(selected_segment_)];
+      if (seg.type == SegmentType::GRAPH) {
+        ImGui::Text("Graph: frames %d - %d, graph: %s", seg.frame_start, seg.frame_end,
+                    seg.graph_id.empty() ? "(none)" : seg.graph_id.c_str());
+      } else {
+        const auto *track = scene_->get_audio_track(static_cast<size_t>(seg.audio_track_index));
+        ImGui::Text("Audio: frames %d - %d, file: %s", seg.frame_start, seg.frame_end,
+                    track ? track->title.c_str() : "(invalid)");
+      }
     }
   }
 
   ImGui::End();
+}
+
+void SceneEditorUI::open_audio_track_dialog() {
+  IGFD::FileDialogConfig cfg;
+  cfg.path = ".";
+  ImGuiFileDialog::Instance()->OpenDialog(
+    kImportAudioDialogKey, "Import Audio Track", kAudioFileFilter, cfg);
+}
+
+void SceneEditorUI::sync_audio_playback() {
+  const bool flowing = is_time_flowing.load(std::memory_order_acquire);
+  const double current_time_s = static_cast<double>(current_frame_) / scene_->fps;
+
+  for (const auto &seg: scene_->timeline) {
+    if (seg.type != SegmentType::AUDIO || seg.audio_track_index < 0) continue;
+
+    auto *track = scene_->get_audio_track(static_cast<size_t>(seg.audio_track_index));
+    if (!track || !track->player) continue;
+
+    const double seg_start_s = static_cast<double>(seg.frame_start) / scene_->fps;
+    const double seg_end_s = static_cast<double>(seg.frame_end) / scene_->fps;
+    const bool in_range = flowing && current_time_s >= seg_start_s && current_time_s < seg_end_s;
+
+    if (in_range) {
+      const double track_offset_s = current_time_s - seg_start_s + track->start_seconds;
+      if (track->player->get_playback_state() != PlaybackState::PLAYING) {
+        track->player->play();
+      }
+      track->player->seek(track_offset_s * 1000.0);
+    } else {
+      if (track->player->get_playback_state() == PlaybackState::PLAYING) {
+        track->player->pause();
+      }
+    }
+  }
 }
 
 void SceneEditorUI::render_top_status_bar() {
@@ -515,14 +592,32 @@ void SceneEditorUI::Get(const int index, int **start, int **end, int *type, unsi
   if (end)
     *end = const_cast<int *>(&segment.frame_end);
   if (type)
-    *type = 0;
+    *type = static_cast<int>(segment.type);
   if (color)
     *color = segment.color;
 }
 
+const char *SceneEditorUI::GetItemLabel(const int index) const {
+  if (index < 0 || index >= static_cast<int>(scene_->timeline.size())) {
+    return "";
+  }
+  const auto &seg = scene_->timeline[static_cast<size_t>(index)];
+  if (seg.type == SegmentType::GRAPH) {
+    const auto *graph = scene_->find_graph(seg.graph_id);
+    return graph ? graph->name.c_str() : "(unknown graph)";
+  }
+  const auto *track = scene_->get_audio_track(static_cast<size_t>(seg.audio_track_index));
+  return track ? track->title.c_str() : "(unknown audio)";
+}
+
 void SceneEditorUI::Add(int type) {
-  const TimelineSegment segment(0, 100, "");
-  scene_->add_timeline_segment(segment);
+  if (type == static_cast<int>(SegmentType::AUDIO)) {
+    const TimelineSegment segment(0, 100, 0);
+    scene_->add_timeline_segment(segment);
+  } else {
+    const TimelineSegment segment(0, 100, "");
+    scene_->add_timeline_segment(segment);
+  }
 }
 
 void SceneEditorUI::Del(const int index) {
@@ -544,6 +639,8 @@ void SceneEditorUI::Duplicate(const int index) {
 void SceneEditorUI::new_scene() {
   scene_ = std::make_unique<Scene>("New Scene");
   current_scene_path_.clear();
+  current_frame_ = 0;
+  selected_segment_ = -1;
   reset_graph();
   set_status_message("New scene created");
 }

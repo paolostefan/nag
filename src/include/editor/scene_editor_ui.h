@@ -21,8 +21,11 @@ public:
   [[nodiscard]] int GetFrameMin() const override { return 0; }
   [[nodiscard]] int GetFrameMax() const override { return scene_->total_frames; }
   [[nodiscard]] int GetItemCount() const override { return static_cast<int>(scene_->timeline.size()); }
-  [[nodiscard]] int GetItemTypeCount() const override { return 1; }
-  [[nodiscard]] const char *GetItemTypeName(int type_index) const override { return "Graph"; }
+  [[nodiscard]] int GetItemTypeCount() const override { return 2; }
+  [[nodiscard]] const char *GetItemTypeName(int type_index) const override {
+    return type_index == 0 ? "Graph" : "Audio";
+  }
+  [[nodiscard]] const char *GetItemLabel(int index) const override;
 
   void Get(int index, int **start, int **end, int *type, unsigned int *color) override;
 
@@ -64,12 +67,17 @@ private:
 
   void select_first_available_graph();
 
+  void open_audio_track_dialog();
+
+  void sync_audio_playback();
+
   // Quits the application
   void quit();
 
   static constexpr float kStatusMessageDuration{3.f};
   static constexpr auto kSaveSceneDialogKey{"SaveSceneDlg"};
   static constexpr auto kOpenSceneDialogKey{"OpenSceneDialogKey"};
+  static constexpr auto kImportAudioDialogKey{"ImportAudioDlg"};
 
   std::string current_scene_path_;
 
@@ -92,6 +100,7 @@ private:
   IdGenerator graph_id_generator;
 
   int selected_segment_{-1};
+  int current_frame_{0};
   int first_frame{0};
 
   int expanded_folders_[64]{};

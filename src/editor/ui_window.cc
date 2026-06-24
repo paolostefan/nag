@@ -71,7 +71,7 @@ void UIWindow::main_event_loop() {
 
 bool UIWindow::initialize() {
   // SDL must be initialized before creating the OpenGL context, which is required for GLEW initialization.
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO) != 0) {
     spdlog::critical("SDL_Init failed: {}", SDL_GetError());
     return false;
   }
