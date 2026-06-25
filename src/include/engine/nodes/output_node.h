@@ -34,7 +34,7 @@ struct OutputNode : Node {
 
   [[nodiscard]] static std::unique_ptr<OutputNode> create() {
     auto node = std::make_unique<OutputNode>();
-    node->add_input(DataType::Texture, "texture");
+    node->add_input(DataType::Texture, "screen");
     return node;
   }
 
