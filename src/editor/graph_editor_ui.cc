@@ -575,7 +575,14 @@ void GraphEditorUI::render_context_menu() {
 
       if (!ImGui::BeginMenu(label.c_str())) return;
 
-      for (const NodeType type: it->second) {
+      auto sorted_types = it->second;
+      std::ranges::sort(sorted_types, [](NodeType a, NodeType b) {
+        const auto *ai = NodeRegistry::instance().get_type_info(a);
+        const auto *bi = NodeRegistry::instance().get_type_info(b);
+        return ai && bi && ai->display_name < bi->display_name;
+      });
+
+      for (const NodeType type: sorted_types) {
         const auto *info = NodeRegistry::instance().get_type_info(type);
         if (!info) continue;
 
