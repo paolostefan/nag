@@ -36,7 +36,7 @@ std::unique_ptr<Scene> SceneLibrary::load_scene(const std::filesystem::path &pat
     auto scene = std::make_unique<Scene>();
     j.get_to(*scene);
     scene->path = path;
-    scene->pristine = true;
+    scene->dirty = false;
     spdlog::info("Loaded scene from: {}", path.string());
     return scene;
   } catch (const std::exception &e) {

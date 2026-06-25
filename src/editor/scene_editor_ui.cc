@@ -25,6 +25,12 @@ SceneEditorUI::SceneEditorUI() : GraphEditorUI("Scene Editor", 1280, 800) {
 
   // Enable history after initial setup to avoid polluting the command history with setup actions
   history_enabled.store(true, std::memory_order_release);
+
+  // Save initial graph state
+  if (current_graph_ref) {
+    scene_->graph_data[current_graph_ref->id] = JsonGraphSerializer::serialize_graph(graph);
+    current_graph_ref->dirty = false;
+  }
 }
 
 void SceneEditorUI::render_ui() {
@@ -120,6 +126,34 @@ void SceneEditorUI::display_dialogs() {
       ImGui::SameLine();
       if (ImGui::Button("Cancel", ImVec2(100, 0))) {
         pending_delete_graph_id_.clear();
+        ImGui::CloseCurrentPopup();
+      }
+      ImGui::EndPopup();
+    }
+  }
+
+  // ── Confirm Quit (unsaved changes) ─────────────────────────────────────────
+  if (quit_requested_.load(std::memory_order_acquire)) {
+    ImGui::OpenPopup("Unsaved Changes##Quit");
+    if (ImGui::BeginPopupModal("Unsaved Changes##Quit", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+      ImGui::Text("The scene has unsaved changes.");
+      ImGui::Separator();
+
+      if (ImGui::Button("Save && Quit", ImVec2(120, 0))) {
+        quit_requested_.store(false, std::memory_order_release);
+        save_scene();
+        running.store(false, std::memory_order_release);
+        ImGui::CloseCurrentPopup();
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Discard && Quit", ImVec2(120, 0))) {
+        quit_requested_.store(false, std::memory_order_release);
+        running.store(false, std::memory_order_release);
+        ImGui::CloseCurrentPopup();
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("Cancel", ImVec2(100, 0))) {
+        quit_requested_.store(false, std::memory_order_release);
         ImGui::CloseCurrentPopup();
       }
       ImGui::EndPopup();
@@ -231,9 +265,25 @@ void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFo
   } // for each folder
 }
 
+void SceneEditorUI::on_graph_modified() {
+  if (current_graph_ref) {
+    scene_->graph_data[current_graph_ref->id] = JsonGraphSerializer::serialize_graph(graph);
+    current_graph_ref->dirty = false;
+    scene_->dirty = true;
+  }
+}
+
+void SceneEditorUI::request_quit() {
+  if (quit_requested_.load(std::memory_order_acquire)) return;
+  if (scene_->dirty) {
+    quit_requested_.store(true, std::memory_order_release);
+  } else {
+    running.store(false, std::memory_order_release);
+  }
+}
+
 void SceneEditorUI::quit() {
-  // TODO: wait if there's something unsaved
-  running.store(false, std::memory_order_release);
+  request_quit();
 }
 
 void SceneEditorUI::handle_keyboard_shortcuts() {
@@ -274,17 +324,17 @@ void SceneEditorUI::handle_keyboard_shortcuts() {
     } else {
       save_scene();
     }
-  } else if (ImGui::IsKeyPressed(ImGuiKey_G)) {
-    save_current_graph();
   } else if (ImGui::IsKeyPressed(ImGuiKey_Z)) {
     if (command_history.can_undo()) {
       command_history.undo(graph);
       node_pos_refresh = true;
+      on_graph_modified();
     }
   } else if (ImGui::IsKeyPressed(ImGuiKey_Y)) {
     if (command_history.can_redo()) {
       command_history.redo(graph);
       node_pos_refresh = true;
+      on_graph_modified();
     }
   } else if (ImGui::IsKeyPressed(ImGuiKey_Q)) {
     quit();
@@ -306,12 +356,6 @@ void SceneEditorUI::render_menu_bar() {
       }
       if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK "  Save Scene As...", "Ctrl+Shift+S")) {
         save_scene_as();
-      }
-
-      ImGui::Separator();
-
-      if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK "  Save Current Graph", "Ctrl+G")) {
-        save_current_graph();
       }
 
       if (ImGui::MenuItem("Quit", "Ctrl+Q")) {
@@ -561,7 +605,7 @@ void SceneEditorUI::render_top_status_bar() {
     if (ImGui::BeginMenuBar()) {
       ImGui::TextUnformatted(scene_->name.c_str());
 
-      if (!scene_->pristine) {
+      if (scene_->dirty) {
         ImGui::SameLine();
         ImGui::TextColored(ImVec4(1.f, .3f, .0f, 1.f), "*");
         if (ImGui::IsItemHovered()) {
@@ -662,7 +706,7 @@ void SceneEditorUI::save_scene() {
   }
 
   if (scene_library_->save_scene(*scene_, current_scene_path_)) {
-    scene_->pristine = true;
+    scene_->dirty = false;
     set_status_message("Scene saved");
   }
 }

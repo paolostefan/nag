@@ -74,7 +74,7 @@ GraphFolder *Scene::add_folder(const char *const parent_folder_id, const std::st
   }
 
   parent->children.push_back(std::move(folder));
-  pristine = false;
+  dirty = true;
   return parent->children.back().get();
 }
 
@@ -86,7 +86,7 @@ bool Scene::rename_folder(const std::string &folder_id, const std::string &new_n
   }
 
   folder->name = new_name;
-  pristine = false;
+  dirty = true;
   return true;
 }
 
@@ -107,7 +107,7 @@ bool Scene::remove_folder(const std::string &folder_id) {
   };
 
   if (remove_from_vector(root_folders, folder_id)) {
-    pristine = false;
+    dirty = true;
     return true;
   }
   return false;
@@ -118,7 +118,7 @@ GraphReference *Scene::add_graph(GraphFolder &folder,
   const std::string graph_id = generate_id();
 
   folder.graphs.emplace_back(graph_id, graph_name);
-  pristine = false;
+  dirty = true;
   return &folder.graphs.back();
 }
 
@@ -142,7 +142,7 @@ bool Scene::remove_graph(const std::string &graph_id) {
 
   if (remove_from_vector(root_folders, graph_id)) {
     graph_data.erase(graph_id);
-    pristine = false;
+    dirty = true;
     return true;
   }
   return false;
@@ -184,7 +184,7 @@ bool Scene::move_graph(const std::string &graph_id, const std::string &target_fo
 
   if (GraphReference copy = *graph_ref;
     remove_and_insert(root_folders, graph_id, target_folder, std::move(copy))) {
-    pristine = false;
+    dirty = true;
     return true;
   }
   return false;
@@ -197,26 +197,26 @@ bool Scene::rename_graph(const std::string &graph_id, const std::string &new_nam
     return false;
   }
   graph->name = new_name;
-  pristine = false;
+  dirty = true;
   return true;
 }
 
 void Scene::add_timeline_segment(const TimelineSegment &segment) {
   timeline.push_back(segment);
-  pristine = false;
+  dirty = true;
 }
 
 void Scene::remove_timeline_segment(const size_t index) {
   if (index < timeline.size()) {
     timeline.erase(timeline.begin() + static_cast<long>(index));
-    pristine = false;
+    dirty = true;
   }
 }
 
 void Scene::update_timeline_segment(const size_t index, const TimelineSegment &segment) {
   if (index < timeline.size()) {
     timeline[index] = segment;
-    pristine = false;
+    dirty = true;
   }
 }
 
@@ -240,7 +240,7 @@ const GraphReference *Scene::get_graph_at_frame(const int frame) const {
 
 size_t Scene::add_audio_track(AudioTrack &&track) {
   audio_tracks.push_back(std::move(track));
-  pristine = false;
+  dirty = true;
   return audio_tracks.size() - 1;
 }
 
@@ -252,7 +252,7 @@ bool Scene::remove_audio_track(const size_t index) {
       seg.audio_track_index--;
     }
   }
-  pristine = false;
+  dirty = true;
   return true;
 }
 

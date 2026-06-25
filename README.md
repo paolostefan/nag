@@ -11,7 +11,6 @@ A simple SDL2 demo engine.
 - [ ] Scene editor: add a "Recent scenes" submenu
 - [ ] Scene editor: add audio tracks
 - [ ] Scene editor: associate graph <-> timeline and set initial time 
-- [ ] Scene editor: warn if quitting with unsaved changes 
 - [ ] Timeline: set/save to disk initial particle system state  
 
 ## Building the project

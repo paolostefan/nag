@@ -71,6 +71,10 @@ private:
 
   void sync_audio_playback();
 
+  void on_graph_modified() override;
+
+  void request_quit() override;
+
   // Quits the application
   void quit();
 
@@ -108,6 +112,9 @@ private:
 
   /// Used to prevent multiple rename popups from opening simultaneously
   std::atomic<bool> is_renaming_{false};
+
+  /// True when quitting while scene is dirty — triggers confirmation dialog
+  std::atomic<bool> quit_requested_{false};
 
   /// Tracks what type of item is currently being renamed (scene, folder, or graph)
   enum {

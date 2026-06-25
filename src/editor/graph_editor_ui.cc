@@ -16,6 +16,10 @@
 #include "engine/nodes/particle_system_node.h"
 
 
+void GraphEditorUI::request_quit() {
+  running.store(false, std::memory_order_release);
+}
+
 GraphEditorUI::GraphEditorUI(
   std::string title, const int width, const int height) : UIWindow(std::move(title), width, height) {
   // Init graphics helpers
@@ -45,14 +49,14 @@ void GraphEditorUI::main_event_loop() {
       ImGui_ImplSDL2_ProcessEvent(&event);
 
       if (event.type == SDL_QUIT) {
-        running.store(false, std::memory_order_release);
+        request_quit();
       }
 
       if (event.type == SDL_WINDOWEVENT &&
           event.window.event == SDL_WINDOWEVENT_CLOSE) {
         // Close main window → quit.
         if (event.window.windowID == SDL_GetWindowID(window)) {
-          running.store(false, std::memory_order_release);
+          request_quit();
         }
 
         // ★ Close preview window → just close the preview, keep running.
@@ -131,6 +135,7 @@ void GraphEditorUI::delete_selected_nodes() {
   delete_nodes(nodes_to_delete);
 
   ImNodes::ClearNodeSelection();
+  on_graph_modified();
 }
 
 // ----------------------------------------------------------------------------
@@ -182,6 +187,7 @@ void GraphEditorUI::duplicate_selected_nodes() {
 
   ImNodes::ClearNodeSelection();
   node_pos_refresh.store(true, std::memory_order_release);
+  on_graph_modified();
 }
 
 // ============================================================================
@@ -201,6 +207,7 @@ void GraphEditorUI::delete_selected_links() {
   }
 
   delete_links(links_to_delete);
+  on_graph_modified();
 }
 
 // ============================================================================
@@ -392,6 +399,7 @@ void GraphEditorUI::render_node_editor() {
         start_pin_id, end_pin_id);
 
       command_history.execute(graph, std::move(add_link_command));
+      on_graph_modified();
     }
 
     // ── Link Deletion ──────────────────────────────────────────────────────────
@@ -400,6 +408,7 @@ void GraphEditorUI::render_node_editor() {
       auto delete_links_command = std::make_unique<DeleteLinksCommand>(link_id);
 
       command_history.execute(graph, std::move(delete_links_command));
+      on_graph_modified();
     }
   }
 
@@ -591,6 +600,7 @@ void GraphEditorUI::render_context_menu() {
           spawn_node(type, spawn_pos);
           ImNodes::ClearNodeSelection();
           node_pos_refresh.store(true, std::memory_order_release);
+          on_graph_modified();
         }
 
         if (ImGui::IsItemHovered() && !info->description.empty()) {

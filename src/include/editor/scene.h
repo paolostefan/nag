@@ -71,7 +71,7 @@ public:
   std::unordered_map<std::string, nlohmann::json> graph_data;
   int fps{60};
   int total_frames{1000};
-  bool pristine{true};
+  bool dirty{false};
 
   Scene() = default;
 

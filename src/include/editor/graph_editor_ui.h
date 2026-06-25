@@ -53,6 +53,19 @@ protected:
   void display_dialogs() override;
 
   /**
+   * @brief Called after every graph modification (node/link add/delete, etc.).
+   * Override in subclasses to auto-save graph state to scene.
+   */
+  virtual void on_graph_modified() {}
+
+  /**
+   * @brief Called when quit is requested (window close, Ctrl+Q, menu).
+   * Override in subclasses to prompt for unsaved changes.
+   * Default implementation immediately sets running = false.
+   */
+  virtual void request_quit();
+
+  /**
  * @brief Deletes selected nodes and their associated links.
  *
  * Safely removes nodes from the graph and cleans up any links
