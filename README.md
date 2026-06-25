@@ -5,8 +5,6 @@ A simple SDL2 demo engine.
 ## @FIXME && @TODO
 
 - [ ] Nodes: add mandelbrot and julia set nodes
-- [ ] Graph editor: Add node context menu should show node names sorted alphabetically
-- [ ] Particle renderer node: the input "texture" should become "sprite" and be used as particle
 - [ ] Graph editor: for texture-output nodes, add the texture size in pixels in the node body
 - [ ] Add an MCP server to allow remote control of the engine (e.g. for live coding)
 - [ ] Scene editor: time nodes should get their values from the current timeline position

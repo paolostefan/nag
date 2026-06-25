@@ -10,10 +10,9 @@
 #include "engine/particles2d.h"
 #include "engine/property_widget.h"
 #include "engine/shader_manager.h"
-#include "shaders/fullscreen_quad_vert.h"
-#include "shaders/particle_bg_frag.h"
 #include "shaders/particle_renderer_frag.h"
 #include "shaders/particle_renderer_vert.h"
+#include "shaders/particle_sprite_frag.h"
 
 struct ParticleRendererNode : VisualNode {
   float color_jitter{0.f};
@@ -28,7 +27,7 @@ struct ParticleRendererNode : VisualNode {
   GLuint vao_{0};
   GLuint vbo_{0};
   std::shared_ptr<ShaderProgram> particle_shader_;
-  std::shared_ptr<ShaderProgram> bg_shader_;
+  std::shared_ptr<ShaderProgram> sprite_shader_;
 
   struct Vertex {
     float x, y;
@@ -76,12 +75,12 @@ struct ParticleRendererNode : VisualNode {
       "particle_renderer", kparticle_renderer_vert, kparticle_renderer_frag
     );
 
-    bg_shader_ = ShaderManager::instance().load_from_source(
-      "particle_bg", kfullscreen_quad_vert, kparticle_bg_frag
+    sprite_shader_ = ShaderManager::instance().load_from_source(
+      "particle_sprite", kparticle_renderer_vert, kparticle_sprite_frag
     );
 
     return particle_shader_ && particle_shader_->is_valid() &&
-           bg_shader_ && bg_shader_->is_valid();
+           sprite_shader_ && sprite_shader_->is_valid();
   }
 
   void render() override {
@@ -89,7 +88,9 @@ struct ParticleRendererNode : VisualNode {
 
     render_target->clear(0.f, 0.f, 0.f, 0.f);
 
-    render_particles();
+    Pin *sprite_pin = get_input("sprite");
+    Texture *const *sprite_tex = sprite_pin ? sprite_pin->get_texture() : nullptr;
+    render_particles(sprite_tex && *sprite_tex ? *sprite_tex : nullptr);
 
     // Set alpha to 1.0 do ImGui preview displays FBO as opaque
     glColorMask(GL_FALSE,GL_FALSE,GL_FALSE,GL_TRUE);
@@ -172,24 +173,24 @@ struct ParticleRendererNode : VisualNode {
   static std::unique_ptr<Node> create() {
     auto node = std::make_unique<ParticleRendererNode>();
     node->add_input(DataType::Particles2D, "particles");
-    node->add_input(DataType::Texture, "texture");
-    node->add_output(DataType::Texture, "texture");
+    node->add_input(DataType::Texture, "sprite");
+    node->add_output(DataType::Texture, "render");
     return node;
   }
 
 private:
-  static unsigned int hash_int(const int i) {
+  static constexpr unsigned int hash_int(const int i) {
     unsigned h = static_cast<unsigned>(i) * 0x9e3779b9u;
     h = (h ^ (h >> 16)) * 0x85ebca6bu;
-    h ^= (h >> 13);
+    h ^= h >> 13;
     return h;
   }
 
-  static float hash_float(const int i) {
+  static constexpr float hash_float(const int i) {
     return static_cast<float>(hash_int(i)) / 4294967296.0f;
   }
 
-  void render_particles() const {
+  void render_particles(const Texture *sprite_texture = nullptr) const {
     if (inputs.empty()) return;
     const Particles2D *ps = inputs[0].get_particles();
     if (!ps || ps->particles.empty()) return;
@@ -237,14 +238,27 @@ private:
     glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(count * sizeof(Vertex)),
                  vertices.get(), GL_STREAM_DRAW);
 
-    particle_shader_->use();
-    particle_shader_->set_uniform("uResolution",
+    if (sprite_texture) {
+      sprite_shader_->use();
+      sprite_shader_->set_uniform("uResolution",
                                   render_target->get_fwidth(),
                                   render_target->get_fheight());
-    particle_shader_->set_uniform("uGlobalScale", global_scale);
+      sprite_shader_->set_uniform("uGlobalScale", global_scale);
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, sprite_texture->texture_id);
+      sprite_shader_->set_uniform("uSpriteTexture", 0);
+    } else {
+      particle_shader_->use();
+      particle_shader_->set_uniform("uResolution",
+                                    render_target->get_fwidth(),
+                                    render_target->get_fheight());
+      particle_shader_->set_uniform("uGlobalScale", global_scale);
+    }
 
     glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(count));
 
+    if (sprite_texture)
+      glBindTexture(GL_TEXTURE_2D, 0);
     ShaderProgram::unuse();
     glBindVertexArray(0);
     glDisable(GL_PROGRAM_POINT_SIZE);
