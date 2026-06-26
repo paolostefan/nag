@@ -60,7 +60,6 @@ struct PolygonNode : ShaderNode {
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j     = VisualNode::serialize_params();
-    j["position"]        = {position.x, position.y};
     j["radius"]          = radius;
     j["rotation"]        = rotation;
     j["n_sides"]         = n_sides;
@@ -73,10 +72,6 @@ struct PolygonNode : ShaderNode {
     try {
       if (auto result = VisualNode::deserialize_params(j); !result) return result;
 
-      if (j.contains("position") && j["position"].is_array() && j["position"].size() >= 2) {
-        position.x = j["position"][0];
-        position.y = j["position"][1];
-      }
       if (j.contains("radius")) radius = j["radius"];
       if (j.contains("rotation")) rotation = j["rotation"];
       if (j.contains("n_sides")) n_sides = j["n_sides"];

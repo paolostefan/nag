@@ -81,6 +81,11 @@ struct VisualNode : Node {
   }
 
   [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
+
+    if (const OperationResult res = Node::deserialize_params(j); !res) {
+      return res;
+    }
+
     try {
       if (j.contains("enabled")) {
         enabled = j["enabled"];

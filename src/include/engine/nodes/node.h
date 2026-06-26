@@ -136,10 +136,17 @@ struct Node {
   }
 
   [[nodiscard]] virtual nlohmann::json serialize_params() const {
-    return nlohmann::json::object();
+    nlohmann::json j = nlohmann::json::object();
+    j["position"] = {position.x, position.y};
+    return j;
   }
 
-  [[nodiscard]] virtual OperationResult deserialize_params(const nlohmann::json &) {
+  [[nodiscard]] virtual OperationResult deserialize_params(const nlohmann::json &j) {
+    if (j.contains("position") && j["position"].is_array() && j["position"].size() >= 2) {
+      position.x = j["position"][0];
+      position.y = j["position"][1];
+    }
+
     return OperationResult::ok();
   }
 

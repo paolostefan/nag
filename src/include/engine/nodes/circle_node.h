@@ -39,7 +39,6 @@ struct CircleNode : ShaderNode {
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
-    j["position"] = {position.x, position.y};
     j["radius"] = radius;
     j["color"] = {color.x, color.y, color.z, color.w};
     j["edge_smoothness"] = edge_smoothness;
@@ -51,11 +50,6 @@ struct CircleNode : ShaderNode {
       // Deserialize base class first
       if (auto result = VisualNode::deserialize_params(j); !result) {
         return result;
-      }
-
-      if (j.contains("position") && j["position"].is_array() && j["position"].size() >= 2) {
-        position.x = j["position"][0];
-        position.y = j["position"][1];
       }
 
       if (j.contains("radius")) {

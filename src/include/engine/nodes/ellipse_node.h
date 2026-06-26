@@ -60,7 +60,7 @@ struct EllipseNode : ShaderNode {
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
-    j["position"] = {position.x, position.y};
+
     j["radius_x"] = radius_x;
     j["radius_y"] = radius_y;
     j["rotation"] = rotation;
@@ -73,10 +73,6 @@ struct EllipseNode : ShaderNode {
     try {
       if (auto result = VisualNode::deserialize_params(j); !result) return result;
 
-      if (j.contains("position") && j["position"].is_array() && j["position"].size() >= 2) {
-        position.x = j["position"][0];
-        position.y = j["position"][1];
-      }
       if (j.contains("radius_x")) radius_x = j["radius_x"];
       if (j.contains("radius_y")) radius_y = j["radius_y"];
       if (j.contains("rotation")) rotation = j["rotation"];

@@ -11,10 +11,10 @@
  * Renders a 2D rectangle using a fragment shader.
  */
 struct Rectangle2DNode : ShaderNode {
+  Color color{1.f, 1.f, 1.f, 1.f};
   Vec2 position{0.5f, 0.5f}; // Center position [0,1]
   Vec2 size{0.3f, 0.2f}; // Width, height
   float rotation{0.f}; // Radians
-  Color color{1.f, 1.f, 1.f, 1.f};
   float corner_radius{0.f}; // For rounded corners
 
   Rectangle2DNode() {
@@ -26,8 +26,7 @@ struct Rectangle2DNode : ShaderNode {
   [[nodiscard]] const char *shader_name() const noexcept override { return "rectangle"; }
   [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return krectangle_frag; }
 
-  void bind_params() override
-  {
+  void bind_params() override {
     shader->set_uniform("u_position", position.x, position.y);
     shader->set_uniform("u_size", size.x, size.y);
     shader->set_uniform("u_rotation", rotation);
@@ -37,7 +36,6 @@ struct Rectangle2DNode : ShaderNode {
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
-    j["position"] = {position.x, position.y};
     j["size"] = {size.x, size.y};
     j["rotation"] = rotation;
     j["color"] = {color.r(), color.g(), color.b(), color.a()};
@@ -50,11 +48,6 @@ struct Rectangle2DNode : ShaderNode {
       // Deserialize base class first
       if (auto result = VisualNode::deserialize_params(j); !result) {
         return result;
-      }
-
-      if (j.contains("position") && j["position"].is_array() && j["position"].size() >= 2) {
-        position.x = j["position"][0];
-        position.y = j["position"][1];
       }
 
       if (j.contains("size") && j["size"].is_array() && j["size"].size() >= 2) {
@@ -82,7 +75,6 @@ struct Rectangle2DNode : ShaderNode {
     }
   }
 
-protected:
   void update_from_inputs() override {
     if (inputs.size() >= 2) {
       if (const float *x = inputs[0].get_float()) {
@@ -100,7 +92,6 @@ protected:
     }
   }
 
-public:
   /**
    * Create a rectangle node.
    */
