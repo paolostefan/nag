@@ -110,18 +110,10 @@ struct ColorCorrectionNode : ShaderNode {
   }
 
   void update_from_inputs() override {
-    auto read = [&](const char *pin_name, float &dst) {
-      if (const Pin *p = get_input(pin_name); p && p->connected) {
-        if (const float *s = p->get_float()) {
-          dst = *s;
-        }
-      }
-    };
-
-    read("brightness", brightness);
-    read("contrast", contrast);
-    read("saturation", saturation);
-    read("hue_shift", hue_shift);
+    read_pin_to("brightness", brightness);
+    read_pin_to("contrast", contrast);
+    read_pin_to("saturation", saturation);
+    read_pin_to("hue_shift", hue_shift);
   }
 
   // ── Factory ───────────────────────────────────────────────────────────────
