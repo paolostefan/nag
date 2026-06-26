@@ -20,12 +20,36 @@ find_package(GLEW REQUIRED)
 # DEPENDENCIES managed by FetchContent
 # ============================================================================
 
-# SDL2
 include(FetchContent)
+
+# Persistent cache outside build dir — survives rm -rf build/
+# Normal variable shadows any cached value; user can override via -D if desired
+set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/.cache/fetchcontent")
+
+# Skip git fetch on re-configure for already-populated deps.
+# Set -DUPDATE_DEPS=ON at cmake time to force re-fetch.
+option(FETCHCONTENT_UPDATES_DISCONNECTED "Skip git fetch on reconfigure" ON)
+
+# Quick GitHub reachability probe before any FetchContent ops
+execute_process(
+    COMMAND git ls-remote --heads https://github.com/gabime/spdlog.git HEAD
+    RESULT_VARIABLE _gh_reachable
+    OUTPUT_QUIET ERROR_QUIET TIMEOUT 5
+)
+
+if(_gh_reachable EQUAL 0)
+    message(STATUS "GitHub reachable — fetching/updating deps")
+else()
+    message(STATUS "GitHub NOT reachable — using cached deps only")
+    set(FETCHCONTENT_FULLY_DISCONNECTED ON)
+endif()
+
+# SDL2
 FetchContent_Declare(
     SDL2
     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
     GIT_TAG release-2.32.10
+    GIT_SHALLOW TRUE
     EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(SDL2)
@@ -35,6 +59,7 @@ FetchContent_Declare(
     imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
     GIT_TAG docking
+    GIT_SHALLOW TRUE
     EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(imgui)
@@ -67,6 +92,7 @@ FetchContent_Declare(
     imgui_filedialog
     GIT_REPOSITORY https://github.com/aiekick/ImGuiFileDialog.git
     GIT_TAG master
+    GIT_SHALLOW TRUE
     EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(imgui_filedialog)
@@ -78,6 +104,7 @@ FetchContent_Declare(
     implot_repo
     GIT_REPOSITORY https://github.com/epezent/implot.git
     GIT_TAG master
+    GIT_SHALLOW TRUE
     EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(implot_repo)
@@ -98,6 +125,7 @@ FetchContent_Declare(
     nlohmann_json
     GIT_REPOSITORY https://github.com/nlohmann/json.git
     GIT_TAG develop
+    GIT_SHALLOW TRUE
     EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(nlohmann_json)
@@ -116,6 +144,7 @@ FetchContent_Declare(
     spdlog
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
     GIT_TAG v2.x
+    GIT_SHALLOW TRUE
     EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(spdlog)
@@ -125,6 +154,7 @@ FetchContent_Declare(
     iconfont_cppheaders
     GIT_REPOSITORY https://github.com/juliettef/IconFontCppHeaders.git
     GIT_TAG main
+    GIT_SHALLOW TRUE
     EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(iconfont_cppheaders)
@@ -135,6 +165,7 @@ FetchContent_Declare(
     stb
     GIT_REPOSITORY https://github.com/nothings/stb.git
     GIT_TAG master
+    GIT_SHALLOW TRUE
     EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(stb)
