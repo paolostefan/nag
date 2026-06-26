@@ -140,19 +140,11 @@ struct TransformNode : ShaderNode {
   }
 
   void update_from_inputs() override {
-    auto read = [&](const char *pin_name, float &dst) {
-      if (const Pin *p = get_input(pin_name); p && p->connected) {
-        if (const float *s = p->get_float()) {
-          dst = *s;
-        }
-      }
-    };
-
     // inputs[0] is Texture* — handled by bind_texture_inputs() in ShaderNode::render()
-    read("translate_x", translate_x);
-    read("translate_y", translate_y);
-    read("scale", scale);
-    read("rotation", rotation);
+    read_pin_to("translate_x", translate_x);
+    read_pin_to("translate_y", translate_y);
+    read_pin_to("scale", scale);
+    read_pin_to("rotation", rotation);
   }
 };
 

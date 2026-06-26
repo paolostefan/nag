@@ -152,18 +152,10 @@ struct TileNode : ShaderNode {
   }
 
   void update_from_inputs() override {
-    auto read = [&](const char *pin_name, float &dst) {
-      if (const Pin *p = get_input(pin_name); p && p->connected) {
-        if (const float *s = p->get_float()) {
-          dst = *s;
-        }
-      }
-    };
-
-    read("tile_x", tile_x);
-    read("tile_y", tile_y);
-    read("offset_x", offset_x);
-    read("offset_y", offset_y);
+    read_pin_to("tile_x", tile_x);
+    read_pin_to("tile_y", tile_y);
+    read_pin_to("offset_x", offset_x);
+    read_pin_to("offset_y", offset_y);
   }
 };
 

@@ -141,18 +141,10 @@ struct PolygonNode : ShaderNode {
   }
 
   void update_from_inputs() override {
-    auto read = [&](const char *pin_name, float &dst) {
-      if (const Pin *p = get_input(pin_name); p && p->connected) {
-        if (const float *s = p->get_float()) {
-          dst = *s;
-        }
-      }
-    };
-
-    read("pos_x", position.x);
-    read("pos_y", position.y);
-    read("radius", radius);
-    read("rotation", rotation);
+    read_pin_to("pos_x", position.x);
+    read_pin_to("pos_y", position.y);
+    read_pin_to("radius", radius);
+    read_pin_to("rotation", rotation);
   }
 };
 

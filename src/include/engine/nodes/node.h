@@ -22,16 +22,16 @@ enum PinDirection : uint8_t {
 };
 
 struct Pin {
-  std::string                 name{"<unnamed>"};
+  std::string name{"<unnamed>"};
   std::shared_ptr<StreamBase> stream{nullptr};
-  uint64_t                    last_seen_version{0};
-  int                         id{};
-  bool                        connected{false};
-  PinDirection                direction{Input};
-  DataType                    data_type{DataType::Float};
-  uint8_t                     pad{}; // Used as general purpose field in particular pins
+  uint64_t last_seen_version{0};
+  int id{};
+  PinDirection direction{Input};
+  DataType data_type{DataType::Float};
+  bool connected{false};
+  uint8_t pad{}; // Used as general purpose field in particular pins
 
-  [[nodiscard]] Stream *      get_stream() { return static_cast<Stream *>(stream.get()); }
+  [[nodiscard]] Stream *get_stream() { return static_cast<Stream *>(stream.get()); }
   [[nodiscard]] const Stream *get_stream() const { return static_cast<const Stream *>(stream.get()); }
 
   [[nodiscard]] float *get_float() {
@@ -104,13 +104,13 @@ struct Pin {
  * @brief Base class for all nodes in the graph.
  */
 struct Node {
-  std::string      name{"<unnamed>"};
+  std::string name{"<unnamed>"};
   std::vector<Pin> inputs;
   std::vector<Pin> outputs;
-  ImVec2           position{};
-  int              id{};
-  NodeType         type{NodeType::Default};
-  uint8_t          pad[3]{};
+  ImVec2 position{};
+  int id{};
+  NodeType type{NodeType::Default};
+  uint8_t pad[3]{};
 
   virtual ~Node() = default;
 
@@ -153,24 +153,24 @@ struct Node {
     return 0.f;
   }
 
-  Pin *add_input(const DataType     data_type = DataType::Float,
-                 const std::string &pin_name  = "in") {
+  Pin *add_input(const DataType data_type = DataType::Float,
+                 const std::string &pin_name = "in") {
     Pin pin;
-    pin.name      = pin_name;
+    pin.name = pin_name;
     pin.data_type = data_type;
     pin.direction = Input;
-    pin.stream    = nullptr;
+    pin.stream = nullptr;
     inputs.push_back(pin);
     return &inputs.back();
   }
 
-  Pin *add_output(const DataType     data_type = DataType::Float,
-                  const std::string &pin_name  = "out") {
+  Pin *add_output(const DataType data_type = DataType::Float,
+                  const std::string &pin_name = "out") {
     Pin pin;
-    pin.name      = pin_name;
+    pin.name = pin_name;
     pin.data_type = data_type;
     pin.direction = Output;
-    pin.stream    = std::make_shared<Stream>(default_stream_value(data_type));
+    pin.stream = std::make_shared<Stream>(default_stream_value(data_type));
     outputs.push_back(pin);
 
     return &outputs.back();
@@ -195,12 +195,28 @@ struct Node {
     return nullptr;
   }
 
+  void read_pin_to(const char *const pin_name, float &destination) {
+    if (const Pin *pin = get_input(pin_name)) {
+      if (const float *val_ptr = pin->get_float()) {
+        destination = *val_ptr;
+      }
+    }
+  }
+
+  // void read_pin_to(const int pin_id, float &destination) {
+  //   if (const Pin *pin = get_input_by_id(pin_id)) {
+  //     if(const float *val_ptr = pin->get_float()) {
+  //       destination = *val_ptr;
+  //     }
+  //   }
+  // }
+
   Pin *remove_input(const size_t index) {
     if (index >= inputs.size()) {
       return nullptr;
     }
-    const auto it          = inputs.begin() + index;
-    auto *     removed_pin = new Pin(std::move(*it));
+    const auto it = inputs.begin() + index;
+    auto *removed_pin = new Pin(std::move(*it));
     inputs.erase(it);
     return removed_pin;
   }

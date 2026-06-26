@@ -37,11 +37,11 @@ struct EllipseNode : ShaderNode {
   [[nodiscard]] const char *frag_shader_src() const noexcept override { return kellipse_frag; }
 
   void bind_params() override {
-    shader->set_uniform("u_position", position.x, position.y);
+    shader->set_uniform("u_position", position);
     shader->set_uniform("u_radius_x", radius_x);
     shader->set_uniform("u_radius_y", radius_y);
     shader->set_uniform("u_rotation", rotation);
-    shader->set_uniform("u_color", color.x, color.y, color.z, color.w);
+    shader->set_uniform("u_color", color);
     shader->set_uniform("u_edge_smoothness", edge_smoothness);
   }
 
@@ -138,19 +138,11 @@ struct EllipseNode : ShaderNode {
   }
 
   void update_from_inputs() override {
-    auto read = [&](const char *pin_name, float &dst) {
-      if (const Pin *p = get_input(pin_name); p && p->connected) {
-        if (const float *s = p->get_float()) {
-          dst = *s;
-        }
-      }
-    };
-
-    read("pos_x", position.x);
-    read("pos_y", position.y);
-    read("radius_x", radius_x);
-    read("radius_y", radius_y);
-    read("rotation", rotation);
+    read_pin_to("pos_x", position.x);
+    read_pin_to("pos_y", position.y);
+    read_pin_to("radius_x", radius_x);
+    read_pin_to("radius_y", radius_y);
+    read_pin_to("rotation", rotation);
   }
 };
 
