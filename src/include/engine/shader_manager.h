@@ -8,6 +8,8 @@
 
 #include "GL/glew.h"
 
+#include "engine/visual_types.h"
+
 class ShaderProgram {
 public:
   ShaderProgram() = default;
@@ -37,9 +39,15 @@ public:
 
   void set_uniform(const std::string &name, float x, float y);
 
-  void set_uniform(const std::string &name, float x, float y, float z);
+  // void set_uniform(const std::string &name, float x, float y, float z);
 
   void set_uniform(const std::string &name, float x, float y, float z, float w);
+
+  void set_uniform(const std::string &name, const Vec2 &xy);
+
+  // void set_uniform(const std::string &name, const Vec3 &v);
+
+  void set_uniform(const std::string &name, const Vec4 &v);
 
 private:
   GLuint program{0};

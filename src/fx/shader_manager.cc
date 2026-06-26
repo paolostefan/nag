@@ -154,14 +154,29 @@ void ShaderProgram::set_uniform(const std::string &name, const float x, const fl
     glUniform2f(loc, x, y);
 }
 
-void ShaderProgram::set_uniform(const std::string &name, const float x, const float y, const float z) {
-  if (const GLint loc = get_uniform_location(name); loc != -1)
-    glUniform3f(loc, x, y, z);
-}
+// void ShaderProgram::set_uniform(const std::string &name, const float x, const float y, const float z) {
+//   if (const GLint loc = get_uniform_location(name); loc != -1)
+//     glUniform3f(loc, x, y, z);
+// }
 
 void ShaderProgram::set_uniform(const std::string &name, const float x, const float y, const float z, const float w) {
   if (const GLint loc = get_uniform_location(name); loc != -1)
     glUniform4f(loc, x, y, z, w);
+}
+
+void ShaderProgram::set_uniform(const std::string &name, const Vec2& xy) {
+  if (const GLint loc = get_uniform_location(name); loc != -1)
+    glUniform2f(loc, xy.x, xy.y);
+}
+
+// void ShaderProgram::set_uniform(const std::string &name, const Vec3& v) {
+//   if (const GLint loc = get_uniform_location(name); loc != -1)
+//     glUniform3f(loc, v.x, v.y, v.z);
+// }
+
+void ShaderProgram::set_uniform(const std::string &name, const Vec4& v) {
+  if (const GLint loc = get_uniform_location(name); loc != -1)
+    glUniform4f(loc, v.x, v.y, v.z, v.w);
 }
 
 ShaderManager &ShaderManager::instance() {
