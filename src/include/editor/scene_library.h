@@ -15,7 +15,7 @@ class SceneLibrary {
 public:
   SceneLibrary() = default;
 
-  [[nodiscard]] bool save_scene(const Scene &scene, const std::filesystem::path &path);
+  [[nodiscard]] static bool save_scene(const Scene &scene, const std::filesystem::path &path);
 
   [[nodiscard]] static std::unique_ptr<Scene> load_scene(const std::filesystem::path &path);
 };

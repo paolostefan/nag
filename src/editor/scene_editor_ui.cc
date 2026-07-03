@@ -1,11 +1,15 @@
 #include "editor/scene_editor_ui.h"
 
+#include <algorithm>
+#include <fstream>
+
 #include <IconsFontAwesome6.h>
 #include <imgui_internal.h>
 
 #include "imgui.h"
 #include "ImGuiFileDialog.h"
 #include "imnodes.h"
+#include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 
 SceneEditorUI::SceneEditorUI() : GraphEditorUI("Scene Editor", 1280, 800) {
@@ -31,6 +35,8 @@ SceneEditorUI::SceneEditorUI() : GraphEditorUI("Scene Editor", 1280, 800) {
     scene_->graph_data[current_graph_ref->id] = JsonGraphSerializer::serialize_graph(graph);
     current_graph_ref->dirty = false;
   }
+
+  load_recent_scenes();
 }
 
 void SceneEditorUI::render_ui() {
@@ -63,6 +69,8 @@ void SceneEditorUI::display_dialogs() {
         current_scene_path_ = scene_path;
         reset_graph();
         set_status_message("Scene loaded: " + scene_->name);
+        add_recent_scene(scene_path);
+        save_recent_scenes();
 
         // Auto-select the first graph in the library if it exists
         if (!scene_->root_folders.empty() && !scene_->root_folders[0]->graphs.empty()) {
@@ -349,6 +357,40 @@ void SceneEditorUI::render_menu_bar() {
       }
       if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "  Open Scene...", "Ctrl+O")) {
         open_scene();
+      }
+      if (ImGui::BeginMenu("Recent Scenes")) {
+        if (recent_scenes_.empty()) {
+          ImGui::BeginDisabled();
+          ImGui::MenuItem("(no recent scenes)", nullptr, false, false);
+          ImGui::EndDisabled();
+        } else {
+          auto it = recent_scenes_.begin();
+          while (it != recent_scenes_.end()) {
+            if (ImGui::MenuItem(it->c_str())) {
+              const std::string path = *it;
+              auto loaded = SceneLibrary::load_scene(path);
+              if (loaded) {
+                scene_ = std::move(loaded);
+                current_scene_path_ = path;
+                reset_graph();
+                set_status_message("Scene loaded: " + scene_->name);
+                add_recent_scene(path);
+                save_recent_scenes();
+                if (!scene_->root_folders.empty() && !scene_->root_folders[0]->graphs.empty()) {
+                  load_graph_from_library(scene_->root_folders[0]->graphs[0]);
+                }
+              } else {
+                spdlog::warn("Recent scene not found, removing: {}", path);
+                recent_scenes_.erase(it);
+                save_recent_scenes();
+                set_status_message("Recent scene not found");
+              }
+              break;
+            }
+            ++it;
+          }
+        }
+        ImGui::EndMenu();
       }
       ImGui::Separator();
       if (ImGui::MenuItem(ICON_FA_FLOPPY_DISK "  Save Scene", "Ctrl+S")) {
@@ -701,13 +743,15 @@ void SceneEditorUI::save_scene() {
     return;
   }
 
-  if (current_graph_ref && current_graph_ref->dirty) {
+  if (current_graph_ref) {
     save_current_graph();
   }
 
   if (scene_library_->save_scene(*scene_, current_scene_path_)) {
     scene_->dirty = false;
     set_status_message("Scene saved");
+    add_recent_scene(current_scene_path_);
+    save_recent_scenes();
   }
 }
 
@@ -772,4 +816,56 @@ GraphReference *SceneEditorUI::add_graph_in_folder(GraphFolder &folder,
   scene_->graph_data[ref->id] = nullptr;
   load_graph_from_library(*ref);
   return ref;
+}
+
+// ── Recent Scenes ─────────────────────────────────────────────────────────────
+
+std::filesystem::path SceneEditorUI::get_recent_scenes_path() {
+  const char *xdg_config = std::getenv("XDG_CONFIG_HOME");
+  std::filesystem::path dir;
+  if (xdg_config && *xdg_config) {
+    dir = std::filesystem::path(xdg_config) / "nag";
+  } else {
+    const char *home = std::getenv("HOME");
+    dir = std::filesystem::path(home ? home : ".") / ".config" / "nag";
+  }
+  std::filesystem::create_directories(dir);
+  return dir / kRecentScenesFile;
+}
+
+void SceneEditorUI::load_recent_scenes() {
+  const auto path = get_recent_scenes_path();
+  std::ifstream file(path);
+  if (!file.is_open()) return;
+  try {
+    nlohmann::json j;
+    file >> j;
+    recent_scenes_ = j.get<std::vector<std::string>>();
+    // Prune non-existent files
+    std::erase_if(recent_scenes_, [](const std::string &p) { return !std::filesystem::exists(p); });
+  } catch (...) {
+    recent_scenes_.clear();
+  }
+}
+
+void SceneEditorUI::save_recent_scenes() {
+  const auto path = get_recent_scenes_path();
+  nlohmann::json j = recent_scenes_;
+  std::ofstream file(path);
+  if (file.is_open()) {
+    file << j.dump(2);
+  }
+}
+
+void SceneEditorUI::add_recent_scene(const std::string &path) {
+  // Move to front (remove duplicate if exists)
+  auto it = std::find(recent_scenes_.begin(), recent_scenes_.end(), path);
+  if (it != recent_scenes_.end()) {
+    recent_scenes_.erase(it);
+  }
+  recent_scenes_.insert(recent_scenes_.begin(), path);
+  // Trim to max
+  if (static_cast<int>(recent_scenes_.size()) > kMaxRecentScenes) {
+    recent_scenes_.resize(kMaxRecentScenes);
+  }
 }

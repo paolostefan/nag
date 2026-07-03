@@ -1,8 +1,10 @@
 #ifndef NAG_EDITOR_SCENE_EDITOR_UI_H
 #define NAG_EDITOR_SCENE_EDITOR_UI_H
 
+#include <filesystem>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "ImSequencer.h"
 #include "imnodes.h"
@@ -71,6 +73,13 @@ private:
 
   void sync_audio_playback();
 
+  // ── Recent Scenes ───────────────────────────────────────────────────────────
+  void add_recent_scene(const std::string &path);
+  void load_recent_scenes();
+  void save_recent_scenes();
+
+  [[nodiscard]] static std::filesystem::path get_recent_scenes_path();
+
   void on_graph_modified() override;
 
   void request_quit() override;
@@ -83,7 +92,11 @@ private:
   static constexpr auto kOpenSceneDialogKey{"OpenSceneDialogKey"};
   static constexpr auto kImportAudioDialogKey{"ImportAudioDlg"};
 
+  static constexpr int kMaxRecentScenes{10};
+  static constexpr auto kRecentScenesFile{"nag_recent.json"};
+
   std::string current_scene_path_;
+  std::vector<std::string> recent_scenes_;
 
   /// Graph ID pending confirmation for deletion
   std::string pending_delete_graph_id_;
