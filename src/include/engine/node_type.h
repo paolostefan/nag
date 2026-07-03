@@ -7,6 +7,7 @@ enum class NodeType : uint8_t {
   // Generators
   Constant,
   Time,
+  Mandel,
   Noise,
   Random,
   StepSequencer,

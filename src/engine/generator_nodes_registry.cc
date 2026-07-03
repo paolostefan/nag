@@ -2,6 +2,7 @@
 #include "engine/nodes/particle_emitter_node.h"
 #include "engine/nodes/particle_system_node.h"
 #include "engine/node_registry.h"
+#include "engine/nodes/mandel_node.h"
 
 namespace node_registration {
   void register_generator_nodes() {
@@ -30,5 +31,9 @@ namespace node_registration {
     registry.register_node(NodeType::ParticleSystem, "Generators",
                            "Manages a system of 2D particles with configurable behavior",
                            [] { return ParticleSystemNode::create(); });
+
+    registry.register_node(NodeType::Mandel, "Generators",
+                           "Generates the classic Mandelbrot fractal",
+                           [] { return MandelNode::create(); });
   }
 } // namespace node_registration
