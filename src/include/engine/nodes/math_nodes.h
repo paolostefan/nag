@@ -132,15 +132,19 @@ struct SubtractNode : MultiInputNode {
       return;
     }
 
-    float result = 0.f;
+    if (!inputs.empty()) {
+      const size_t inputs_ct = inputs.size();
+      const auto *in0 = inputs[0].get_float();
+      float result = in0 ? *in0 : 0.f;
 
-    for (const auto &pin: inputs) {
-      if (const float *in = pin.get_float()) {
-        result += *in;
-      } // invalid pins are ignored
+      for (size_t i = 1; i < inputs_ct; i++) {
+        if (const float *in = inputs[i].get_float()) {
+          result -= *in;
+        } // invalid pins are ignored
+      }
+
+      outputs[0].set_float(result);
     }
-
-    outputs[0].set_float(result);
     mark_inputs_consumed();
   }
 
