@@ -1,58 +1,62 @@
 #include <gtest/gtest.h>
-#include <fstream>
-#include <filesystem>
 #include <SDL.h>
 
-#include "engine/node_graph.h"
-#include "engine/nodes/temporal_nodes.h"
-#include "engine/nodes/generator_nodes.h"
-#include "engine/nodes/math_nodes.h"
-#include "engine/nodes/clear_color_node.h"
-#include "engine/nodes/gradient_node.h"
+#include "engine/node_registry.h"
 #include "engine/nodes/circle_node.h"
-#include "engine/nodes/rectangle2dnode.h"
+#include "engine/nodes/node.h"
+#include "engine/nodes/generator_nodes.h"
+#include "engine/nodes/visual_node.h"
+#include "engine/nodes/clear_color_node.h"
 #include "engine/nodes/composite_node.h"
+#include "engine/nodes/gradient_node.h"
+#include "engine/nodes/mandel_node.h"
+#include "engine/nodes/math_nodes.h"
+#include "engine/nodes/rectangle2dnode.h"
+#include "engine/nodes/temporal_nodes.h"
 #include "engine/serialization/json_graph_serializer.h"
 
 namespace fs = std::filesystem;
 
-class SerializationTest : public testing::Test {
+// ============================================================================
+// Test Fixture – SDL/GL context needed for visual/MandelNode shader init
+// ============================================================================
+class NodeSerializationTest : public testing::Test {
 protected:
-  SDL_Window *window{nullptr};
-  SDL_GLContext gl_context{nullptr};
+  // ReSharper disable once CppDFATimeOver
+  SDL_Window *window_{nullptr};
+  SDL_GLContext gl_context_{nullptr};
   std::string test_file_path_;
 
   void SetUp() override {
-    test_file_path_ = "test_graph.json";
-    register_all_builtin_nodes();
-
-    SDL_Init(SDL_INIT_VIDEO); // Needed for shader compilation in visual nodes
+    // SDL/GL context must be created BEFORE register_all_builtin_nodes()
+    // because some node constructors (e.g. TextureLoaderNode) call OpenGL.
+    SDL_Init(SDL_INIT_VIDEO);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-
-    // Hidden window with minimal size for OpenGL context
-    window = SDL_CreateWindow("Test", 0, 0, 1, 1, SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
-    gl_context = SDL_GL_CreateContext(window);
+    window_ = SDL_CreateWindow("Test", 0, 0, 1, 1,
+                               SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
+    gl_context_ = SDL_GL_CreateContext(window_);
     glewInit();
+
+    register_all_builtin_nodes();
+
+    test_file_path_ = "test_graph.json";
   }
 
   void TearDown() override {
     // Cleanup test file
-    if (fs::exists(test_file_path_)) {
+    if (!test_file_path_.empty() && fs::exists(test_file_path_)) {
       fs::remove(test_file_path_);
     }
 
-    if (gl_context) {
-      SDL_GL_DeleteContext(gl_context);
-    }
-    if (window) {
-      SDL_DestroyWindow(window);
-    }
+    if (gl_context_) SDL_GL_DeleteContext(gl_context_);
+    if (window_) SDL_DestroyWindow(window_);
     SDL_Quit();
   }
 };
 
-TEST_F(SerializationTest, RenderTargetInitializes) {
+
+TEST_F(NodeSerializationTest, RenderTargetInitializes) {
   RenderTarget rt;
   EXPECT_TRUE(rt.initialize(256, 256, false));
 }
@@ -60,7 +64,7 @@ TEST_F(SerializationTest, RenderTargetInitializes) {
 // ============================================================================
 // Test: Basic Save and Load
 // ============================================================================
-TEST_F(SerializationTest, SaveAndLoadEmptyGraph) {
+TEST_F(NodeSerializationTest, SaveAndLoadEmptyGraph) {
   const NodeGraph graph;
   const JsonGraphSerializer serializer;
 
@@ -80,13 +84,13 @@ TEST_F(SerializationTest, SaveAndLoadEmptyGraph) {
 // ============================================================================
 // Test: Save and Load Single Node
 // ============================================================================
-TEST_F(SerializationTest, SaveAndLoadSingleNode) {
+TEST_F(NodeSerializationTest, SaveAndLoadSingleNode) {
   NodeGraph graph;
 
   // Create LFO node
   auto lfo = LFONode::create(2.5f, 1.f, LFONode::WaveShape::Sawtooth, 0.5f, 0.1f);
   lfo->name = "Test LFO";
-  lfo->position = {100.f, 200.f};
+  lfo->gui_xy = {100.f, 200.f};
   const uint64_t original_id = lfo->id;
 
   graph.add_node(std::move(lfo));
@@ -114,8 +118,8 @@ TEST_F(SerializationTest, SaveAndLoadSingleNode) {
   EXPECT_EQ(loaded_node->wave_shape, LFONode::WaveShape::Sawtooth);
   EXPECT_FLOAT_EQ(loaded_node->phase, 0.5f);
   EXPECT_FLOAT_EQ(loaded_node->offset, 0.1f);
-  EXPECT_FLOAT_EQ(loaded_node->position.x, 100.f);
-  EXPECT_FLOAT_EQ(loaded_node->position.y, 200.f);
+  EXPECT_FLOAT_EQ(loaded_node->gui_xy.x, 100.f);
+  EXPECT_FLOAT_EQ(loaded_node->gui_xy.y, 200.f);
 
   // ID should be different (regenerated)
   EXPECT_NE(loaded_node->id, original_id);
@@ -124,7 +128,7 @@ TEST_F(SerializationTest, SaveAndLoadSingleNode) {
 // ============================================================================
 // Test: Save and Load Graph with Links
 // ============================================================================
-TEST_F(SerializationTest, SaveAndLoadGraphWithLinks) {
+TEST_F(NodeSerializationTest, SaveAndLoadGraphWithLinks) {
   NodeGraph graph;
 
   // Create time node
@@ -181,7 +185,7 @@ TEST_F(SerializationTest, SaveAndLoadGraphWithLinks) {
 // ============================================================================
 // Test: Multiple Parameter Types
 // ============================================================================
-TEST_F(SerializationTest, SaveAndLoadEnvelopeNode) {
+TEST_F(NodeSerializationTest, SaveAndLoadEnvelopeNode) {
   NodeGraph graph;
 
   auto envelope = EnvelopeNode::create(
@@ -213,7 +217,7 @@ TEST_F(SerializationTest, SaveAndLoadEnvelopeNode) {
 // ============================================================================
 // Test: Error Handling - Invalid File
 // ============================================================================
-TEST_F(SerializationTest, LoadFromNonExistentFile) {
+TEST_F(NodeSerializationTest, LoadFromNonExistentFile) {
   NodeGraph graph;
   const JsonGraphSerializer serializer;
 
@@ -225,7 +229,7 @@ TEST_F(SerializationTest, LoadFromNonExistentFile) {
 // ============================================================================
 // Test: Error Handling - Corrupted JSON
 // ============================================================================
-TEST_F(SerializationTest, LoadFromCorruptedFile) {
+TEST_F(NodeSerializationTest, LoadFromCorruptedFile) {
   // Write invalid JSON
   std::ofstream file(test_file_path_);
   file << "{ invalid json content";
@@ -241,7 +245,7 @@ TEST_F(SerializationTest, LoadFromCorruptedFile) {
 // ============================================================================
 // Test: ID Remapping
 // ============================================================================
-TEST_F(SerializationTest, NodeIDsAreRemapped) {
+TEST_F(NodeSerializationTest, NodeIDsAreRemapped) {
   NodeGraph graph;
 
   auto node1 = LFONode::create();
@@ -271,7 +275,7 @@ TEST_F(SerializationTest, NodeIDsAreRemapped) {
 // ============================================================================
 // Test: Visual Node - ClearColor
 // ============================================================================
-TEST_F(SerializationTest, SaveAndLoadClearColorNode) {
+TEST_F(NodeSerializationTest, SaveAndLoadClearColorNode) {
   NodeGraph graph;
 
   auto clear_node = ClearColorNode::create(Vec4(0.2f, 0.5f, 0.8f, 1.f));
@@ -318,7 +322,7 @@ TEST_F(SerializationTest, SaveAndLoadClearColorNode) {
 // ============================================================================
 // Test: Visual Node - Gradient
 // ============================================================================
-TEST_F(SerializationTest, SaveAndLoadGradientNode) {
+TEST_F(NodeSerializationTest, SaveAndLoadGradientNode) {
   NodeGraph graph;
 
   auto gradient = GradientNode::create(
@@ -373,7 +377,7 @@ TEST_F(SerializationTest, SaveAndLoadGradientNode) {
 // ============================================================================
 // Test: Visual Node - Circle
 // ============================================================================
-TEST_F(SerializationTest, SaveAndLoadCircleNode) {
+TEST_F(NodeSerializationTest, SaveAndLoadCircleNode) {
   NodeGraph graph;
 
   auto circle = CircleNode::create(
@@ -413,7 +417,7 @@ TEST_F(SerializationTest, SaveAndLoadCircleNode) {
 // ============================================================================
 // Test: Visual Node - Rectangle
 // ============================================================================
-TEST_F(SerializationTest, SaveAndLoadRectangleNode) {
+TEST_F(NodeSerializationTest, SaveAndLoadRectangleNode) {
   NodeGraph graph;
 
   auto rect = Rectangle2DNode::create(
@@ -456,7 +460,7 @@ TEST_F(SerializationTest, SaveAndLoadRectangleNode) {
 // ============================================================================
 // Test: Visual Node - Composite
 // ============================================================================
-TEST_F(SerializationTest, SaveAndLoadCompositeNode) {
+TEST_F(NodeSerializationTest, SaveAndLoadCompositeNode) {
   NodeGraph graph;
 
   auto composite = CompositeNode::create(
@@ -491,7 +495,7 @@ TEST_F(SerializationTest, SaveAndLoadCompositeNode) {
 // ============================================================================
 // Test: Complex Visual Pipeline
 // ============================================================================
-TEST_F(SerializationTest, SaveAndLoadVisualPipeline) {
+TEST_F(NodeSerializationTest, SaveAndLoadVisualPipeline) {
   NodeGraph graph;
 
   // Create a pipeline: ClearColor -> Gradient -> Composite
@@ -547,7 +551,7 @@ TEST_F(SerializationTest, SaveAndLoadVisualPipeline) {
 }
 
 // Test that a MultiInputNode with >2 inputs gets (de)serialized properly
-TEST_F(SerializationTest, MultiInputNode) {
+TEST_F(NodeSerializationTest, MultiInputNode) {
   const auto add3node = AddNode::create(3);
 
   ASSERT_NE(add3node, nullptr);
@@ -562,4 +566,213 @@ TEST_F(SerializationTest, MultiInputNode) {
 
   ASSERT_EQ(deserialized->type, NodeType::Add);
   ASSERT_EQ(deserialized->inputs.size(), 3);
+}
+
+
+// ============================================================================
+// Node (base class) – position & identity round-trip
+// ============================================================================
+
+TEST_F(NodeSerializationTest, NodeSerializeBaseParams) {
+  const auto node = TimeNode::create();
+  node->name = "MyTime";
+  node->gui_xy = {12.5f, 34.7f};
+
+  const auto j = JsonGraphSerializer::serialize_node(node.get());
+
+  EXPECT_TRUE(j.contains("id"));
+  EXPECT_EQ(j["type"], "Time");
+  EXPECT_EQ(j["name"], "MyTime");
+  EXPECT_FLOAT_EQ(j["gui_xy"][0], 12.5f);
+  EXPECT_FLOAT_EQ(j["gui_xy"][1], 34.7f);
+  EXPECT_TRUE(j.contains("params"));
+}
+
+TEST_F(NodeSerializationTest, NodeRoundTripPreservesPositionAndName) {
+  const auto node = ConstantFloatNode::create(3.14f);
+  node->name = "Pi";
+  node->gui_xy = {320.f, 240.f};
+
+  const auto j = JsonGraphSerializer::serialize_node(node.get());
+  const auto loaded = JsonGraphSerializer::deserialize_node(j);
+  ASSERT_NE(loaded, nullptr);
+
+  EXPECT_EQ(loaded->name, "Pi");
+  EXPECT_EQ(loaded->type, NodeType::Constant);
+  EXPECT_FLOAT_EQ(loaded->gui_xy.x, 320.f);
+  EXPECT_FLOAT_EQ(loaded->gui_xy.y, 240.f);
+}
+
+TEST_F(NodeSerializationTest, NodeMissingPositionDefaultsToZero) {
+  nlohmann::json j;
+  j["type"] = "Constant";
+  j["name"] = "NoPos";
+  j["position"] = nlohmann::json::array(); // empty — no usable coords
+  j["params"] = nlohmann::json::object();
+
+  auto loaded = JsonGraphSerializer::deserialize_node(j);
+  ASSERT_NE(loaded, nullptr);
+  EXPECT_FLOAT_EQ(loaded->gui_xy.x, 0.f);
+  EXPECT_FLOAT_EQ(loaded->gui_xy.y, 0.f);
+}
+
+// ============================================================================
+// VisualNode – enabled / render-target dimensions
+// ============================================================================
+
+TEST_F(NodeSerializationTest, VisualNodeSerializesEnabledAndDimensions) {
+  const auto node = ClearColorNode::create();
+  ASSERT_TRUE(node->initialize(640, 480));
+
+  const auto j = node->serialize_params();
+
+  EXPECT_TRUE(j["enabled"].get<bool>());
+  EXPECT_EQ(j["width"].get<int>(), 640);
+  EXPECT_EQ(j["height"].get<int>(), 480);
+}
+
+TEST_F(NodeSerializationTest, VisualNodeUninitializedOmitsDimensions) {
+  auto node = ClearColorNode::create();
+
+  const auto j = node->serialize_params();
+
+  EXPECT_TRUE(j["enabled"].get<bool>());
+  EXPECT_FALSE(j.contains("width"));
+  EXPECT_FALSE(j.contains("height"));
+}
+
+TEST_F(NodeSerializationTest, VisualNodeDeserializeRestoresDisabledState) {
+  nlohmann::json j;
+  j["enabled"] = false;
+
+  auto node = ClearColorNode::create();
+  const auto result = node->deserialize_params(j);
+  ASSERT_TRUE(result) << result.error_message;
+
+  // VisualNode::enabled is shadowed by ClearColorNode::enabled — check
+  // the base member via explicit scope to verify deserialization.
+  EXPECT_FALSE(static_cast<VisualNode *>(node.get())->enabled);
+  ASSERT_NE(node->render_target, nullptr);
+  EXPECT_TRUE(node->render_target->is_valid());
+  // Default dimensions when width/height omitted
+  EXPECT_EQ(node->render_target->get_width(), 512);
+  EXPECT_EQ(node->render_target->get_height(), 512);
+}
+
+TEST_F(NodeSerializationTest, VisualNodeDeserializeCustomDimensions) {
+  nlohmann::json j;
+  j["enabled"] = true;
+  j["width"] = 800;
+  j["height"] = 600;
+
+  auto node = ClearColorNode::create();
+  const auto result = node->deserialize_params(j);
+  ASSERT_TRUE(result) << result.error_message;
+
+  ASSERT_NE(node->render_target, nullptr);
+  EXPECT_EQ(node->render_target->get_width(), 800);
+  EXPECT_EQ(node->render_target->get_height(), 600);
+}
+
+// ============================================================================
+// MandelNode – center, zoom, iterations
+// ============================================================================
+
+TEST_F(NodeSerializationTest, MandelNodeSerializesAllParams) {
+  auto node = MandelNode::create(
+    Vec2(0.5f, -0.5f),
+    1.5f,
+    200
+  );
+  ASSERT_TRUE(node->initialize(1024, 768));
+
+  const auto j = node->serialize_params();
+
+  // Inherited from VisualNode
+  EXPECT_TRUE(j["enabled"].get<bool>());
+  EXPECT_EQ(j["width"].get<int>(), 1024);
+  EXPECT_EQ(j["height"].get<int>(), 768);
+
+  // Mandel-specific
+  EXPECT_FLOAT_EQ(j["center"][0], 0.5f);
+  EXPECT_FLOAT_EQ(j["center"][1], -0.5f);
+  EXPECT_FLOAT_EQ(j["zoom"], 1.5f);
+  EXPECT_EQ(j["iterations"].get<int>(), 200);
+}
+
+TEST_F(NodeSerializationTest, MandelNodeRoundTripPreservesValues) {
+  auto node = MandelNode::create(
+    Vec2(-0.75f, 0.25f),
+    0.5f,
+    500
+  );
+  node->name = "DeepZoom";
+  node->gui_xy = {100.f, 50.f};
+  ASSERT_TRUE(node->initialize(800, 600));
+
+  const auto node_json = JsonGraphSerializer::serialize_node(node.get());
+  auto loaded = JsonGraphSerializer::deserialize_node(node_json);
+  ASSERT_NE(loaded, nullptr);
+
+  EXPECT_EQ(loaded->name, "DeepZoom");
+  EXPECT_EQ(loaded->type, NodeType::Mandel);
+  EXPECT_FLOAT_EQ(loaded->gui_xy.x, 100.f);
+  EXPECT_FLOAT_EQ(loaded->gui_xy.y, 50.f);
+
+  auto *mandel = dynamic_cast<MandelNode *>(loaded.get());
+  ASSERT_NE(mandel, nullptr);
+
+  EXPECT_FLOAT_EQ(mandel->center.x, -0.75f);
+  EXPECT_FLOAT_EQ(mandel->center.y, 0.25f);
+  EXPECT_FLOAT_EQ(mandel->zoom, 0.5f);
+  EXPECT_EQ(mandel->iterations, 500);
+
+  // Render target recreated
+  ASSERT_NE(mandel->render_target, nullptr);
+  EXPECT_TRUE(mandel->render_target->is_valid());
+  EXPECT_EQ(mandel->render_target->get_width(), 800);
+  EXPECT_EQ(mandel->render_target->get_height(), 600);
+
+  // Shader reloaded
+  ASSERT_NE(mandel->shader, nullptr);
+  EXPECT_TRUE(mandel->shader->is_valid());
+}
+
+TEST_F(NodeSerializationTest, MandelNodeDeserializeMissingFieldsUseDefaults) {
+  // Minimal JSON – only VisualNode fields, no Mandel-specific keys
+  nlohmann::json j;
+  j["enabled"] = true;
+  j["width"] = 320;
+  j["height"] = 240;
+
+  auto node = MandelNode::create();
+  const auto result = node->deserialize_params(j);
+  ASSERT_TRUE(result) << result.error_message;
+
+  // Should retain the member-initialiser defaults
+  EXPECT_FLOAT_EQ(node->center.x, -1.f);
+  EXPECT_FLOAT_EQ(node->center.y, 0.f);
+  EXPECT_FLOAT_EQ(node->zoom, 0.7f);
+  EXPECT_EQ(node->iterations, 100);
+}
+
+TEST_F(NodeSerializationTest, MandelNodeSerializeWithoutInitOmitsDimensions) {
+  const auto node = MandelNode::create(
+    Vec2(0.1f, -0.2f),
+    2.f,
+    50
+  );
+
+  const auto j = node->serialize_params();
+
+  // VisualNode fields without render-target
+  EXPECT_TRUE(j["enabled"].get<bool>());
+  EXPECT_FALSE(j.contains("width"));
+  EXPECT_FALSE(j.contains("height"));
+
+  // Mandel fields still present
+  EXPECT_FLOAT_EQ(j["center"][0], 0.1f);
+  EXPECT_FLOAT_EQ(j["center"][1], -0.2f);
+  EXPECT_FLOAT_EQ(j["zoom"], 2.f);
+  EXPECT_EQ(j["iterations"].get<int>(), 50);
 }
