@@ -109,7 +109,15 @@ private:
    * @param pin The pin to get the color for
    * @return ImColor for the pin
    */
-  static unsigned int get_pin_color(const Pin &pin);
+  static constexpr unsigned int get_pin_color(const Pin &pin) {
+    switch (pin.data_type) {
+      case DataType::Int: return ImColor(200, 100, 100);
+      case DataType::Float: return ImColor(100, 200, 100);
+      case DataType::Texture: return ImColor(200, 100, 200);
+      case DataType::Particles2D: return ImColor(200, 200, 100);
+      default: return ImColor(100, 100, 200);
+    }
+  }
 
   // ── Graph Actions ─────────────────────────────────────────────────────────
 

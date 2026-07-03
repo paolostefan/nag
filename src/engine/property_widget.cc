@@ -87,12 +87,13 @@ namespace PropertyWidget {
                           const float min,
                           const float max,
                           const char *format,
-                          const bool disabled) {
+                          const bool disabled,
+                          const ImGuiSliderFlags flags) {
     const std::string key = internal::MakeKey(node_id, label);
     auto &before_map = internal::BeforeMap<float>();
 
     ImGui::BeginDisabled(disabled);
-    ImGui::SliderFloat(label.c_str(), &value, min, max, format);
+    ImGui::SliderFloat(label.c_str(), &value, min, max, format, flags);
 
     if (ImGui::IsItemActivated()) {
       before_map[key] = value;

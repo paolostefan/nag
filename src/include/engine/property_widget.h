@@ -109,7 +109,9 @@ namespace PropertyWidget {
                    float min = 0.f,
                    float max = 1.f,
                    const char *format = "%.3f",
-                   bool disabled = false);
+                   bool disabled = false,
+                   ImGuiSliderFlags flags = 0
+                   );
 
   // ---------------------------------------------------------------------------
   // ColorEdit4

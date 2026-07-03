@@ -68,7 +68,7 @@ struct VisualNode : Node {
   }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j;
+    nlohmann::json j = Node::serialize_params();
     j["enabled"] = enabled;
 
     // Serialize render target dimensions
