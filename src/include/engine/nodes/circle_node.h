@@ -11,9 +11,9 @@
  * @brief Renders a circle to texture.
  */
 struct CircleNode : ShaderNode {
+  Vec4 color{1.f, 1.f, 1.f, 1.f};
   Vec2 position{0.5f, 0.5f};
   float radius{0.2f};
-  Vec4 color{1.f, 1.f, 1.f, 1.f};
   float edge_smoothness{0.01f};
 
   CircleNode() {
@@ -40,6 +40,7 @@ struct CircleNode : ShaderNode {
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
     j["radius"] = radius;
+    j["position"] = {position.x, position.y};
     j["color"] = {color.x, color.y, color.z, color.w};
     j["edge_smoothness"] = edge_smoothness;
     return j;
@@ -52,15 +53,20 @@ struct CircleNode : ShaderNode {
         return result;
       }
 
-      if (j.contains("radius")) {
-        radius = j["radius"];
-      }
-
       if (j.contains("color") && j["color"].is_array() && j["color"].size() >= 4) {
         color.x = j["color"][0];
         color.y = j["color"][1];
         color.z = j["color"][2];
         color.w = j["color"][3];
+      }
+
+      if (j.contains("position") && j["position"].is_array() && j["position"].size() >= 2) {
+        position.x = j["position"][0];
+        position.y = j["position"][1];
+      }
+
+      if (j.contains("radius")) {
+        radius = j["radius"];
       }
 
       if (j.contains("edge_smoothness")) {
