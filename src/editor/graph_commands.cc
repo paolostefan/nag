@@ -26,9 +26,9 @@ bool AddNodeCommand::execute(NodeGraph &graph) {
     }
 
     recreated->name = node_data_["name"];
-    recreated->position = ImVec2(
-      node_data_["position"][0],
-      node_data_["position"][1]
+    recreated->gui_xy = ImVec2(
+      node_data_["gui_xy"][0],
+      node_data_["gui_xy"][1]
     );
 
     if (node_data_.contains("params")) {
@@ -44,7 +44,7 @@ bool AddNodeCommand::execute(NodeGraph &graph) {
     // Serialize for potential redo
     node_data_["type"] = node_->type;
     node_data_["name"] = node_->name;
-    node_data_["position"] = {node_->position.x, node_->position.y};
+    node_data_["gui_xy"] = {node_->gui_xy.x, node_->gui_xy.y};
     node_data_["params"] = node_->serialize_params();
 
     graph.add_node(std::move(node_));
@@ -110,7 +110,7 @@ bool DeleteNodesCommand::execute(NodeGraph &graph) {
       node_json["id"] = node->id;
       node_json["type"] = node->type;
       node_json["name"] = node->name;
-      node_json["position"] = {node->position.x, node->position.y};
+      node_json["gui_xy"] = {node->gui_xy.x, node->gui_xy.y};
       node_json["params"] = node->serialize_params();
       deleted_nodes_.push_back(node_json);
 
@@ -176,9 +176,9 @@ bool DeleteNodesCommand::undo(NodeGraph &graph) {
     const int old_id = node_json["id"];
 
     node->name = node_json["name"];
-    node->position = ImVec2(
-      node_json["position"][0],
-      node_json["position"][1]
+    node->gui_xy = ImVec2(
+      node_json["gui_xy"][0],
+      node_json["gui_xy"][1]
     );
 
     if (node_json.contains("params")) {
@@ -370,7 +370,7 @@ bool MoveNodesCommand::execute(NodeGraph &graph) {
   for (const auto &move: moves_) {
     for (const auto &node: graph.nodes) {
       if (node->id == move.node_id) {
-        node->position = move.new_pos;
+        node->gui_xy = move.new_pos;
         break;
       }
     }
@@ -382,7 +382,7 @@ bool MoveNodesCommand::undo(NodeGraph &graph) {
   for (const auto &move: moves_) {
     for (const auto &node: graph.nodes) {
       if (node->id == move.node_id) {
-        node->position = move.old_pos;
+        node->gui_xy = move.old_pos;
         break;
       }
     }

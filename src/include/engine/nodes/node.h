@@ -107,7 +107,7 @@ struct Node {
   std::string name{"<unnamed>"};
   std::vector<Pin> inputs;
   std::vector<Pin> outputs;
-  ImVec2 position{};
+  ImVec2 gui_xy{};
   int id{};
   NodeType type{NodeType::Default};
   uint8_t pad[3]{};
@@ -137,14 +137,14 @@ struct Node {
 
   [[nodiscard]] virtual nlohmann::json serialize_params() const {
     nlohmann::json j = nlohmann::json::object();
-    j["position"] = {position.x, position.y};
+    j["gui_xy"] = {gui_xy.x, gui_xy.y};
     return j;
   }
 
   [[nodiscard]] virtual OperationResult deserialize_params(const nlohmann::json &j) {
-    if (j.contains("position") && j["position"].is_array() && j["position"].size() >= 2) {
-      position.x = j["position"][0];
-      position.y = j["position"][1];
+    if (j.contains("gui_xy") && j["gui_xy"].is_array() && j["gui_xy"].size() >= 2) {
+      gui_xy.x = j["gui_xy"][0];
+      gui_xy.y = j["gui_xy"][1];
     }
 
     return OperationResult::ok();

@@ -153,7 +153,7 @@ void GraphEditorUI::duplicate_selected_nodes() {
   // Convert to set to avoid errors
   const std::unordered_set nodes_to_copy(selected_nodes, selected_nodes + num_selected);
 
-  // Offset position
+  // Offset gui_xy
 
   // Create duplicated nodes
   for (const int old_id: nodes_to_copy) {
@@ -166,8 +166,8 @@ void GraphEditorUI::duplicate_selected_nodes() {
 
     [[maybe_unused]] auto res = new_node->deserialize_params(old_node->serialize_params());
     new_node->name = old_node->name;
-    new_node->position.x = old_node->position.x + kOffset;
-    new_node->position.y = old_node->position.y + kOffset;
+    new_node->gui_xy.x = old_node->gui_xy.x + kOffset;
+    new_node->gui_xy.y = old_node->gui_xy.y + kOffset;
 
     if (auto *vis = dynamic_cast<VisualNode *>(new_node.get())) {
       if (auto *old_vis = dynamic_cast<VisualNode *>(old_node)) {
@@ -226,14 +226,14 @@ void GraphEditorUI::render_node_editor() {
     ImNodes::EditorContextSet(editor_context);
     ImNodes::BeginNodeEditor();
 
-    const bool refresh_positions = node_pos_refresh.exchange(false);
+    const bool refresh_gui_xys = node_pos_refresh.exchange(false);
     const bool flowing = is_time_flowing.load(std::memory_order_acquire);
 
     // ── Nodes ──────────────────────────────────────────────────────────────────
     for (const auto &node: graph.nodes) {
       // ReSharper disable once CppDFAConstantConditions
-      if (refresh_positions) {
-        ImNodes::SetNodeScreenSpacePos(node->id, node->position);
+      if (refresh_gui_xys) {
+        ImNodes::SetNodeScreenSpacePos(node->id, node->gui_xy);
       }
 
       ImNodes::BeginNode(node->id);
@@ -360,9 +360,9 @@ void GraphEditorUI::render_node_editor() {
 
     ImNodes::EndNodeEditor();
 
-    // Sync ImNodes positions back into node data every frame
+    // Sync ImNodes gui_xys back into node data every frame
     for (const auto &node: graph.nodes) {
-      node->position = ImNodes::GetNodeScreenSpacePos(node->id);
+      node->gui_xy = ImNodes::GetNodeScreenSpacePos(node->id);
     }
 
     // ── Detect Right Click on Canvas ───────────────────────────────────────────
@@ -692,9 +692,3 @@ void GraphEditorUI::render_visual_node_body(const VisualNode *visual_node) {
   );
 }
 
-unsigned int GraphEditorUI::get_pin_color(const Pin &pin) {
-  if (pin.data_type == DataType::Particles2D) return ImColor(200, 200, 100);
-  if (pin.data_type == DataType::Float) return ImColor(100, 200, 100);
-  if (pin.data_type == DataType::Texture) return ImColor(200, 100, 200);
-  return ImColor(100, 100, 200);
-}

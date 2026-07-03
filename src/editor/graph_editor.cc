@@ -24,12 +24,12 @@ void GraphEditor::build_default_graph() {
 
   // Time node
   auto time_node_unique = TimeNode::create();
-  time_node_unique->position = {30, 100};
+  time_node_unique->gui_xy = {30, 100};
   time_node = dynamic_cast<TimeNode *>(graph.add_node(std::move(time_node_unique)));
 
   // Visual: OutputNode (sink) — receives the composited texture
   auto output_node_unique = OutputNode::create();
-  output_node_unique->position = {300, 100};
+  output_node_unique->gui_xy = {300, 100};
   output_node = dynamic_cast<OutputNode *>(graph.add_node(std::move(output_node_unique)));
 }
 
@@ -59,7 +59,7 @@ OperationResult GraphEditor::load_graph(const std::string &path) {
   return OperationResult::ok();
 }
 
-Node *GraphEditor::spawn_node(const NodeType type, const ImVec2 &position) {
+Node *GraphEditor::spawn_node(const NodeType type, const ImVec2 &gui_xy) {
   auto node = NodeRegistry::instance().create_node(type);
   if (!node) {
     spdlog::error("Failed to create node of type {}", static_cast<int>(type));
@@ -75,7 +75,7 @@ Node *GraphEditor::spawn_node(const NodeType type, const ImVec2 &position) {
     }
   }
 
-  node->position = position;
+  node->gui_xy = gui_xy;
 
   auto add_command = std::make_unique<AddNodeCommand>(std::move(node));
   if (history_enabled.load(std::memory_order_acquire)) {
