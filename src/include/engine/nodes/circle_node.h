@@ -32,11 +32,6 @@ struct CircleNode : ShaderNode {
     shader->set_uniform("u_edge_smoothness", edge_smoothness);
   }
 
-  void render() override {
-    update_from_inputs();
-    ShaderNode::render();
-  }
-
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
     j["radius"] = radius;
