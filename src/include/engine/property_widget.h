@@ -59,6 +59,32 @@ namespace PropertyWidget {
                 bool disabled = false);
 
   // ---------------------------------------------------------------------------
+  // DragInt
+  // ---------------------------------------------------------------------------
+
+  /// @brief Renders a DragInt widget and emits an undo command on release.
+  ///
+  /// @param label       Widget label (also used as param_name in the command).
+  /// @param node_id     ID of the owning node.
+  /// @param value       Reference to the float field on the node.
+  /// @param setter      Callable to restore the value during undo/redo.
+  /// @param graph       The node graph (passed to history.execute()).
+  /// @param history     The command history.
+  /// @param speed       speed (default 1.f).
+  /// @param min         Minimum value (default 0).
+  /// @param max         Maximum value (default 100).
+  /// @param format      Printf format string (default "%.3f").
+  /// @param disabled    If true, the widget is rendered disabled and does not emit commands (default false).
+  void DragInt(const std::string &label, int node_id, int &value,
+               std::function<void(Node &, int)> setter,
+               NodeGraph &graph, CommandHistory &history,
+               float speed = 1.f,
+               int min = 0,
+               int max = 100,
+               const char *format = "%d",
+               bool disabled = false);
+
+  // ---------------------------------------------------------------------------
   // DragFloat
   // ---------------------------------------------------------------------------
 
@@ -90,16 +116,17 @@ namespace PropertyWidget {
 
   /// @brief Renders a SliderFloat widget and emits an undo command on release.
   ///
-  /// @param label   The label for the slider widget.
-  /// @param node_id The ID of the node this property belongs to.
-  /// @param value   Reference to a float field on the node.
-  /// @param setter  Callable to restore the value during undo/redo.
-  /// @param graph   The node graph (passed to history.execute).
-  /// @param history The command history.
-  /// @param min     Minimum value (default 0.f).
-  /// @param max     Maximum value (default 1.f).
-  /// @param format  Printf format string (default "%.3f").
+  /// @param label    The label for the slider widget.
+  /// @param node_id  The ID of the node this property belongs to.
+  /// @param value    Reference to a float field on the node.
+  /// @param setter   Callable to restore the value during undo/redo.
+  /// @param graph    The node graph (passed to `history.execute()`).
+  /// @param history  The command history.
+  /// @param min      Minimum value (default 0.f).
+  /// @param max      Maximum value (default 1.f).
+  /// @param format   Printf format string (default "%.3f").
   /// @param disabled If true, the slider is rendered disabled and does not emit commands (default false).
+  /// @param flags    Slider flags, possibly ImGuiSliderFlags_Logarithmic.
   void SliderFloat(const std::string &label,
                    int node_id,
                    float &value,
@@ -111,7 +138,7 @@ namespace PropertyWidget {
                    const char *format = "%.3f",
                    bool disabled = false,
                    ImGuiSliderFlags flags = 0
-                   );
+  );
 
   // ---------------------------------------------------------------------------
   // ColorEdit4
@@ -128,10 +155,10 @@ namespace PropertyWidget {
   /// @param flags    ImGui color edit flags (default 0).
   /// @param disabled If true, the widget is rendered disabled and does not emit commands (default false).
   void ColorEdit4(const std::string &label, int node_id, ImVec4 &value,
-                         std::function<void(Node &, ImVec4)> setter,
-                         NodeGraph &graph, CommandHistory &history,
-                         ImGuiColorEditFlags flags = 0,
-                         bool disabled = false);
+                  std::function<void(Node &, ImVec4)> setter,
+                  NodeGraph &graph, CommandHistory &history,
+                  ImGuiColorEditFlags flags = 0,
+                  bool disabled = false);
 
   // ---------------------------------------------------------------------------
   // Combo (for enums)
@@ -151,12 +178,12 @@ namespace PropertyWidget {
   /// @param history    The command history.
   /// @param disabled   If true, the combo is rendered disabled and does not emit commands (default false).
   void Combo(const std::string &label, int node_id, int &value,
-                    const char *const*items,
-                    int item_count,
-                    std::function<void(Node &, int)> setter,
-                    NodeGraph &graph,
-                    CommandHistory &history,
-                    bool disabled = false);
+             const char *const*items,
+             int item_count,
+             std::function<void(Node &, int)> setter,
+             NodeGraph &graph,
+             CommandHistory &history,
+             bool disabled = false);
 } // namespace PropertyWidget
 
 #endif // NAG_EDITOR_PROPERTY_WIDGET_H
