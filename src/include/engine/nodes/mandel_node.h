@@ -2,6 +2,7 @@
 #define NAG_ENGINE_MANDEL_NODE_H
 
 #include "shader_node.h"
+#include "engine/property_widget.h"
 #include "engine/visual_types.h"
 #include "shaders/mandel_frag.h"
 
@@ -43,35 +44,62 @@ struct MandelNode : ShaderNode {
     shader->set_uniform("u_iterations", iterations);
   }
 
+  void update_from_inputs() override {
+    if(const float *x = inputs[0].get_float()) {
+      center.x = *x;
+    }
+
+    if(const float *y = inputs[1].get_float()) {
+      center.y = *y;
+    }
+
+    if(const float *zoom_ptr = inputs[2].get_float()) {
+      zoom = *zoom_ptr;
+    }
+
+    if(const int *it_ptr = inputs[3].get_int()) {
+      iterations = *it_ptr;
+    }
+  }
+
   void draw_properties(NodeGraph &graph, CommandHistory &history) override {
     PropertyWidget::DragFloat("Center X", id,
-                                center.x,
-                                [](Node &n, const float v) { dynamic_cast<MandelNode &>(n).center.x = v; },
-                                graph, history,
-                                /*speed=*/0.00001,
-                                /*min=*/ -5.f, /*max=*/5.f,
-                                /*format=*/"%.4f");
+                              center.x,
+                              [](Node &n, const float v) {
+                                dynamic_cast<MandelNode &>(n).center.x = v;
+                              },
+                              graph, history,
+                              /*speed=*/0.00001,
+                              /*min=*/ -3.f, /*max=*/3.f,
+                              /*format=*/"%.06f");
 
     PropertyWidget::DragFloat("Center Y", id,
-                                center.y,
-                                [](Node &n, const float v) { dynamic_cast<MandelNode &>(n).center.y = v; },
-                                graph, history,
-                                /*speed=*/0.00001,
-                                /*min=*/ -5.f, /*max=*/5.f,
-                                /*format=*/"%.4f");
+                              center.y,
+                              [](Node &n, const float v) {
+                                dynamic_cast<MandelNode &>(n).center.y = v;
+                              },
+                              graph, history,
+                              /*speed=*/0.00001,
+                              /*min=*/ -3.f, /*max=*/3.f,
+                              /*format=*/"%.06f");
 
     PropertyWidget::SliderFloat("Zoom", id,
                                 zoom,
-                                [](Node &n, const float v) { dynamic_cast<MandelNode &>(n).zoom = v; },
+                                [](Node &n, const float v) {
+                                  dynamic_cast<MandelNode &>(n).zoom = v;
+                                },
                                 graph, history,
                                 /*min=*/ 0.05f, /*max=*/10000.f,
                                 /*format=*/"%.3f",
                                 /*disabled=*/false,
                                 /*flags=*/ImGuiSliderFlags_Logarithmic);
-    PropertyWidget::InputInt("Iterations",
-                             id, iterations,
-                             [](Node &n, const int v) { dynamic_cast<MandelNode &>(n).iterations = v; },
-                             graph, history, 10, 10000);
+
+    PropertyWidget::DragInt("Iterations",
+                            id, iterations,
+                            [](Node &n, const int v) {
+                              dynamic_cast<MandelNode &>(n).iterations = v;
+                            },
+                            graph, history, 1, 10, 10000);
   }
 
   // ── Serialization ─────────────────────────────────────────────────────────

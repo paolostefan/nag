@@ -44,6 +44,16 @@ struct Pin {
     return s ? s->as_float() : nullptr;
   }
 
+  [[nodiscard]] int *get_int() {
+    auto *s = (Stream *) stream.get();
+    return s ? s->as_int() : nullptr;
+  }
+
+  [[nodiscard]] const int *get_int() const {
+    auto *s = (const Stream *) stream.get();
+    return s ? s->as_int() : nullptr;
+  }
+
   [[nodiscard]] bool *get_bool() {
     auto *s = (Stream *) stream.get();
     return s ? s->as_bool() : nullptr;

@@ -17,7 +17,7 @@ struct StreamBase {
   uint64_t version{0};
 };
 
-using StreamValue = std::variant<std::monostate, float, bool, Texture *, Particles2D>;
+using StreamValue = std::variant<std::monostate, float, int, bool, Texture *, Particles2D>;
 
 struct Stream : StreamBase {
   StreamValue value;
@@ -26,6 +26,8 @@ struct Stream : StreamBase {
 
   [[nodiscard]] float *as_float() { return std::get_if<float>(&value); }
   [[nodiscard]] const float *as_float() const { return std::get_if<float>(&value); }
+  [[nodiscard]] int *as_int() { return std::get_if<int>(&value); }
+  [[nodiscard]] const int *as_int() const { return std::get_if<int>(&value); }
   [[nodiscard]] bool *as_bool() { return std::get_if<bool>(&value); }
   [[nodiscard]] const bool *as_bool() const { return std::get_if<bool>(&value); }
   [[nodiscard]] Texture **as_texture() { return std::get_if<Texture *>(&value); }
@@ -46,8 +48,9 @@ struct Stream : StreamBase {
 inline StreamValue default_stream_value(const DataType t) {
   switch (t) {
     case DataType::Float: return 0.0f;
+    case DataType::Int: return 0;
     case DataType::Bool: return false;
-    case DataType::Texture: return static_cast<Texture *>(nullptr);
+    case DataType::Texture: return nullptr;
     case DataType::Particles2D: return Particles2D{};
     default: return std::monostate{};
   }

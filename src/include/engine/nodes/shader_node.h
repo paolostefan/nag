@@ -55,6 +55,11 @@ struct ShaderNode : VisualNode {
   virtual void bind_params() {
   }
 
+  /**
+   * @brief Called by @ref render() before using the shader
+   *
+   * Override to make internal Node vars dependent on input pins.
+   */
   virtual void update_from_inputs() {
   }
 
