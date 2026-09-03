@@ -12,10 +12,31 @@
 #include "nlohmann/json.hpp"
 #include "spdlog/spdlog.h"
 
-SceneEditorUI::SceneEditorUI() : GraphEditorUI("Scene Editor", 1280, 800) {
+#include "editor/audio_playback_controller.h"
+
+namespace {
+  /// @brief Extract audio segments from the scene timeline.
+  std::vector<audio_playback::AudioSegment> to_audio_segments(const Scene &scene) {
+    std::vector<audio_playback::AudioSegment> segments;
+    for (const auto &seg: scene.timeline) {
+      if (seg.type != SegmentType::AUDIO) continue;
+      segments.push_back({
+        seg.audio_track_index,
+        seg.frame_start,
+        seg.frame_end
+      });
+    }
+    return segments;
+  }
+} // namespace
+
+SceneEditorUI::SceneEditorUI()
+  : GraphEditorUI("Scene Editor", 1280, 800),
+    recent_files_(get_recent_scenes_path()) {
+
   scene_library_ = std::make_unique<SceneLibrary>();
 
-  // Create a new empty scene
+  // Create a new empty scene (also wires scene-dependent modules)
   new_scene();
 
   // Start with at least a default folder and a default graph in it for better UX
@@ -32,11 +53,29 @@ SceneEditorUI::SceneEditorUI() : GraphEditorUI("Scene Editor", 1280, 800) {
 
   // Save initial graph state
   if (current_graph_ref) {
-    scene_->graph_data[current_graph_ref->id] = JsonGraphSerializer::serialize_graph(graph);
-    current_graph_ref->dirty = false;
+    graph_scene_sync_->sync_graph(*current_graph_ref, graph);
   }
 
-  load_recent_scenes();
+  recent_files_.load();
+}
+
+void SceneEditorUI::wire_scene_dependencies() {
+  timeline_controller_ = std::make_unique<TimelineController>(*scene_);
+  graph_scene_sync_ = std::make_unique<GraphSceneSync>(*scene_);
+
+  GraphLibraryPanel::Callbacks cb;
+  cb.on_open_graph = [this](GraphReference &ref) { load_graph_from_library(ref); };
+  cb.on_add_graph = [this](GraphFolder &folder) -> GraphReference * {
+    return add_graph_in_folder(folder);
+  };
+  cb.on_add_folder = [this]() { [[maybe_unused]] auto *folder = scene_->add_folder(nullptr, "New Folder"); };
+  cb.on_graph_deleted = [this](const std::string &graph_id) {
+    graph_scene_sync_->remove_graph_data(graph_id);
+    select_first_available_graph();
+  };
+
+  graph_library_panel_ = std::make_unique<GraphLibraryPanel>(
+    *scene_, current_graph_ref, std::move(cb));
 }
 
 void SceneEditorUI::render_ui() {
@@ -50,7 +89,7 @@ void SceneEditorUI::render_ui() {
 
   render_node_props();
 
-  render_graph_library_panel();
+  graph_library_panel_->render();
   render_timeline();
 }
 
@@ -66,15 +105,16 @@ void SceneEditorUI::display_dialogs() {
       const auto scene_path = ImGuiFileDialog::Instance()->GetFilePathName();
       scene_ = SceneLibrary::load_scene(scene_path);
       if (scene_) {
+        wire_scene_dependencies();
         current_scene_path_ = scene_path;
         reset_graph();
         set_status_message("Scene loaded: " + scene_->name);
-        add_recent_scene(scene_path);
-        save_recent_scenes();
+        recent_files_.add(scene_path);
+        recent_files_.save();
 
         // Auto-select the first graph in the library if it exists
-        if (!scene_->root_folders.empty() && !scene_->root_folders[0]->graphs.empty()) {
-          load_graph_from_library(scene_->root_folders[0]->graphs[0]);
+        if (auto *first = graph_scene_sync_->find_first_graph()) {
+          load_graph_from_library(*first);
         }
       } else {
         spdlog::error("Failed to load scene: {}", scene_path);
@@ -116,30 +156,6 @@ void SceneEditorUI::display_dialogs() {
     ImGuiFileDialog::Instance()->Close();
   }
 
-  // ── Confirm Delete Graph ──────────────────────────────────────────────────
-  if (!pending_delete_graph_id_.empty()) {
-    ImGui::OpenPopup("Delete Graph##Modal");
-    // ImGui::SetNextWindowSize(ImVec2(300, 0));
-    if (ImGui::BeginPopupModal("Delete Graph##Modal", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-      const auto *graph = scene_->find_graph(pending_delete_graph_id_);
-      ImGui::Text("Delete graph \"%s\"?", graph ? graph->name.c_str() : "(unknown)");
-      ImGui::Separator();
-
-      if (ImGui::Button("Delete", ImVec2(100, 0))) {
-        scene_->remove_graph(pending_delete_graph_id_);
-        pending_delete_graph_id_.clear();
-        select_first_available_graph();
-        ImGui::CloseCurrentPopup();
-      }
-      ImGui::SameLine();
-      if (ImGui::Button("Cancel", ImVec2(100, 0))) {
-        pending_delete_graph_id_.clear();
-        ImGui::CloseCurrentPopup();
-      }
-      ImGui::EndPopup();
-    }
-  }
-
   // ── Confirm Quit (unsaved changes) ─────────────────────────────────────────
   if (quit_requested_.load(std::memory_order_acquire)) {
     ImGui::OpenPopup("Unsaved Changes##Quit");
@@ -170,20 +186,7 @@ void SceneEditorUI::display_dialogs() {
 }
 
 void SceneEditorUI::select_first_available_graph() {
-  std::function<GraphReference *(const std::vector<std::unique_ptr<GraphFolder> > &)> find_first;
-  find_first = [&find_first](const std::vector<std::unique_ptr<GraphFolder> > &folders) -> GraphReference * {
-    for (const auto &folder: folders) {
-      if (!folder->graphs.empty()) {
-        return &folder->graphs.front();
-      }
-      if (auto *found = find_first(folder->children)) {
-        return found;
-      }
-    }
-    return nullptr;
-  };
-
-  if (auto *first = find_first(scene_->root_folders)) {
+  if (auto *first = graph_scene_sync_->find_first_graph()) {
     load_graph_from_library(*first);
   } else {
     current_graph_ref = nullptr;
@@ -191,92 +194,9 @@ void SceneEditorUI::select_first_available_graph() {
   }
 }
 
-void SceneEditorUI::render_folder_tree(const std::vector<std::unique_ptr<GraphFolder> > &folders) {
-  for (auto &folder: folders) {
-    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-    if (folder->children.empty() && folder->graphs.empty()) {
-      flags |= ImGuiTreeNodeFlags_Leaf;
-    } else {
-      flags |= ImGuiTreeNodeFlags_DefaultOpen;
-    }
-
-    const bool opened = ImGui::TreeNodeEx(folder->id.c_str(), flags, "%s", folder->name.c_str());
-
-    if (ImGui::BeginPopupContextItem()) {
-      if (ImGui::MenuItem(ICON_FA_FOLDER_PLUS "  Add Subfolder")) {
-        [[maybe_unused]] auto *subfolder = scene_->add_folder(folder->id, "New Subfolder");
-      }
-      if (ImGui::MenuItem(ICON_FA_DIAGRAM_PROJECT "  Add Graph Here")) {
-        [[maybe_unused]] auto *subgraph = add_graph_in_folder(*folder);
-      }
-
-      if (ImGui::MenuItem(ICON_FA_I_CURSOR "  Rename")) {
-        rename_target_ = RenameTargetFolder;
-        rename_target_id_ = folder->id.c_str();
-        is_renaming_.store(true, std::memory_order_release);
-      }
-
-      ImGui::Separator();
-
-      if (ImGui::MenuItem(ICON_FA_TRASH "  Delete Folder")) {
-        scene_->remove_folder(folder->id);
-        ImGui::EndPopup();
-        if (opened)
-          ImGui::TreePop();
-        continue;
-      }
-      ImGui::EndPopup();
-    }
-
-    if (opened) {
-      for (auto &graph_ref: folder->graphs) {
-        constexpr ImGuiTreeNodeFlags kGraphFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_SpanAvailWidth;
-
-        const bool is_selected = &graph_ref == current_graph_ref;
-        if (is_selected) {
-          // Highlight the selected graph
-          ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.2f, 0.6f, 1.0f, 1.0f)); // Bright blue
-        }
-
-        if (ImGui::TreeNodeEx(graph_ref.id.c_str(), kGraphFlags,
-                              "%s%s", graph_ref.name.c_str(), graph_ref.dirty ? " *" : "")) {
-          if (ImGui::IsItemClicked() && &graph_ref != current_graph_ref) {
-            load_graph_from_library(graph_ref);
-          }
-
-          if (ImGui::BeginPopupContextItem()) {
-            if (ImGui::MenuItem(ICON_FA_I_CURSOR "  Rename")) {
-              rename_target_ = RenameTargetGraph;
-              rename_target_id_ = graph_ref.id.c_str();
-              is_renaming_.store(true, std::memory_order_release);
-            }
-
-            ImGui::Separator();
-
-            if (ImGui::MenuItem(ICON_FA_TRASH "  Delete")) {
-              pending_delete_graph_id_ = graph_ref.id;
-              ImGui::OpenPopup("Delete Graph##Modal");
-            }
-            ImGui::EndPopup();
-          }
-          ImGui::TreePop();
-        }
-
-        if (is_selected) {
-          ImGui::PopStyleColor();
-        }
-      }
-
-      render_folder_tree(folder->children);
-      ImGui::TreePop();
-    } // if opened
-  } // for each folder
-}
-
 void SceneEditorUI::on_graph_modified() {
   if (current_graph_ref) {
-    scene_->graph_data[current_graph_ref->id] = JsonGraphSerializer::serialize_graph(graph);
-    current_graph_ref->dirty = false;
+    graph_scene_sync_->sync_graph(*current_graph_ref, graph);
     scene_->dirty = true;
   }
 }
@@ -359,30 +279,31 @@ void SceneEditorUI::render_menu_bar() {
         open_scene();
       }
       if (ImGui::BeginMenu("Recent Scenes")) {
-        if (recent_scenes_.empty()) {
+        if (recent_files_.get().empty()) {
           ImGui::BeginDisabled();
           ImGui::MenuItem("(no recent scenes)", nullptr, false, false);
           ImGui::EndDisabled();
         } else {
-          auto it = recent_scenes_.begin();
-          while (it != recent_scenes_.end()) {
+          auto it = recent_files_.get().begin();
+          while (it != recent_files_.get().end()) {
             if (ImGui::MenuItem(it->c_str())) {
               const std::string path = *it;
               auto loaded = SceneLibrary::load_scene(path);
               if (loaded) {
                 scene_ = std::move(loaded);
+                wire_scene_dependencies();
                 current_scene_path_ = path;
                 reset_graph();
                 set_status_message("Scene loaded: " + scene_->name);
-                add_recent_scene(path);
-                save_recent_scenes();
-                if (!scene_->root_folders.empty() && !scene_->root_folders[0]->graphs.empty()) {
-                  load_graph_from_library(scene_->root_folders[0]->graphs[0]);
+                recent_files_.add(path);
+                recent_files_.save();
+                if (auto *first = graph_scene_sync_->find_first_graph()) {
+                  load_graph_from_library(*first);
                 }
               } else {
                 spdlog::warn("Recent scene not found, removing: {}", path);
-                recent_scenes_.erase(it);
-                save_recent_scenes();
+                recent_files_.remove(path);
+                recent_files_.save();
                 set_status_message("Recent scene not found");
               }
               break;
@@ -443,94 +364,6 @@ void SceneEditorUI::render_menu_bar() {
   }
 }
 
-void SceneEditorUI::render_graph_library_panel() {
-  if (ImGui::Begin("Graph Library")) {
-    if (ImGui::Button(ICON_FA_FOLDER_PLUS "  New folder")) {
-      [[maybe_unused]] auto *folder = scene_->add_folder(nullptr, "New Folder");
-    }
-
-    ImGui::SameLine();
-
-    if (ImGui::Button(ICON_FA_DIAGRAM_PROJECT "  New graph")) {
-      GraphFolder *folder = nullptr;
-      if (!scene_->root_folders.empty()) {
-        folder = scene_->root_folders[0].get();
-      }
-
-      if (folder) {
-        [[maybe_unused]] auto *ref = add_graph_in_folder(*folder);
-      }
-    }
-
-    ImGui::Separator();
-
-    render_folder_tree(scene_->root_folders);
-  }
-
-  ImGui::End();
-
-  if (is_renaming_.load(std::memory_order_acquire)) {
-    ImGui::OpenPopup("RenamePopup");
-  }
-
-  if (ImGui::BeginPopup("RenamePopup")) {
-    static char name_buffer[256];
-
-    // Focus the text input when the popup opens
-    if (ImGui::IsWindowAppearing()) {
-      ImGui::SetKeyboardFocusHere();
-      // Upon popping up the rename popup, fill the buffer with the current name
-      switch (rename_target_) {
-        case RenameTargetScene:
-          strncpy(name_buffer, scene_->name.c_str(), sizeof(name_buffer));
-          break;
-        case RenameTargetFolder: {
-          if (const auto *folder = scene_->find_folder(rename_target_id_)) {
-            strncpy(name_buffer, folder->name.c_str(), sizeof(name_buffer));
-          }
-          break;
-        }
-        case RenameTargetGraph: {
-          if (const auto *graph = scene_->find_graph(rename_target_id_)) {
-            strncpy(name_buffer, graph->name.c_str(), sizeof(name_buffer));
-          }
-          break;
-        }
-        default:
-          name_buffer[0] = '\0';
-          break;
-      }
-    }
-
-    ImGui::InputText("##renameNewName", name_buffer, sizeof(name_buffer));
-
-    ImGui::SameLine();
-
-    ImGui::BeginDisabled(strlen(name_buffer) == 0);
-    if (ImGui::Button("OK")) {
-      const std::string new_name(name_buffer);
-      switch (rename_target_) {
-        case RenameTargetScene:
-          scene_->name = new_name;
-          break;
-        case RenameTargetFolder:
-          scene_->rename_folder(rename_target_id_, new_name);
-          break;
-        case RenameTargetGraph:
-          scene_->rename_graph(rename_target_id_, new_name);
-          break;
-        default:
-          break;
-      }
-      ImGui::CloseCurrentPopup();
-      is_renaming_.store(false, std::memory_order_release);
-    }
-    ImGui::EndDisabled();
-
-    ImGui::EndPopup();
-  }
-}
-
 static constexpr auto kAudioFileFilter =
   ".mod,.xm,.mp3";
 
@@ -575,12 +408,18 @@ void SceneEditorUI::render_timeline() {
       }
     }
 
-    sync_audio_playback();
+    audio_playback::sync(
+      scene_->audio_tracks,
+      to_audio_segments(*scene_),
+      scene_->fps,
+      current_frame_,
+      flowing
+    );
 
     ImGui::Separator();
 
     static bool expanded = true;
-    ImSequencer::Sequencer(this,
+    ImSequencer::Sequencer(timeline_controller_.get(),
                            &current_frame_, &expanded,
                            &selected_segment_,
                            &first_frame,
@@ -607,34 +446,6 @@ void SceneEditorUI::open_audio_track_dialog() {
   cfg.path = ".";
   ImGuiFileDialog::Instance()->OpenDialog(
     kImportAudioDialogKey, "Import Audio Track", kAudioFileFilter, cfg);
-}
-
-void SceneEditorUI::sync_audio_playback() {
-  const bool flowing = is_time_flowing.load(std::memory_order_acquire);
-  const double current_time_s = static_cast<double>(current_frame_) / scene_->fps;
-
-  for (const auto &seg: scene_->timeline) {
-    if (seg.type != SegmentType::AUDIO || seg.audio_track_index < 0) continue;
-
-    auto *track = scene_->get_audio_track(static_cast<size_t>(seg.audio_track_index));
-    if (!track || !track->player) continue;
-
-    const double seg_start_s = static_cast<double>(seg.frame_start) / scene_->fps;
-    const double seg_end_s = static_cast<double>(seg.frame_end) / scene_->fps;
-    const bool in_range = flowing && current_time_s >= seg_start_s && current_time_s < seg_end_s;
-
-    if (in_range) {
-      const double track_offset_s = current_time_s - seg_start_s + track->start_seconds;
-      if (track->player->get_playback_state() != PlaybackState::PLAYING) {
-        track->player->play();
-      }
-      track->player->seek(track_offset_s * 1000.0);
-    } else {
-      if (track->player->get_playback_state() == PlaybackState::PLAYING) {
-        track->player->pause();
-      }
-    }
-  }
 }
 
 void SceneEditorUI::render_top_status_bar() {
@@ -667,63 +478,9 @@ void SceneEditorUI::render_top_status_bar() {
   }
 }
 
-void SceneEditorUI::Get(const int index, int **start, int **end, int *type, unsigned int *color) {
-  if (index < 0 || index >= static_cast<int>(scene_->timeline.size())) {
-    return;
-  }
-
-  const TimelineSegment &segment = scene_->timeline[static_cast<size_t>(index)];
-  if (start)
-    *start = const_cast<int *>(&segment.frame_start);
-  if (end)
-    *end = const_cast<int *>(&segment.frame_end);
-  if (type)
-    *type = static_cast<int>(segment.type);
-  if (color)
-    *color = segment.color;
-}
-
-const char *SceneEditorUI::GetItemLabel(const int index) const {
-  if (index < 0 || index >= static_cast<int>(scene_->timeline.size())) {
-    return "";
-  }
-  const auto &seg = scene_->timeline[static_cast<size_t>(index)];
-  if (seg.type == SegmentType::GRAPH) {
-    const auto *graph = scene_->find_graph(seg.graph_id);
-    return graph ? graph->name.c_str() : "(unknown graph)";
-  }
-  const auto *track = scene_->get_audio_track(static_cast<size_t>(seg.audio_track_index));
-  return track ? track->title.c_str() : "(unknown audio)";
-}
-
-void SceneEditorUI::Add(int type) {
-  if (type == static_cast<int>(SegmentType::AUDIO)) {
-    const TimelineSegment segment(0, 100, 0);
-    scene_->add_timeline_segment(segment);
-  } else {
-    const TimelineSegment segment(0, 100, "");
-    scene_->add_timeline_segment(segment);
-  }
-}
-
-void SceneEditorUI::Del(const int index) {
-  if (index >= 0 && index < static_cast<int>(scene_->timeline.size())) {
-    scene_->remove_timeline_segment(static_cast<size_t>(index));
-  }
-}
-
-void SceneEditorUI::Duplicate(const int index) {
-  if (index >= 0 && index < static_cast<int>(scene_->timeline.size())) {
-    const TimelineSegment &original = scene_->timeline[static_cast<size_t>(index)];
-    TimelineSegment copy = original;
-    copy.frame_start = original.frame_end;
-    copy.frame_end = original.frame_end + (original.frame_end - original.frame_start);
-    scene_->add_timeline_segment(copy);
-  }
-}
-
 void SceneEditorUI::new_scene() {
   scene_ = std::make_unique<Scene>("New Scene");
+  wire_scene_dependencies();
   current_scene_path_.clear();
   current_frame_ = 0;
   selected_segment_ = -1;
@@ -750,8 +507,8 @@ void SceneEditorUI::save_scene() {
   if (scene_library_->save_scene(*scene_, current_scene_path_)) {
     scene_->dirty = false;
     set_status_message("Scene saved");
-    add_recent_scene(current_scene_path_);
-    save_recent_scenes();
+    recent_files_.add(current_scene_path_);
+    recent_files_.save();
   }
 }
 
@@ -763,8 +520,7 @@ void SceneEditorUI::save_scene_as() {
 
 void SceneEditorUI::save_current_graph() {
   if (current_graph_ref) {
-    scene_->graph_data[current_graph_ref->id] = JsonGraphSerializer::serialize_graph(graph);
-    current_graph_ref->dirty = false;
+    graph_scene_sync_->sync_graph(*current_graph_ref, graph);
     set_status_message("Graph saved: " + current_graph_ref->name);
   }
 }
@@ -772,23 +528,15 @@ void SceneEditorUI::save_current_graph() {
 void SceneEditorUI::load_graph_from_library(GraphReference &graph_ref) {
   current_graph_ref = &graph_ref;
 
-  const auto it = scene_->graph_data.find(graph_ref.id);
-  if (it == scene_->graph_data.end() || it->second.is_null()) {
+  auto loaded_graph = graph_scene_sync_->load_graph(graph_ref);
+  if (!loaded_graph) {
     reset_graph();
     set_status_message("Empty graph: " + graph_ref.name);
     return;
   }
 
-  NodeGraph loaded_graph;
-  const auto result = JsonGraphSerializer::deserialize_graph(loaded_graph, it->second);
-  if (!result) {
-    spdlog::error("Failed to deserialize graph '{}': {}", graph_ref.name, result.error_message);
-    set_status_message("Failed to load graph " + graph_ref.name);
-    return;
-  }
-
   command_history.clear();
-  graph = std::move(loaded_graph);
+  graph = std::move(*loaded_graph);
   node_pos_refresh = true;
 
   // Find time and output nodes in the loaded graph
@@ -812,9 +560,10 @@ void SceneEditorUI::load_graph_from_library(GraphReference &graph_ref) {
 
 GraphReference *SceneEditorUI::add_graph_in_folder(GraphFolder &folder,
                                                    const std::string_view graph_name) {
-  auto *ref = scene_->add_graph(folder, std::string(graph_name));
-  scene_->graph_data[ref->id] = nullptr;
-  load_graph_from_library(*ref);
+  auto *ref = graph_scene_sync_->add_graph(folder, graph_name);
+  if (ref) {
+    load_graph_from_library(*ref);
+  }
   return ref;
 }
 
@@ -831,41 +580,4 @@ std::filesystem::path SceneEditorUI::get_recent_scenes_path() {
   }
   std::filesystem::create_directories(dir);
   return dir / kRecentScenesFile;
-}
-
-void SceneEditorUI::load_recent_scenes() {
-  const auto path = get_recent_scenes_path();
-  std::ifstream file(path);
-  if (!file.is_open()) return;
-  try {
-    nlohmann::json j;
-    file >> j;
-    recent_scenes_ = j.get<std::vector<std::string>>();
-    // Prune non-existent files
-    std::erase_if(recent_scenes_, [](const std::string &p) { return !std::filesystem::exists(p); });
-  } catch (...) {
-    recent_scenes_.clear();
-  }
-}
-
-void SceneEditorUI::save_recent_scenes() {
-  const auto path = get_recent_scenes_path();
-  nlohmann::json j = recent_scenes_;
-  std::ofstream file(path);
-  if (file.is_open()) {
-    file << j.dump(2);
-  }
-}
-
-void SceneEditorUI::add_recent_scene(const std::string &path) {
-  // Move to front (remove duplicate if exists)
-  auto it = std::find(recent_scenes_.begin(), recent_scenes_.end(), path);
-  if (it != recent_scenes_.end()) {
-    recent_scenes_.erase(it);
-  }
-  recent_scenes_.insert(recent_scenes_.begin(), path);
-  // Trim to max
-  if (static_cast<int>(recent_scenes_.size()) > kMaxRecentScenes) {
-    recent_scenes_.resize(kMaxRecentScenes);
-  }
 }

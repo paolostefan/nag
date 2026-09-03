@@ -9,33 +9,20 @@
 #include "ImSequencer.h"
 #include "imnodes.h"
 #include "editor/graph_editor_ui.h"
+#include "editor/graph_library_panel.h"
+#include "editor/graph_scene_sync.h"
+#include "editor/recent_files_manager.h"
 #include "editor/scene.h"
 #include "editor/scene_library.h"
+#include "editor/timeline_controller.h"
 
-class SceneEditorUI : public GraphEditorUI, public ImSequencer::SequenceInterface {
+class SceneEditorUI : public GraphEditorUI {
 public:
   SceneEditorUI();
 
   void render_top_status_bar();
 
   ~SceneEditorUI() override = default;
-
-  [[nodiscard]] int GetFrameMin() const override { return 0; }
-  [[nodiscard]] int GetFrameMax() const override { return scene_->total_frames; }
-  [[nodiscard]] int GetItemCount() const override { return static_cast<int>(scene_->timeline.size()); }
-  [[nodiscard]] int GetItemTypeCount() const override { return 2; }
-  [[nodiscard]] const char *GetItemTypeName(int type_index) const override {
-    return type_index == 0 ? "Graph" : "Audio";
-  }
-  [[nodiscard]] const char *GetItemLabel(int index) const override;
-
-  void Get(int index, int **start, int **end, int *type, unsigned int *color) override;
-
-  void Add(int type) override;
-
-  void Del(int index) override;
-
-  void Duplicate(int index) override;
 
 protected:
   void render_ui() override;
@@ -45,15 +32,14 @@ protected:
 private:
   void handle_keyboard_shortcuts();
 
-  void render_folder_tree(const std::vector<std::unique_ptr<GraphFolder> > &folders);
-
-  void render_graph_library_panel();
-
   void render_menu_bar() override;
 
   void render_timeline();
 
   void new_scene();
+
+  /// @brief Rebind scene-dependent modules (timeline, sync, library panel) to scene_.
+  void wire_scene_dependencies();
 
   static void open_scene();
 
@@ -71,13 +57,7 @@ private:
 
   void open_audio_track_dialog();
 
-  void sync_audio_playback();
-
   // ── Recent Scenes ───────────────────────────────────────────────────────────
-  void add_recent_scene(const std::string &path);
-  void load_recent_scenes();
-  void save_recent_scenes();
-
   [[nodiscard]] static std::filesystem::path get_recent_scenes_path();
 
   void on_graph_modified() override;
@@ -91,15 +71,12 @@ private:
   static constexpr auto kSaveSceneDialogKey{"SaveSceneDlg"};
   static constexpr auto kOpenSceneDialogKey{"OpenSceneDialogKey"};
   static constexpr auto kImportAudioDialogKey{"ImportAudioDlg"};
-
-  static constexpr int kMaxRecentScenes{10};
   static constexpr auto kRecentScenesFile{"nag_recent.json"};
 
   std::string current_scene_path_;
-  std::vector<std::string> recent_scenes_;
+  RecentFilesManager recent_files_;
 
-  /// Graph ID pending confirmation for deletion
-  std::string pending_delete_graph_id_;
+  std::unique_ptr<TimelineController> timeline_controller_;
 
   /// @brief The currently loaded scene.
   /// The editor operates on this scene, and it can be replaced when loading a new scene or creating a new one.
@@ -108,34 +85,21 @@ private:
   /// The scene library manages loading/saving scenes and graphs, and provides a list of available graphs for the library panel.
   std::unique_ptr<SceneLibrary> scene_library_;
 
+  /// @brief Graph<->scene data movement.
+  std::unique_ptr<GraphSceneSync> graph_scene_sync_;
+
+  /// @brief Graph library dock panel.
+  std::unique_ptr<GraphLibraryPanel> graph_library_panel_;
+
   /// The currently selected graph reference from the library panel. This is used to determine which graph to load into the editor when a graph is selected.
   GraphReference *current_graph_ref{nullptr};
-
-  /// Stores the ID of the item being renamed (folder ID or graph ID)
-  const char *rename_target_id_{nullptr};
-
-  IdGenerator graph_id_generator;
 
   int selected_segment_{-1};
   int current_frame_{0};
   int first_frame{0};
 
-  int expanded_folders_[64]{};
-  int expanded_folder_count_{0};
-
-  /// Used to prevent multiple rename popups from opening simultaneously
-  std::atomic<bool> is_renaming_{false};
-
   /// True when quitting while scene is dirty — triggers confirmation dialog
   std::atomic<bool> quit_requested_{false};
-
-  /// Tracks what type of item is currently being renamed (scene, folder, or graph)
-  enum {
-    RenameTargetNone,
-    RenameTargetScene,
-    RenameTargetFolder,
-    RenameTargetGraph
-  } rename_target_{RenameTargetNone};
 
 };
 

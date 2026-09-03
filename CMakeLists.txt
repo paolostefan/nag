@@ -256,12 +256,17 @@ add_library(nag_editor_lib
     src/_3rd_party/ImGuizmo/ImSequencer.cpp
     src/_3rd_party/imnodes/imnodes.cpp
     src/editor/command_history.cc
+    src/editor/audio_playback_controller.cc
     src/editor/graph_commands.cc
     src/editor/graph_editor_ui.cc
+    src/editor/graph_library_panel.cc
+    src/editor/graph_scene_sync.cc
     src/editor/node_properties_panel.cc
     src/editor/preview_window.cc
+    src/editor/recent_files_manager.cc
     src/editor/scene.cc
     src/editor/scene_library.cc
+    src/editor/timeline_controller.cc
     src/editor/toast_manager.cc
     src/editor/ui_window.cc
     src/editor/graph_editor.cc

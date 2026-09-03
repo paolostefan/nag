@@ -42,11 +42,16 @@ add_executable(
     editor_tests
     timeline_json_test.cc
     timeline_test.cc
+    recent_files_manager_test.cc
+    audio_playback_controller_test.cc
+    timeline_controller_test.cc
+    graph_scene_sync_test.cc
 )
 
 target_link_libraries(
     editor_tests
     GTest::gtest_main
+    nag_engine_lib
     nag_editor_lib
 )
 
