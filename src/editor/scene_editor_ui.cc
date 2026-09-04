@@ -45,8 +45,8 @@ SceneEditorUI::SceneEditorUI()
   current_graph_ref->dirty = true;
 
   // Add a time node and an output node to the default graph to avoid starting with an empty graph
-  time_node = reinterpret_cast<TimeNode *>(spawn_node(NodeType::Time, ImVec2(100, 100)));
-  output_node = reinterpret_cast<OutputNode *>(spawn_node(NodeType::Output, ImVec2(300, 100)));
+  time_node = reinterpret_cast<TimeNode *>(spawn_node(NodeType::Time, 100.f, 100.f));
+  output_node = reinterpret_cast<OutputNode *>(spawn_node(NodeType::Output, 300.f, 100.f));
 
   // Enable history after initial setup to avoid polluting the command history with setup actions
   history_enabled.store(true, std::memory_order_release);

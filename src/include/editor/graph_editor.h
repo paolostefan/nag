@@ -46,7 +46,7 @@ protected:
    *
    * @return The newly created node, or nullptr if creation failed (e.g. unknown type).
    */
-  Node *spawn_node(NodeType type, const ImVec2 &position);
+  Node *spawn_node(NodeType type, float gui_x, float gui_y);
 
   /**
    * @brief Deletes specified nodes and their associated links.

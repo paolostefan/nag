@@ -166,8 +166,8 @@ void GraphEditorUI::duplicate_selected_nodes() {
 
     [[maybe_unused]] auto res = new_node->deserialize_params(old_node->serialize_params());
     new_node->name = old_node->name;
-    new_node->gui_xy.x = old_node->gui_xy.x + kOffset;
-    new_node->gui_xy.y = old_node->gui_xy.y + kOffset;
+    new_node->gui_x = old_node->gui_x + kOffset;
+    new_node->gui_y = old_node->gui_y + kOffset;
 
     if (auto *vis = dynamic_cast<VisualNode *>(new_node.get())) {
       if (auto *old_vis = dynamic_cast<VisualNode *>(old_node)) {
@@ -233,7 +233,7 @@ void GraphEditorUI::render_node_editor() {
     for (const auto &node: graph.nodes) {
       // ReSharper disable once CppDFAConstantConditions
       if (refresh_gui_xys) {
-        ImNodes::SetNodeScreenSpacePos(node->id, node->gui_xy);
+        ImNodes::SetNodeScreenSpacePos(node->id, {node->gui_x, node->gui_y});
       }
 
       ImNodes::BeginNode(node->id);
@@ -360,9 +360,11 @@ void GraphEditorUI::render_node_editor() {
 
     ImNodes::EndNodeEditor();
 
-    // Sync ImNodes gui_xys back into node data every frame
+    // Sync ImNodes positions back into node data every frame
     for (const auto &node: graph.nodes) {
-      node->gui_xy = ImNodes::GetNodeScreenSpacePos(node->id);
+      const auto pos = ImNodes::GetNodeScreenSpacePos(node->id);
+      node->gui_x = pos.x;
+      node->gui_y = pos.y;
     }
 
     // ── Detect Right Click on Canvas ───────────────────────────────────────────
@@ -597,7 +599,7 @@ void GraphEditorUI::render_context_menu() {
 
         // Menu item Tooltip
         if (ImGui::MenuItem(info->display_name.c_str())) {
-          spawn_node(type, spawn_pos);
+          spawn_node(type, spawn_pos.x, spawn_pos.y);
           ImNodes::ClearNodeSelection();
           node_pos_refresh.store(true, std::memory_order_release);
           on_graph_modified();

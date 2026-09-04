@@ -230,7 +230,7 @@ json JsonGraphSerializer::serialize_node(const Node *node) {
   j["id"] = node->id;
   j["type"] = node->type_name();
   j["name"] = node->name;
-  j["gui_xy"] = {node->gui_xy.x, node->gui_xy.y};
+  j["gui_xy"] = {node->gui_x, node->gui_y};
 
   j["params"] = node->serialize_params();
 
@@ -254,10 +254,10 @@ std::unique_ptr<Node> JsonGraphSerializer::deserialize_node(const json &j) {
   }
   const std::string name = j.value("name", "<unnamed>");
 
-  ImVec2 gui_xy{0.f, 0.f};
+  float gui_x = 0.f, gui_y = 0.f;
   if (j.contains("gui_xy") && j["gui_xy"].is_array() && j["gui_xy"].size() >= 2) {
-    gui_xy.x = j["gui_xy"][0];
-    gui_xy.y = j["gui_xy"][1];
+    gui_x = j["gui_xy"][0];
+    gui_y = j["gui_xy"][1];
   }
 
   // Create node via registry
@@ -269,7 +269,8 @@ std::unique_ptr<Node> JsonGraphSerializer::deserialize_node(const json &j) {
 
   // Set basic properties
   node->name = name;
-  node->gui_xy = gui_xy;
+  node->gui_x = gui_x;
+  node->gui_y = gui_y;
 
   // Deserialize parameters using virtual method
   if (j.contains("params")) {

@@ -90,7 +90,8 @@ TEST_F(NodeSerializationTest, SaveAndLoadSingleNode) {
   // Create LFO node
   auto lfo = LFONode::create(2.5f, 1.f, LFONode::WaveShape::Sawtooth, 0.5f, 0.1f);
   lfo->name = "Test LFO";
-  lfo->gui_xy = {100.f, 200.f};
+  lfo->gui_x = 100.f;
+  lfo->gui_y = 200.f;
   const uint64_t original_id = lfo->id;
 
   graph.add_node(std::move(lfo));
@@ -118,8 +119,8 @@ TEST_F(NodeSerializationTest, SaveAndLoadSingleNode) {
   EXPECT_EQ(loaded_node->wave_shape, LFONode::WaveShape::Sawtooth);
   EXPECT_FLOAT_EQ(loaded_node->phase, 0.5f);
   EXPECT_FLOAT_EQ(loaded_node->offset, 0.1f);
-  EXPECT_FLOAT_EQ(loaded_node->gui_xy.x, 100.f);
-  EXPECT_FLOAT_EQ(loaded_node->gui_xy.y, 200.f);
+  EXPECT_FLOAT_EQ(loaded_node->gui_x, 100.f);
+  EXPECT_FLOAT_EQ(loaded_node->gui_y, 200.f);
 
   // ID should be different (regenerated)
   EXPECT_NE(loaded_node->id, original_id);
@@ -576,7 +577,8 @@ TEST_F(NodeSerializationTest, MultiInputNode) {
 TEST_F(NodeSerializationTest, NodeSerializeBaseParams) {
   const auto node = TimeNode::create();
   node->name = "MyTime";
-  node->gui_xy = {12.5f, 34.7f};
+  node->gui_x = 12.5f;
+  node->gui_y = 34.7f;
 
   const auto j = JsonGraphSerializer::serialize_node(node.get());
 
@@ -591,7 +593,8 @@ TEST_F(NodeSerializationTest, NodeSerializeBaseParams) {
 TEST_F(NodeSerializationTest, NodeRoundTripPreservesPositionAndName) {
   const auto node = ConstantFloatNode::create(3.14f);
   node->name = "Pi";
-  node->gui_xy = {320.f, 240.f};
+  node->gui_x = 320.f;
+  node->gui_y = 240.f;
 
   const auto j = JsonGraphSerializer::serialize_node(node.get());
   const auto loaded = JsonGraphSerializer::deserialize_node(j);
@@ -599,8 +602,8 @@ TEST_F(NodeSerializationTest, NodeRoundTripPreservesPositionAndName) {
 
   EXPECT_EQ(loaded->name, "Pi");
   EXPECT_EQ(loaded->type, NodeType::Constant);
-  EXPECT_FLOAT_EQ(loaded->gui_xy.x, 320.f);
-  EXPECT_FLOAT_EQ(loaded->gui_xy.y, 240.f);
+  EXPECT_FLOAT_EQ(loaded->gui_x, 320.f);
+  EXPECT_FLOAT_EQ(loaded->gui_y, 240.f);
 }
 
 TEST_F(NodeSerializationTest, NodeMissingPositionDefaultsToZero) {
@@ -612,8 +615,8 @@ TEST_F(NodeSerializationTest, NodeMissingPositionDefaultsToZero) {
 
   auto loaded = JsonGraphSerializer::deserialize_node(j);
   ASSERT_NE(loaded, nullptr);
-  EXPECT_FLOAT_EQ(loaded->gui_xy.x, 0.f);
-  EXPECT_FLOAT_EQ(loaded->gui_xy.y, 0.f);
+  EXPECT_FLOAT_EQ(loaded->gui_x, 0.f);
+  EXPECT_FLOAT_EQ(loaded->gui_y, 0.f);
 }
 
 // ============================================================================
@@ -707,7 +710,8 @@ TEST_F(NodeSerializationTest, MandelNodeRoundTripPreservesValues) {
     500
   );
   node->name = "DeepZoom";
-  node->gui_xy = {100.f, 50.f};
+  node->gui_x = 100.f;
+  node->gui_y = 50.f;
   ASSERT_TRUE(node->initialize(800, 600));
 
   const auto node_json = JsonGraphSerializer::serialize_node(node.get());
@@ -716,8 +720,8 @@ TEST_F(NodeSerializationTest, MandelNodeRoundTripPreservesValues) {
 
   EXPECT_EQ(loaded->name, "DeepZoom");
   EXPECT_EQ(loaded->type, NodeType::Mandel);
-  EXPECT_FLOAT_EQ(loaded->gui_xy.x, 100.f);
-  EXPECT_FLOAT_EQ(loaded->gui_xy.y, 50.f);
+  EXPECT_FLOAT_EQ(loaded->gui_x, 100.f);
+  EXPECT_FLOAT_EQ(loaded->gui_y, 50.f);
 
   auto *mandel = dynamic_cast<MandelNode *>(loaded.get());
   ASSERT_NE(mandel, nullptr);

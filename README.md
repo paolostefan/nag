@@ -5,7 +5,7 @@ A simple SDL2 demo engine.
 ## @FIXME && @TODO
 
 - [ ] Nodes: add mandelbrot and julia set nodes
-- [ ] Graph editor: for texture-output nodes, add the texture size in pixels in the node body
+- [ ] Graph editor: for texture outputs, add the texture size in pixels in the node body
 - [ ] Add an MCP server to allow remote control of the engine (e.g. for live coding)
 - [ ] Scene editor: time nodes should get their values from the current timeline position
 - [ ] Scene editor: add a "Recent scenes" submenu
@@ -68,3 +68,5 @@ the above, I learned that the English word "nag" has a completely different mean
 The FontStruction “Amiga Topaz” (https://fontstruct.com/fontstructions/show/675155) by Patrick H. Lauke is licensed
 under a Creative Commons Attribution license (http://creativecommons.org/licenses/by/3.0/).
 [ancestry]
+
+
