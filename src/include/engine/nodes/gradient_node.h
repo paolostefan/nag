@@ -3,7 +3,6 @@
 
 #include <memory>
 
-#include "engine/property_widget.h"
 #include "nlohmann/json.hpp"
 
 #include "engine/nodes/shader_node.h"
@@ -110,44 +109,6 @@ struct GradientNode : ShaderNode {
 
     node->add_output(DataType::Texture, "texture");
     return node;
-  }
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    static constexpr const char *types[] = {"Linear", "Radial", nullptr};
-    // Gradient type
-    int gradient_type_int = static_cast<int>(gradient_type);
-
-    PropertyWidget::Combo("Gradient type",
-                          /* node_id=*/ id,
-                          /* value=*/ gradient_type_int,
-                          /* items=*/ types,
-                          /* item_count=*/ 2,
-                          /* setter=*/[](Node &n, int v) {
-                            dynamic_cast<GradientNode &>(n).gradient_type = static_cast<Type>(v);
-                          },
-                          graph, history);
-
-    gradient_type = static_cast<Type>(gradient_type_int);
-
-    auto *color_start_vec4 = reinterpret_cast<ImVec4 *>(&color_start);
-    PropertyWidget::ColorEdit4("Start color",
-                               /* node_id=*/ id,
-                               /* value=*/ *color_start_vec4,
-                               /* setter =*/[](Node &n, const ImVec4 &col) {
-                                 dynamic_cast<GradientNode &>(n).color_start = col;
-                               },
-                               graph, history
-    );
-
-    auto *color_end_vec4 = reinterpret_cast<ImVec4 *>(&color_end);
-    PropertyWidget::ColorEdit4("End color",
-                               /* node_id=*/ id,
-                               /* value=*/ *color_end_vec4,
-                               /* setter =*/[](Node &n, const ImVec4 &col) {
-                                 dynamic_cast<GradientNode &>(n).color_end = col;
-                               },
-                               graph, history
-    );
   }
 
   void update_from_inputs() override {

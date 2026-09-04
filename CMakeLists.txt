@@ -216,7 +216,6 @@ add_library(nag_engine_lib
     src/engine/temporal_nodes_registry.cc
     src/engine/visual_nodes_registry.cc
     ${GENERATED_SHADER_HEADERS}
-    src/engine/property_widget.cc
 )
 
 target_include_directories(nag_engine_lib PUBLIC
@@ -262,7 +261,9 @@ add_library(nag_editor_lib
     src/editor/graph_library_panel.cc
     src/editor/graph_scene_sync.cc
     src/editor/node_properties_panel.cc
+    src/editor/node_properties_renderers.cc
     src/editor/preview_window.cc
+    src/editor/property_widget.cc
     src/editor/recent_files_manager.cc
     src/editor/scene.cc
     src/editor/scene_library.cc

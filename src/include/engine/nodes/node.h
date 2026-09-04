@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-#include "imgui.h"
 #include "nlohmann/json.hpp"
 
 #include "engine/data_type.h"
@@ -13,7 +12,6 @@
 #include "engine/operation_result.h"
 #include "engine/stream.h"
 
-class CommandHistory;
 struct NodeGraph;
 
 enum PinDirection : uint8_t {
@@ -159,11 +157,6 @@ struct Node {
     }
 
     return OperationResult::ok();
-  }
-
-  virtual void draw_properties(NodeGraph &graph, CommandHistory &history) {
-    (void) graph;
-    (void) history;
   }
 
   [[nodiscard]] virtual float get_param(const std::string &param_name) const {

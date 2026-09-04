@@ -2,7 +2,6 @@
 #define NAG_ENGINE_COLOR_CORRECTION_NODE_H
 
 #include "engine/nodes/shader_node.h"
-#include "engine/property_widget.h"
 #include "shaders/color_correction_frag.h"
 
 /**
@@ -75,38 +74,6 @@ struct ColorCorrectionNode : ShaderNode {
       return OperationResult::error(
         std::string("Failed to deserialize ColorCorrectionNode params: ") + e.what());
     }
-  }
-
-  // ── Properties panel ──────────────────────────────────────────────────────
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat("Brightness", id,
-                                brightness,
-                                [](Node &n, const float v) { dynamic_cast<ColorCorrectionNode &>(n).brightness = v; },
-                                graph, history,
-                                /*min=*/-1.f, /*max=*/1.f, /*format=*/"%.2f",
-                                /*disabled=*/get_input("brightness")->connected);
-
-    PropertyWidget::SliderFloat("Contrast", id,
-                                contrast,
-                                [](Node &n, const float v) { dynamic_cast<ColorCorrectionNode &>(n).contrast = v; },
-                                graph, history,
-                                /*min=*/0.f, /*max=*/4.f, /*format=*/"%.2f",
-                                /*disabled=*/get_input("contrast")->connected);
-
-    PropertyWidget::SliderFloat("Saturation", id,
-                                saturation,
-                                [](Node &n, const float v) { dynamic_cast<ColorCorrectionNode &>(n).saturation = v; },
-                                graph, history,
-                                /*min=*/0.f, /*max=*/2.f, /*format=*/"%.2f",
-                                /*disabled=*/get_input("saturation")->connected);
-
-    PropertyWidget::SliderFloat("Hue shift", id,
-                                hue_shift,
-                                [](Node &n, const float v) { dynamic_cast<ColorCorrectionNode &>(n).hue_shift = v; },
-                                graph, history,
-                                /*min=*/0.f, /*max=*/6.2832f, /*format=*/"%.2f",
-                                /*disabled=*/get_input("hue_shift")->connected);
   }
 
   void update_from_inputs() override {

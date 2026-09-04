@@ -1,7 +1,6 @@
 #ifndef NAG_ENGINE_CIRCLE_NODE_H
 #define NAG_ENGINE_CIRCLE_NODE_H
 
-#include "engine/property_widget.h"
 #include "engine/nodes/shader_node.h"
 #include "engine/visual_types.h"
 #include "shaders/circle_frag.h"
@@ -74,31 +73,6 @@ struct CircleNode : ShaderNode {
         std::string("Failed to deserialize CircleNode params: ") + e.what()
       );
     }
-  }
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    auto *color_ = reinterpret_cast<ImVec4 *>(&color);
-    PropertyWidget::ColorEdit4("Color",
-                               /* node_id=*/ id,
-                               /* value=*/ *color_,
-                               /* setter =*/[](Node &n, const ImVec4 &col) {
-                                 dynamic_cast<CircleNode &>(n).color = col;
-                               },
-                               graph, history
-    );
-
-    // ------------------------------------------------------------------
-    // Edge smoothness — slider with range [0, 1]
-    // ------------------------------------------------------------------
-    PropertyWidget::SliderFloat(
-      "Edge smoothness",
-      /*node_id=*/id,
-      /*value=*/edge_smoothness,
-      /*setter=*/[](Node &n, const float v) {
-        dynamic_cast<CircleNode &>(n).edge_smoothness = v;
-      },
-      graph, history,
-      /*min=*/0.f, /*max=*/1.f);
   }
 
   void update_from_inputs() override {

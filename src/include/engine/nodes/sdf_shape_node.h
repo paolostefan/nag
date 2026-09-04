@@ -2,7 +2,6 @@
 #define NAG_ENGINE_SDF_SHAPE_NODE_H
 
 #include "engine/nodes/shader_node.h"
-#include "engine/property_widget.h"
 #include "engine/visual_types.h"
 #include "shaders/sdf_shape_frag.h"
 
@@ -100,37 +99,6 @@ struct SDFShapeNode : ShaderNode {
       return OperationResult::error(
         std::string("Failed to deserialize SDFShapeNode params: ") + e.what());
     }
-  }
-
-  // ── Properties panel ──────────────────────────────────────────────────────
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    // Shape selector
-    static constexpr const char *kShapes[] = {"Circle", "Box", "Ring"};
-    int                          shape_idx = static_cast<int>(shape);
-    if (ImGui::Combo("Shape", &shape_idx, kShapes, 3)) {
-      shape = static_cast<Shape>(shape_idx);
-    }
-
-    // Shape-specific parameters
-    if (shape == Shape::Box) {
-      ImGui::DragFloat("Aspect ratio", &aspect, 0.01f, 0.1f, 10.f, "%.2f");
-    }
-    if (shape == Shape::Ring) {
-      ImGui::DragFloat("Ring thickness", &ring_thickness, 0.005f, 0.01f, 1.f, "%.3f");
-    }
-
-    auto *color_ = reinterpret_cast<ImVec4 *>(&color);
-    PropertyWidget::ColorEdit4("Color", id,
-                               *color_,
-                               [](Node &n, const ImVec4 &v) { dynamic_cast<SDFShapeNode &>(n).color = v; },
-                               graph, history);
-
-    PropertyWidget::SliderFloat("Edge smoothness", id,
-                                edge_smoothness,
-                                [](Node &n, const float v) { dynamic_cast<SDFShapeNode &>(n).edge_smoothness = v; },
-                                graph, history,
-                                /*min=*/0.f, /*max=*/1.f, /*format=*/"%.3f");
   }
 
   void update_from_inputs() override {

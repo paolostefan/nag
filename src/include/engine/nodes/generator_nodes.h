@@ -5,7 +5,6 @@
 #include <random>
 
 #include "engine/nodes/node.h"
-#include "engine/property_widget.h"
 
 /**
  * Node that outputs a constant float value.
@@ -36,17 +35,6 @@ struct ConstantFloatNode : Node {
   [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
     if (j.contains("value")) value = j["value"];
     return OperationResult::ok();
-  }
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat(
-      "Value",
-      id,
-      value,
-      [](Node &n, const float v) { dynamic_cast<ConstantFloatNode &>(n).value = v; },
-      graph, history,
-      -20.f, 20.f, "%.3f"
-    );
   }
 
   [[nodiscard]] float get_param(const std::string &param_name) const override {
@@ -153,33 +141,6 @@ struct NoiseNode : Node {
         std::string("Failed to deserialize Noise params: ") + e.what()
       );
     }
-  }
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat(
-      "Frequency",
-      id,
-      frequency,
-      [](Node &n, const float v) { dynamic_cast<NoiseNode &>(n).frequency = v; },
-      graph, history,
-      0.1f, 10.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Amplitude",
-      id,
-      amplitude,
-      [](Node &n, const float v) { dynamic_cast<NoiseNode &>(n).amplitude = v; },
-      graph, history,
-      0.f, 2.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Persistence",
-      id,
-      persistence,
-      [](Node &n, const float v) { dynamic_cast<NoiseNode &>(n).persistence = v; },
-      graph, history,
-      0.f, 1.f, "%.2f"
-    );
   }
 
   [[nodiscard]] float get_param(const std::string &param_name) const override {
@@ -290,32 +251,6 @@ struct RandomNode : Node {
         std::string("Failed to deserialize RandomNode params: ") + e.what()
       );
     }
-  }
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat(
-      "Min",
-      id,
-      min_value,
-      [](Node &n, const float v) { dynamic_cast<RandomNode &>(n).set_range(v, dynamic_cast<RandomNode &>(n).max_value); },
-      graph, history,
-      0.f, 1.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Max",
-      id,
-      max_value,
-      [](Node &n, const float v) { dynamic_cast<RandomNode &>(n).set_range(dynamic_cast<RandomNode &>(n).min_value, v); },
-      graph, history,
-      0.f, 1.f, "%.2f"
-    );
-    PropertyWidget::InputInt(
-      "Seed",
-      id,
-      seed,
-      [](Node &n, const int v) { dynamic_cast<RandomNode &>(n).set_seed(v); },
-      graph, history
-    );
   }
 
   static std::unique_ptr<RandomNode> create(

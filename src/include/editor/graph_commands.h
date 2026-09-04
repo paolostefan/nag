@@ -149,8 +149,10 @@ class MoveNodesCommand : public ICommand {
 public:
   struct NodePosition {
     int node_id{};
-    ImVec2 old_pos;
-    ImVec2 new_pos;
+    float old_x{0.f};
+    float old_y{0.f};
+    float new_x{0.f};
+    float new_y{0.f};
   };
 
   /**

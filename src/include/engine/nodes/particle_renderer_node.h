@@ -8,7 +8,6 @@
 
 #include "engine/nodes/visual_node.h"
 #include "engine/particles2d.h"
-#include "engine/property_widget.h"
 #include "engine/shader_manager.h"
 #include "shaders/particle_renderer_frag.h"
 #include "shaders/particle_renderer_vert.h"
@@ -125,49 +124,6 @@ struct ParticleRendererNode : VisualNode {
     if (j.contains("emitter_x")) emitter_x = j["emitter_x"];
     if (j.contains("emitter_y")) emitter_y = j["emitter_y"];
     return OperationResult::ok();
-  }
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat(
-      "Color Jitter", id, color_jitter,
-      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).color_jitter = v; },
-      graph, history, 0.f, 1.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Alpha Jitter", id, alpha_jitter,
-      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).alpha_jitter = v; },
-      graph, history, 0.f, 1.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Size Min", id, size_min,
-      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).size_min = v; },
-      graph, history, 0.5f, 50.f, "%.1f"
-    );
-    PropertyWidget::SliderFloat(
-      "Size Max", id, size_max,
-      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).size_max = v; },
-      graph, history, 0.5f, 50.f, "%.1f"
-    );
-    PropertyWidget::SliderFloat(
-      "Size Scatter", id, size_scatter,
-      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).size_scatter = v; },
-      graph, history, 0.f, 20.f, "%.1f"
-    );
-    PropertyWidget::SliderFloat(
-      "Global Scale", id, global_scale,
-      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).global_scale = v; },
-      graph, history, 0.01f, 10.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Emitter X", id, emitter_x,
-      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).emitter_x = v; },
-      graph, history, 0.f, 1.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Emitter Y", id, emitter_y,
-      [](Node &n, const float v) { dynamic_cast<ParticleRendererNode &>(n).emitter_y = v; },
-      graph, history, 0.f, 1.f, "%.2f"
-    );
   }
 
   static std::unique_ptr<Node> create() {

@@ -5,7 +5,6 @@
 
 #include "engine/nodes/node.h"
 #include "engine/particles2d.h"
-#include "engine/property_widget.h"
 
 struct ParticleEmitterNode : Node {
   std::mt19937 rng;
@@ -73,37 +72,6 @@ struct ParticleEmitterNode : Node {
       rng.seed(seed);
     }
     return OperationResult::ok();
-  }
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat(
-      "Rate",
-      id, rate,
-      [](Node &n, const float v) { dynamic_cast<ParticleEmitterNode &>(n).rate = v; },
-      graph, history,
-      0.1f, 500.f, "%.1f"
-    );
-    PropertyWidget::SliderFloat(
-      "Speed",
-      id, speed,
-      [](Node &n, const float v) { dynamic_cast<ParticleEmitterNode &>(n).speed = v; },
-      graph, history,
-      0.f, 1000.f, "%.1f"
-    );
-    PropertyWidget::SliderFloat(
-      "Min Life",
-      id, min_life,
-      [](Node &n, const float v) { dynamic_cast<ParticleEmitterNode &>(n).min_life = v; },
-      graph, history,
-      0.1f, 10.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Max Life",
-      id, max_life,
-      [](Node &n, const float v) { dynamic_cast<ParticleEmitterNode &>(n).max_life = v; },
-      graph, history,
-      0.1f, 10.f, "%.2f"
-    );
   }
 
   [[nodiscard]] float get_param(const std::string &param_name) const override {

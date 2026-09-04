@@ -1,7 +1,6 @@
 #ifndef NAG_ENGINE_ELLIPSE_NODE_H
 #define NAG_ENGINE_ELLIPSE_NODE_H
 
-#include "engine/property_widget.h"
 #include "engine/nodes/shader_node.h"
 #include "engine/visual_types.h"
 #include "shaders/ellipse_frag.h"
@@ -89,23 +88,6 @@ struct EllipseNode : ShaderNode {
       return OperationResult::error(
         std::string("Failed to deserialize EllipseNode params: ") + e.what());
     }
-  }
-
-  // ── Properties panel ──────────────────────────────────────────────────────
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    auto *color_ = reinterpret_cast<ImVec4 *>(&color);
-    PropertyWidget::ColorEdit4("Color", id,
-                               *color_,
-                               [](Node &n, const ImVec4 &v) { dynamic_cast<EllipseNode &>(n).color = v; },
-                               graph, history);
-
-    PropertyWidget::SliderFloat("Edge smoothness", id,
-                                edge_smoothness,
-                                [](Node &n, const float v) { dynamic_cast<EllipseNode &>(n).edge_smoothness = v; },
-                                graph, history,
-                                /*min=*/ 0.f, /*max=*/1.f,
-                                /*format=*/"%.3f");
   }
 
   // ── Factory ───────────────────────────────────────────────────────────────

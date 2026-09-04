@@ -1,9 +1,10 @@
 #ifndef NAG_ENGINE_PARTICLE_SYSTEM_NODE_H
 #define NAG_ENGINE_PARTICLE_SYSTEM_NODE_H
 
-#include <IconsFontAwesome6.h>
+#include <cstring>
 
 #include "engine/nodes/node.h"
+#include "spdlog/spdlog.h"
 
 struct ParticleSystemNode : Node {
   // Will be saved to the "pad" Pin member of added forces
@@ -237,108 +238,6 @@ struct ParticleSystemNode : Node {
   [[nodiscard]] float get_param(const std::string &/*param_name*/) const override {
     // No parameters for now, so always return 0
     return 0.f;
-  }
-
-  // ── Properties panel ──────────────────────────────────────────────────────
-
-  void draw_properties(NodeGraph &graph, CommandHistory & /*history*/) override {
-    static constexpr const char *kForceTypes[] = {
-      "Acceleration X",
-      "Acceleration Y",
-      "Radial",
-      "Drag X",
-      "Drag Y",
-      "Vortex",
-    };
-
-    if (inputs.size() <= 1) {
-      ImGui::TextDisabled("No input forces.");
-    }
-
-    if (ImGui::Button(ICON_FA_PLUS "  Add Force")) {
-      Pin *force_pin = add_input(DataType::Float, "force " + std::to_string(inputs.size()));
-      force_pin->id = graph.pin_id_generator.generate_id();
-      force_pin->pad = static_cast<uint8_t>(ParticleSystemForce::AccelerationX);
-    }
-
-    for (size_t i = 1; i < inputs.size(); ++i) {
-      const char *const pin_name = inputs[i].name.c_str();
-      ImGui::PushID(inputs[i].id);
-      ImGui::TextUnformatted(pin_name);
-      ImGui::SameLine();
-
-      ImGui::BeginDisabled(is_renaming);
-
-      // Combo for selecting force type
-      int force_type = inputs[i].pad - (uint8_t) ParticleSystemForce::AccelerationX;
-      if (ImGui::Combo("Force type", &force_type, kForceTypes, 6)) {
-        inputs[i].pad = static_cast<uint8_t>((int) ParticleSystemForce::AccelerationX + force_type);
-      }
-      ImGui::SameLine();
-
-      // Small rename button
-      if (ImGui::SmallButton(ICON_FA_I_CURSOR)) {
-        is_renaming = true;
-        rename_pin_id = inputs[i].id;
-      }
-
-      if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Rename this force pin (%s)", pin_name);
-      }
-
-      // small red remove button
-      ImGui::SameLine();
-      ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 1.f));
-      if (ImGui::SmallButton(ICON_FA_XMARK)) {
-        remove_input(i);
-      }
-
-      if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("Remove this force pin (%s)", pin_name);
-      }
-
-      ImGui::EndDisabled();
-
-      ImGui::PopStyleColor();
-      ImGui::PopID();
-    }
-
-    const std::string popup_id = "RenamePinPopup" + std::to_string(id);
-
-    if (is_renaming) {
-      ImGui::OpenPopup(popup_id.c_str());
-    }
-
-    if (ImGui::BeginPopup(popup_id.c_str())) {
-      // Focus the text input when the popup opens
-      Pin *force_pin = get_input_by_id(rename_pin_id);
-      if (ImGui::IsWindowAppearing()) {
-        if (!force_pin) {
-          ImGui::TextColored(ImVec4(200, 50, 50, 255), "Pin %d not found!", rename_pin_id);
-        } else {
-          ImGui::SetKeyboardFocusHere();
-          // Upon popping up the rename popup, fill the buffer with the current name
-          strncpy(pin_name_buf, force_pin->name.c_str(), sizeof(pin_name_buf));
-        }
-      }
-
-      if (force_pin) {
-        ImGui::InputText("##renamePinNewName", pin_name_buf, sizeof(pin_name_buf));
-
-        ImGui::SameLine();
-
-        ImGui::BeginDisabled(strlen(pin_name_buf) == 0);
-        if (ImGui::Button("OK")) {
-          const std::string new_name(pin_name_buf);
-          force_pin->name = pin_name_buf;
-          ImGui::CloseCurrentPopup();
-          is_renaming = false;
-        }
-        ImGui::EndDisabled();
-      }
-
-      ImGui::EndPopup();
-    }
   }
 
   /// Factory method to create a new ParticleSystemNode with the correct input and output pins

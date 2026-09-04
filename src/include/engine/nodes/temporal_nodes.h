@@ -6,7 +6,6 @@
 #include <memory>
 
 #include "engine/nodes/node.h"
-#include "engine/property_widget.h"
 
 static constexpr float PI = M_PI;
 
@@ -112,60 +111,6 @@ struct LFONode : Node {
         std::string("Failed to deserialize LFONode params: ") + e.what()
       );
     }
-  }
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat(
-      "Frequency",
-      id,
-      frequency,
-      [](Node &n, const float v) { dynamic_cast<LFONode &>(n).frequency = v; },
-      graph, history,
-      0.1f, 10.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Amplitude",
-      id,
-      amplitude,
-      [](Node &n, const float v) { dynamic_cast<LFONode &>(n).amplitude = v; },
-      graph, history,
-      0.f, 2.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Phase",
-      id,
-      phase,
-      [](Node &n, const float v) { dynamic_cast<LFONode &>(n).phase = v; },
-      graph, history,
-      0.f, 6.28f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Offset",
-      id,
-      offset,
-      [](Node &n, const float v) { dynamic_cast<LFONode &>(n).offset = v; },
-      graph, history,
-      -1.f, 1.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Pulse Width",
-      id,
-      pulse_width,
-      [](Node &n, const float v) { dynamic_cast<LFONode &>(n).pulse_width = v; },
-      graph, history,
-      0.01f, 0.99f, "%.2f"
-    );
-    const char *const wave_shapes[] = {"Sine", "Square", "Triangle", "Sawtooth"};
-    PropertyWidget::Combo(
-      "Wave Shape",
-      id,
-      reinterpret_cast<int &>(wave_shape),
-      wave_shapes,
-      4,
-      [](Node &n, const int v) { dynamic_cast<LFONode &>(n).wave_shape = static_cast<WaveShape>(v); },
-      graph,
-      history
-    );
   }
 
   [[nodiscard]] float get_param(const std::string &param_name) const override {
@@ -295,41 +240,6 @@ struct EnvelopeNode : Node {
         std::string("Failed to deserialize EnvelopeNode params: ") + e.what()
       );
     }
-  }
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat(
-      "Attack",
-      id,
-      attack_time,
-      [](Node &n, const float v) { dynamic_cast<EnvelopeNode &>(n).attack_time = v; },
-      graph, history,
-      0.01f, 2.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Decay",
-      id,
-      decay_time,
-      [](Node &n, const float v) { dynamic_cast<EnvelopeNode &>(n).decay_time = v; },
-      graph, history,
-      0.01f, 2.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Sustain",
-      id,
-      sustain_level,
-      [](Node &n, const float v) { dynamic_cast<EnvelopeNode &>(n).sustain_level = v; },
-      graph, history,
-      0.f, 1.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Release",
-      id,
-      release_time,
-      [](Node &n, const float v) { dynamic_cast<EnvelopeNode &>(n).release_time = v; },
-      graph, history,
-      0.01f, 2.f, "%.2f"
-    );
   }
 
   [[nodiscard]] float get_param(const std::string &param_name) const override {
@@ -548,33 +458,6 @@ struct DelayNode : Node {
     }
   }
 
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat(
-      "Delay Time",
-      id,
-      delay_time,
-      [](Node &n, const float v) {
-        auto &dn = dynamic_cast<DelayNode &>(n);
-        dn.delay_time = v;
-        dn.update_buffer_size();
-      },
-      graph, history,
-      0.1f, 5.f, "%.2f"
-    );
-    PropertyWidget::SliderFloat(
-      "Sample Rate",
-      id,
-      sample_rate,
-      [](Node &n, const float v) {
-        auto &dn = dynamic_cast<DelayNode &>(n);
-        dn.sample_rate = v;
-        dn.update_buffer_size();
-      },
-      graph, history,
-      10.f, 120.f, "%.0f"
-    );
-  }
-
   [[nodiscard]] float get_param(const std::string &param_name) const override {
     if (param_name == "delay_time") return delay_time;
     if (param_name == "sample_rate") return sample_rate;
@@ -672,17 +555,6 @@ struct SmootherNode : Node {
         std::string("Failed to deserialize SmootherNode params: ") + e.what()
       );
     }
-  }
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat(
-      "Smooth Time",
-      id,
-      smooth_time,
-      [](Node &n, const float v) { dynamic_cast<SmootherNode &>(n).smooth_time = v; },
-      graph, history,
-      0.01f, 1.f, "%.2f"
-    );
   }
 
   [[nodiscard]] float get_param(const std::string &param_name) const override {

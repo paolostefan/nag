@@ -2,7 +2,6 @@
 #define NAG_ENGINE_EFFECT_NODES_H
 
 #include "engine/nodes/shader_node.h"
-#include "engine/property_widget.h"
 #include "shaders/blur_frag.h"
 #include "shaders/chromatic_aberration_frag.h"
 #include "shaders/pixelate_frag.h"
@@ -82,38 +81,6 @@ struct BlurNode : ShaderNode {
     return OperationResult::ok();
   }
 
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    // ------------------------------------------------------------------
-    // Radius — slider with range [0, 64]
-    // ------------------------------------------------------------------
-    PropertyWidget::SliderFloat(
-      "Radius",
-      /*node_id=*/id,
-      /*value=*/radius,
-      /*setter=*/[](Node &n, const float v) {
-        dynamic_cast<BlurNode &>(n).radius = v;
-      },
-      graph, history,
-      /*min=*/0.f,
-      /*max=*/64.f,
-      /*format=*/"%.1f",
-      /*disabled=*/get_input("radius")->connected
-    );
-
-    // ------------------------------------------------------------------
-    // Sigma — drag (no fixed limits, typically [0.1, 20])
-    // // ------------------------------------------------------------------
-    // PropertyWidget::DragFloat(
-    //   "Sigma",
-    //   /*node_id=*/id,
-    //   /*value=*/sigma,
-    //   /*setter=*/[](Node &n, float v) {
-    //     dynamic_cast<BlurNode &>(n).sigma = v;
-    //   },
-    //   graph, history,
-    //   /*speed=*/0.05f, /*min=*/0.01f, /*max=*/20.f);
-  }
-
   [[nodiscard]] float get_param(const std::string &param_name) const override {
     if (param_name == "radius") return radius;
     return 0.f;
@@ -183,17 +150,6 @@ struct ChromaticAberrationNode : ShaderNode {
     return OperationResult::ok();
   }
 
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat(
-      "Strength",
-      id,
-      strength,
-      [](Node &n, const float v) { dynamic_cast<ChromaticAberrationNode &>(n).strength = v; },
-      graph, history,
-      0.f, 20.f, "%.1f"
-    );
-  }
-
   [[nodiscard]] float get_param(const std::string &param_name) const override {
     if (param_name == "strength") return strength;
     return 0.f;
@@ -251,17 +207,6 @@ struct PixelateNode : ShaderNode {
 
     if (j.contains("pixel_size")) pixel_size = j["pixel_size"];
     return OperationResult::ok();
-  }
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat(
-      "Pixel Size",
-      id,
-      pixel_size,
-      [](Node &n, const float v) { dynamic_cast<PixelateNode &>(n).pixel_size = v; },
-      graph, history,
-      1.f, 64.f, "%.0f"
-    );
   }
 
   [[nodiscard]] float get_param(const std::string &param_name) const override {

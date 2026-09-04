@@ -3,7 +3,6 @@
 
 #include <memory>
 
-#include "engine/property_widget.h"
 #include "engine/nodes/shader_node.h"
 #include "shaders/composite_frag.h"
 
@@ -86,34 +85,6 @@ struct CompositeNode : ShaderNode {
     return node;
   }
 
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    static constexpr const char *modes[] = {"Normal", "Add", "Multiply", "Screen", nullptr};
-
-    // Blend mode
-    int blend_mode_int = static_cast<int>(blend_mode);
-
-    PropertyWidget::Combo("Blend mode",
-                          /* node_id=*/ id,
-                          /* value=*/ blend_mode_int,
-                          /* items=*/ modes,
-                          /* item_count=*/ 4,
-                          /* setter=*/[](Node &n, int value) {
-                            dynamic_cast<CompositeNode &>(n).blend_mode = static_cast<BlendMode>(value);
-                          },
-                          graph, history);
-
-    blend_mode = static_cast<BlendMode>(blend_mode_int);
-
-    // Opacity
-    PropertyWidget::SliderFloat("Opacity",
-                                /* node_id=*/ id,
-                                /* value=*/ opacity,
-                                /* setter=*/[](Node &n, float value) {
-                                  dynamic_cast<CompositeNode &>(n).opacity = value;
-                                },
-                                graph, history,
-                                /* min=*/ 0.f, /* max=*/ 1.f);
-  }
 };
 
 #endif // NAG_ENGINE_NODES_COMPOSITE_NODE_H

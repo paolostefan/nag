@@ -2,7 +2,6 @@
 #define NAG_ENGINE_DISPLACE_NODE_H
 
 #include "engine/nodes/shader_node.h"
-#include "engine/property_widget.h"
 #include "shaders/displace_frag.h"
 
 /**
@@ -73,22 +72,6 @@ struct DisplaceNode : ShaderNode {
       return OperationResult::error(
         std::string("Failed to deserialize DisplaceNode params: ") + e.what());
     }
-  }
-
-  // ── Properties panel ──────────────────────────────────────────────────────
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat("Strength", id,
-                                strength,
-                                [](Node &n, const float v) { dynamic_cast<DisplaceNode &>(n).strength = v; },
-                                graph, history,
-                                /*min=*/0.f, /*max=*/0.5f, /*format=*/"%.3f",
-                                /*disabled=*/get_input("strength")->connected);
-
-    // Channel selectors — GUI only, not animatable
-    constexpr const char *kChannels[] = {"R", "G", "B"};
-    ImGui::Combo("X channel", &channel_x, kChannels, 3);
-    ImGui::Combo("Y channel", &channel_y, kChannels, 3);
   }
 
   // ── Factory ───────────────────────────────────────────────────────────────

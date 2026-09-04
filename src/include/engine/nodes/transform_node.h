@@ -1,7 +1,6 @@
 #ifndef NAG_ENGINE_TRANSFORM_NODE_H
 #define NAG_ENGINE_TRANSFORM_NODE_H
 
-#include "engine/property_widget.h"
 #include "engine/nodes/shader_node.h"
 #include "shaders/transform_frag.h"
 
@@ -78,42 +77,6 @@ struct TransformNode : ShaderNode {
       return OperationResult::error(
         std::string("Failed to deserialize TransformNode params: ") + e.what());
     }
-  }
-
-  // ── Properties panel ──────────────────────────────────────────────────────
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::DragFloat("Translate X", id,
-                              translate_x,
-                              [](Node &n, const float v) { dynamic_cast<TransformNode &>(n).translate_x = v; },
-                              graph, history,
-                              /*speed=*/0.005f, /*min=*/-1.f, /*max=*/1.f,
-                              /*format=*/"%.3f",
-                              /*disabled=*/get_input("translate_x")->connected);
-
-    PropertyWidget::DragFloat("Translate Y", id,
-                              translate_y,
-                              [](Node &n, const float v) { dynamic_cast<TransformNode &>(n).translate_y = v; },
-                              graph, history,
-                              /*speed=*/0.005f, /*min=*/-1.f, /*max=*/1.f,
-                              /*format=*/"%.3f",
-                              /*disabled=*/get_input("translate_y")->connected);
-
-    PropertyWidget::DragFloat("Scale", id,
-                              scale,
-                              [](Node &n, const float v) { dynamic_cast<TransformNode &>(n).scale = v; },
-                              graph, history,
-                              /*speed=*/0.01f, /*min=*/0.01f, /*max=*/10.f,
-                              /*format=*/"%.3f",
-                              /*disabled=*/get_input("scale")->connected);
-
-    PropertyWidget::DragFloat("Rotation", id,
-                              rotation,
-                              [](Node &n, const float v) { dynamic_cast<TransformNode &>(n).rotation = v; },
-                              graph, history,
-                              /*speed=*/0.01f, /*min=*/-3.14159f, /*max=*/3.14159f,
-                              /*format=*/"%.3f",
-                              /*disabled=*/get_input("rotation")->connected);
   }
 
   // ── Factory ───────────────────────────────────────────────────────────────

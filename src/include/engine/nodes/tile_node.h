@@ -2,7 +2,6 @@
 #define NAG_ENGINE_NODES_TILE_NODE_H
 
 #include "engine/nodes/shader_node.h"
-#include "engine/property_widget.h"
 #include "shaders/tile_frag.h"
 
 /**
@@ -91,41 +90,6 @@ struct TileNode : ShaderNode {
       return OperationResult::error(
         std::string("Failed to deserialize TileNode params: ") + e.what());
     }
-  }
-
-  // ── Properties panel ──────────────────────────────────────────────────────
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::DragFloat("Tile X", id,
-                              tile_x,
-                              [](Node &n, const float v) { dynamic_cast<TileNode &>(n).tile_x = v; },
-                              graph, history,
-                              /*speed=*/0.1f, /*min=*/1.f, /*max=*/32.f, /*format=*/"%.1f",
-                              /*disabled=*/get_input("tile_x")->connected);
-
-    PropertyWidget::DragFloat("Tile Y", id,
-                              tile_y,
-                              [](Node &n, const float v) { dynamic_cast<TileNode &>(n).tile_y = v; },
-                              graph, history,
-                              /*speed=*/0.1f, /*min=*/1.f, /*max=*/32.f, /*format=*/"%.1f",
-                              /*disabled=*/get_input("tile_y")->connected);
-
-    PropertyWidget::DragFloat("Offset X", id,
-                              offset_x,
-                              [](Node &n, const float v) { dynamic_cast<TileNode &>(n).offset_x = v; },
-                              graph, history,
-                              /*speed=*/0.005f, /*min=*/-1.f, /*max=*/1.f, /*format=*/"%.3f",
-                              /*disabled=*/get_input("offset_x")->connected);
-
-    PropertyWidget::DragFloat("Offset Y", id,
-                              offset_y,
-                              [](Node &n, const float v) { dynamic_cast<TileNode &>(n).offset_y = v; },
-                              graph, history,
-                              /*speed=*/0.005f, /*min=*/-1.f, /*max=*/1.f, /*format=*/"%.3f",
-                              /*disabled=*/get_input("offset_y")->connected);
-
-    ImGui::Checkbox("Mirror X", &mirror_x);
-    ImGui::Checkbox("Mirror Y", &mirror_y);
   }
 
   // ── Factory ───────────────────────────────────────────────────────────────

@@ -47,17 +47,6 @@ struct VintageCRTNode : ShaderNode {
     return OperationResult::ok();
   }
 
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    PropertyWidget::SliderFloat(
-      "Pixel Size",
-      id,
-      pixel_size,
-      [](Node &n, const float v) { dynamic_cast<VintageCRTNode &>(n).pixel_size = v; },
-      graph, history,
-      1.f, 64.f, "%.0f"
-    );
-  }
-
   [[nodiscard]] float get_param(const std::string &param_name) const override {
     if (param_name == "pixel_size") return pixel_size;
     return 0.f;

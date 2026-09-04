@@ -113,31 +113,6 @@ struct Rectangle2DNode : ShaderNode {
 
     return node;
   }
-
-  void draw_properties(NodeGraph &graph, CommandHistory &history) override {
-    auto *color_ = reinterpret_cast<ImVec4 *>(&color);
-    PropertyWidget::ColorEdit4("Color",
-                               /* node_id=*/ id,
-                               /* value=*/ *color_,
-                               /* setter =*/[](Node &n, const ImVec4 &col) {
-                                 dynamic_cast<Rectangle2DNode &>(n).color = col;
-                               },
-                               graph, history
-    );
-
-    // ------------------------------------------------------------------
-    // Edge smoothness — slider with range [0, 1]
-    // ------------------------------------------------------------------
-    PropertyWidget::SliderFloat(
-      "Corner radius",
-      /*node_id=*/id,
-      /*value=*/corner_radius,
-      /*setter=*/[](Node &n, const float v) {
-        dynamic_cast<Rectangle2DNode &>(n).corner_radius = v;
-      },
-      graph, history,
-      /*min=*/0.f, /*max=*/1.f);
-  }
 };
 
 #endif //NAG_ENGINE_RECTANGLE2DNODE_H

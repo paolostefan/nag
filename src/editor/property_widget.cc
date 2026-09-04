@@ -1,4 +1,4 @@
-#include "engine/property_widget.h"
+#include "editor/property_widget.h"
 
 namespace PropertyWidget {
   void InputInt(const std::string &label,

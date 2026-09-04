@@ -135,46 +135,6 @@ struct TextureLoaderNode : VisualNode {
     }
   }
 
-  // ── Properties panel ──────────────────────────────────────────────────────
-
-  void draw_properties(NodeGraph & /*graph*/, CommandHistory & /*history*/) override {
-    // Current path (read-only display)
-    if (file_path.empty()) {
-      ImGui::TextDisabled("No file loaded.");
-    } else {
-      // Show only the filename, tooltip shows full path
-      const std::string filename = file_path.substr(file_path.find_last_of("/\\") + 1);
-      ImGui::TextUnformatted(filename.c_str());
-      if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", file_path.c_str());
-      }
-    }
-
-    // Texture info
-    if (output_texture.is_valid()) {
-      ImGui::TextDisabled("%d x %d", output_texture.width, output_texture.height);
-    }
-
-    // Error message if last load failed
-    if (!last_error_.empty()) {
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 0.4f, 0.4f, 1.f));
-      ImGui::TextWrapped("%s", last_error_.c_str());
-      ImGui::PopStyleColor();
-    }
-
-    ImGui::Spacing();
-
-    if (ImGui::Button(ICON_FA_FOLDER_OPEN "  Browse...")) {
-      open_file_dialog();
-    }
-
-    // Reload button — useful if the file on disk has changed
-    ImGui::SameLine();
-    if (ImGui::Button(ICON_FA_ROTATE_RIGHT "  Reload")) {
-      path_dirty_ = true;
-    }
-  }
-
   // ── Factory ───────────────────────────────────────────────────────────────
 
   static std::unique_ptr<TextureLoaderNode> create(const std::string &path = {}) {

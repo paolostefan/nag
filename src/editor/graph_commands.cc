@@ -366,8 +366,8 @@ bool MoveNodesCommand::execute(NodeGraph &graph) {
   for (const auto &move: moves_) {
     for (const auto &node: graph.nodes) {
       if (node->id == move.node_id) {
-        node->gui_x = move.new_pos.x;
-        node->gui_y = move.new_pos.y;
+        node->gui_x = move.new_x;
+        node->gui_y = move.new_y;
         break;
       }
     }
@@ -379,8 +379,8 @@ bool MoveNodesCommand::undo(NodeGraph &graph) {
   for (const auto &move: moves_) {
     for (const auto &node: graph.nodes) {
       if (node->id == move.node_id) {
-        node->gui_x = move.old_pos.x;
-        node->gui_y = move.old_pos.y;
+        node->gui_x = move.old_x;
+        node->gui_y = move.old_y;
         break;
       }
     }
