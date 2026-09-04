@@ -28,8 +28,9 @@ public:
     /// @brief Add a new root folder.
     std::function<void()> on_add_folder;
 
-    /// @brief React after a graph is actually deleted (editor may reselect).
-    std::function<void()> on_graph_deleted;
+    /// @brief React after a graph is actually deleted; the editor may reselect
+    /// and clean up any graph data. Receives the deleted graph's id.
+    std::function<void(const std::string &)> on_graph_deleted;
   };
 
   GraphLibraryPanel(Scene &scene, GraphReference *&current_graph,
