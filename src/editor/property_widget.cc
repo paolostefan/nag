@@ -16,6 +16,10 @@ namespace PropertyWidget {
     ImGui::BeginDisabled(disabled);
     ImGui::InputInt(label.c_str(), &value);
 
+    if (ImGui::IsItemActive() || ImGui::IsItemEdited()) {
+      internal::EvaluateNode(graph, node_id);
+    }
+
     if (ImGui::IsItemActivated()) {
       before_map[key] = value;
     }
@@ -53,6 +57,10 @@ namespace PropertyWidget {
 
     ImGui::BeginDisabled(disabled);
     ImGui::DragInt(label.c_str(), &value, speed, min, max, format);
+
+    if (ImGui::IsItemActive() || ImGui::IsItemEdited()) {
+      internal::EvaluateNode(graph, node_id);
+    }
 
     if (ImGui::IsItemActivated()) {
       before_map[key] = value;
@@ -93,6 +101,10 @@ namespace PropertyWidget {
     ImGui::BeginDisabled(disabled);
     ImGui::DragFloat(label.c_str(), &value, speed, min, max, format);
 
+    if (ImGui::IsItemActive() || ImGui::IsItemEdited()) {
+      internal::EvaluateNode(graph, node_id);
+    }
+
     if (ImGui::IsItemActivated()) {
       before_map[key] = value;
     }
@@ -132,6 +144,10 @@ namespace PropertyWidget {
     ImGui::BeginDisabled(disabled);
     ImGui::SliderFloat(label.c_str(), &value, min, max, format, flags);
 
+    if (ImGui::IsItemActive() || ImGui::IsItemEdited()) {
+      internal::EvaluateNode(graph, node_id);
+    }
+
     if (ImGui::IsItemActivated()) {
       before_map[key] = value;
     }
@@ -167,6 +183,10 @@ namespace PropertyWidget {
     ImGui::BeginDisabled(disabled);
 
     ImGui::ColorEdit4(label.c_str(), reinterpret_cast<float *>(&value), flags);
+
+    if (ImGui::IsItemActive() || ImGui::IsItemEdited()) {
+      internal::EvaluateNode(graph, node_id);
+    }
 
     if (ImGui::IsItemActivated()) {
       before_map[key] = value;

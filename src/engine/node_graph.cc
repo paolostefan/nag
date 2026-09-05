@@ -140,10 +140,18 @@ void NodeGraph::remove_link(const int link_id) {
   links.erase(it);
 }
 
-void NodeGraph::evaluate() const {
+void NodeGraph::evaluate() {
   // ── Topological sort (Kahn's algorithm) ───────────────────────────────────
-  // Guarantees each node is evaluated exactly once, after all its predecessors.
+  // Guarantees each node is visited exactly once, after all its predecessors.
   // Always terminates in O(N+E), regardless of stream versioning bugs.
+  //
+  // Incremental: a node is only evaluated when at least one of its input
+  // streams has been updated since the last pass (see Pin::last_seen_version
+  // and Node::needs_evaluation). If it skips, its output stream version does
+  // not change, so downstream nodes naturally skip too. Input-less source
+  // nodes have no versioned inputs and are therefore skipped here; they are
+  // expected to be driven externally (e.g. TimeNode via step(), or a param
+  // edit that re-evaluates the node).
 
   // 1. Build node_id → node* map
   std::unordered_map<int, Node *> node_map;
@@ -188,14 +196,18 @@ void NodeGraph::evaluate() const {
   }
 
   // 4. Process nodes in topological order
-  int evaluated_count = 0;
+  int visited_count = 0;
   while (!queue.empty()) {
     const int current_id = queue.front();
     queue.pop();
 
+    ++visited_count;
+
     Node *node = node_map[current_id];
-    node->evaluate();
-    ++evaluated_count;
+    if (node->needs_evaluation()) {
+      node->evaluate();
+      node->mark_inputs_consumed();
+    }
 
     // Decrement in-degree of successors; enqueue any that become ready
     if (const auto it = adj.find(current_id); it != adj.end()) {
@@ -207,13 +219,22 @@ void NodeGraph::evaluate() const {
     }
   }
 
-  // 5. Sanity check: if not all nodes were evaluated, a cycle exists
-  if (evaluated_count != static_cast<int>(nodes.size())) {
+  // 5. Sanity check: if not all nodes were visited, a cycle exists
+  if (visited_count != static_cast<int>(nodes.size())) {
     spdlog::error(
       "NodeGraph::evaluate: topological sort incomplete. "
-      "Evaluated {}/{} nodes. A cycle may be present in the graph.",
-      evaluated_count, nodes.size()
+      "Visited {}/{} nodes. A cycle may be present in the graph.",
+      visited_count, nodes.size()
     );
+  }
+}
+
+void NodeGraph::prime() {
+  for (const auto &node: nodes) {
+    if (node->inputs.empty()) {
+      node->evaluate();
+      node->mark_inputs_consumed();
+    }
   }
 }
 

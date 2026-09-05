@@ -62,6 +62,9 @@ private:
     Node *node = graph.find_node(node_id_);
     if (!node) return false;
     setter_(*node, value);
+    // Re-evaluate the node so its output stream version advances and the
+    // change propagates to downstream nodes on the next incremental pass.
+    node->evaluate();
     return true;
   }
 

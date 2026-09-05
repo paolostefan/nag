@@ -89,9 +89,11 @@ A unified editor combining node graph editing with timeline-based scene organiza
 - **Data types**: `Stream<float>` (generators, math), `Stream<bool>` (CompareNode), `Stream<Texture*>` (visual pipeline — VisualNode renders to FBO and outputs Texture*).
 
 ### Graph Evaluation
-- Uses Kahn's algorithm (topological sort) in `NodeGraph::evaluate()`.
-- Nodes are processed in dependency order; each node's `evaluate()` reads from input streams and writes to output streams.
-- `needs_evaluation()` checks if any input stream's `version` differs from the pin's `last_seen_version` (skips re-processing unchanged data).
+- Uses Kahn's algorithm (topological sort) in `NodeGraph::evaluate()` (non-const; it mutates pin bookkeeping).
+- **Incremental**: a node is evaluated only when `needs_evaluation()` is true — i.e. at least one input stream's `version` differs from the input pin's `last_seen_version`. After evaluating, `NodeGraph::evaluate()` calls `mark_inputs_consumed()` so the node is skipped until an input actually changes.
+- **Skipped nodes don't bump their output version**, so downstream nodes see no change and are skipped too — the dirty/clean signal propagates through the DAG naturally.
+- **Sources are driven externally**: input-less nodes have no versioned inputs, so `needs_evaluation()` is false for them and the graph skips them. They are evaluated by their driver (e.g. `TimeNode::step()` in the editor, or a param-edit command). `NodeGraph::prime()` evaluates all input-less source nodes once after (de)serialization so their outputs populate.
+- **Param edits propagate**: `SetNodeParamCommand::apply()` and live property widgets re-evaluate the owning node after changing a field, so the output version advances and downstream wakes up (works even when time is paused).
 - `OutputNode` is the sink: reads `Stream<Texture*>` input, stores the `Texture*` for preview rendering.
 - `TimeNode` is the source: outputs a `Stream<float>` driven by external time updates.
 

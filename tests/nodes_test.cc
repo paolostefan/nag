@@ -751,3 +751,57 @@ TEST_F(NodesTest, SmootherNode) {
   // On first evaluation, should initialize to target value
   EXPECT_FLOAT_EQ(*node_ptr->outputs[0].get_float(), 10.f);
 }
+
+// ===========================================================================
+// INCREMENTAL EVALUATION
+// ===========================================================================
+
+TEST_F(NodesTest, IncrementalEvaluationSkipsUnchangedNodes) {
+  // Constant(2) -> Multiply(x3) -> out
+  auto a = ConstantFloatNode::create(2.f);
+  auto b = ConstantFloatNode::create(3.f);
+  auto mul = MultiplyNode::create();
+
+  const auto a_ptr = node_graph->add_node(std::move(a));
+  const auto b_ptr = node_graph->add_node(std::move(b));
+  const auto mul_ptr = node_graph->add_node(std::move(mul));
+
+  node_graph->add_link(a_ptr->outputs[0], mul_ptr->inputs[0]);
+  node_graph->add_link(b_ptr->outputs[0], mul_ptr->inputs[1]);
+
+  // Seed input-less sources so their outputs populate on the first pass.
+  node_graph->prime();
+
+  // First fully evaluated pass: downstream compute is triggered by sources.
+  node_graph->evaluate();
+  EXPECT_FLOAT_EQ(*mul_ptr->outputs[0].get_float(), 6.f);
+
+  // Nothing changed: the multiply node must be skipped and output preserved.
+  node_graph->evaluate();
+  node_graph->evaluate();
+  EXPECT_FLOAT_EQ(*mul_ptr->outputs[0].get_float(), 6.f);
+
+  // External source drive: bump one constant, downstream recomputes to 12.
+  dynamic_cast<ConstantFloatNode &>(*a_ptr).value = 4.f;
+  a_ptr->evaluate(); // external drive (e.g. a param-edit command)
+  node_graph->evaluate();
+  EXPECT_FLOAT_EQ(*mul_ptr->outputs[0].get_float(), 12.f);
+}
+
+TEST_F(NodesTest, PrimeEvaluatesInputlessSourcesOnce) {
+  // A constant driven only by an externally wire-less chain must still emit.
+  auto a = ConstantFloatNode::create(7.f);
+  auto mul = MultiplyNode::create();
+  auto b = ConstantFloatNode::create(1.f);
+
+  const auto a_ptr = node_graph->add_node(std::move(a));
+  const auto mul_ptr = node_graph->add_node(std::move(mul));
+  const auto b_ptr = node_graph->add_node(std::move(b));
+
+  node_graph->add_link(a_ptr->outputs[0], mul_ptr->inputs[0]);
+  node_graph->add_link(b_ptr->outputs[0], mul_ptr->inputs[1]);
+
+  node_graph->prime();
+  node_graph->evaluate();
+  EXPECT_FLOAT_EQ(*mul_ptr->outputs[0].get_float(), 7.f);
+}

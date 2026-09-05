@@ -34,6 +34,14 @@ namespace PropertyWidget {
       static std::unordered_map<std::string, T> map;
       return map;
     }
+
+    /// Re-evaluate the owning node so a live edit advances its output stream
+    /// version and propagates to downstream nodes on the next incremental pass.
+    inline void EvaluateNode(NodeGraph &graph, const int node_id) {
+      if (Node *node = graph.find_node(node_id); node) {
+        node->evaluate();
+      }
+    }
   } // namespace internal
 
   // ---------------------------------------------------------------------------
