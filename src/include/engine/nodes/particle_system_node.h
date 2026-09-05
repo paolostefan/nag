@@ -185,6 +185,8 @@ struct ParticleSystemNode : Node {
       p.x += p.vx * dt_;
       p.y += p.vy * dt_;
     }
+
+    outputs[0].bump_version();
   }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {

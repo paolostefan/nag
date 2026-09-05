@@ -35,6 +35,7 @@ struct Stream : StreamBase {
   [[nodiscard]] Particles2D *as_particles() { return std::get_if<Particles2D>(&value); }
   [[nodiscard]] const Particles2D *as_particles() const { return std::get_if<Particles2D>(&value); }
 
+  constexpr void touch() noexcept { version++; }
   void update_float(const float v) { value = v; version++; }
   void update_bool(const bool v) { value = v; version++; }
   void update_texture(Texture *const v) { value = v; version++; }

@@ -29,8 +29,10 @@ struct Pin {
   bool connected{false};
   uint8_t pad{}; // Used as general purpose field in particular pins
 
-  [[nodiscard]] Stream *get_stream() { return static_cast<Stream *>(stream.get()); }
-  [[nodiscard]] const Stream *get_stream() const { return static_cast<const Stream *>(stream.get()); }
+  [[nodiscard]] constexpr Stream *get_stream() { return (Stream *)stream.get(); }
+  [[nodiscard]] const Stream *get_stream() const { return (const Stream *)stream.get(); }
+
+  constexpr void bump_version() {if (auto *s = get_stream()) s->touch(); }
 
   [[nodiscard]] float *get_float() {
     auto *s = (Stream *) stream.get();
