@@ -127,7 +127,7 @@ struct Node {
 
   [[nodiscard]] virtual std::string_view type_name() const noexcept = 0;
 
-  [[nodiscard]] bool needs_evaluation() const noexcept {
+  [[nodiscard]] constexpr bool needs_evaluation() const noexcept {
     for (auto const &pin: inputs) {
       if (pin.stream && pin.stream->version != pin.last_seen_version) {
         return true;

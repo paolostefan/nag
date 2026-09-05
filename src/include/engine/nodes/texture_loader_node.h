@@ -53,8 +53,6 @@ struct TextureLoaderNode : VisualNode {
     if (!outputs.empty()) {
       outputs[0].set_texture(output_texture.is_valid() ? &output_texture : nullptr);
     }
-
-    mark_inputs_consumed();
   }
 
   // ── VisualNode overrides ──────────────────────────────────────────────────

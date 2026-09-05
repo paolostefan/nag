@@ -87,7 +87,7 @@ struct ParticleRendererNode : VisualNode {
 
     render_target->clear(0.f, 0.f, 0.f, 0.f);
 
-    Pin *sprite_pin = get_input("sprite");
+    Pin *const sprite_pin = get_input("sprite");
     Texture *const *sprite_tex = sprite_pin ? sprite_pin->get_texture() : nullptr;
     render_particles(sprite_tex && *sprite_tex ? *sprite_tex : nullptr);
 

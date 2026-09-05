@@ -117,7 +117,6 @@ struct NoiseNode : Node {
     }
 
     outputs[0].set_float(result);
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
@@ -228,8 +227,6 @@ struct RandomNode : Node {
       outputs[0].set_float(random_value);
       last_trigger_version = inputs[0].stream->version;
     }
-
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
@@ -305,7 +302,6 @@ struct StepSequencerNode : Node {
     }
 
     outputs[0].set_float(steps[current_step]);
-    mark_inputs_consumed();
   }
 
   static std::unique_ptr<StepSequencerNode> create(const std::vector<float> &steps = {}) {

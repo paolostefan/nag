@@ -89,8 +89,6 @@ struct ParticleSystemNode : Node {
       return;
     }
 
-    mark_inputs_consumed();
-
     Particles2D *out_particles = outputs[0].get_particles();
     if (!out_particles) { return; }
 

@@ -47,7 +47,6 @@ struct ParticleEmitterNode : Node {
     }
 
     outputs[0].set_particles(particles_);
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {

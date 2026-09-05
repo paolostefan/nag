@@ -51,7 +51,7 @@ struct NodeGraph {
   // Evaluate every input-less source node once and mark its inputs consumed.
   // Used after (de)serialization or adding nodes so sources emit their value
   // once; subsequent evaluate() passes skip them unless re-driven externally.
-  void prime();
+  void prime() const;
 
   Node *add_node(std::unique_ptr<Node> &&node);
 

@@ -52,7 +52,6 @@ struct VisualNode : Node {
         outputs[0].set_texture(&output_texture);
       }
     }
-    mark_inputs_consumed();
   }
 
   /**

@@ -203,6 +203,7 @@ void NodeGraph::evaluate() {
 
     ++visited_count;
 
+    // ReSharper disable once CppTooWideScopeInitStatement
     Node *node = node_map[current_id];
     if (node->needs_evaluation()) {
       node->evaluate();
@@ -229,7 +230,7 @@ void NodeGraph::evaluate() {
   }
 }
 
-void NodeGraph::prime() {
+void NodeGraph::prime() const {
   for (const auto &node: nodes) {
     if (node->inputs.empty()) {
       node->evaluate();

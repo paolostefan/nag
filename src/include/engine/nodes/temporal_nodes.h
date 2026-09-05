@@ -80,7 +80,6 @@ struct LFONode : Node {
 
     const float result = offset + amplitude * wave_value;
     outputs[0].set_float(result);
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
@@ -213,7 +212,6 @@ struct EnvelopeNode : Node {
     update_envelope(time);
 
     outputs[0].set_float(envelope_value);
-    mark_inputs_consumed();
   }
 
   // In EnvelopeNode struct, dopo update_envelope():
@@ -429,7 +427,6 @@ struct DelayNode : Node {
     // Output oldest value from buffer
     const float delayed_value = buffer.empty() ? 0.f : buffer.front();
     outputs[0].set_float(delayed_value);
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
@@ -537,7 +534,6 @@ struct SmootherNode : Node {
     }
 
     outputs[0].set_float(current_value);
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {

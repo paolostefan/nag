@@ -66,11 +66,15 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
       auto &n = dynamic_cast<RandomNode &>(node);
       PropertyWidget::SliderFloat(
         "Min", n.id, n.min_value,
-        [](Node &nd, const float v) { dynamic_cast<RandomNode &>(nd).set_range(v, dynamic_cast<RandomNode &>(nd).max_value); },
+        [](Node &nd, const float v) {
+          dynamic_cast<RandomNode &>(nd).set_range(v, dynamic_cast<RandomNode &>(nd).max_value);
+        },
         graph, history, 0.f, 1.f, "%.2f");
       PropertyWidget::SliderFloat(
         "Max", n.id, n.max_value,
-        [](Node &nd, const float v) { dynamic_cast<RandomNode &>(nd).set_range(dynamic_cast<RandomNode &>(nd).min_value, v); },
+        [](Node &nd, const float v) {
+          dynamic_cast<RandomNode &>(nd).set_range(dynamic_cast<RandomNode &>(nd).min_value, v);
+        },
         graph, history, 0.f, 1.f, "%.2f");
       PropertyWidget::InputInt(
         "Seed", n.id, n.seed,
@@ -213,18 +217,22 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
       static constexpr const char *types[] = {"Linear", "Radial", nullptr};
       int gradient_type_int = static_cast<int>(n.gradient_type);
       PropertyWidget::Combo("Gradient type", n.id, gradient_type_int, types, 2,
-        [](Node &nd, int v) { dynamic_cast<GradientNode &>(nd).gradient_type = static_cast<GradientNode::Type>(v); },
-        graph, history);
+                            [](Node &nd, int v) {
+                              dynamic_cast<GradientNode &>(nd).gradient_type = static_cast<GradientNode::Type>(v);
+                            },
+                            graph, history);
       n.gradient_type = static_cast<GradientNode::Type>(gradient_type_int);
 
       auto *color_start_vec4 = reinterpret_cast<ImVec4 *>(&n.color_start);
       PropertyWidget::ColorEdit4("Start color", n.id, *color_start_vec4,
-        [](Node &nd, const ImVec4 &col) { dynamic_cast<GradientNode &>(nd).color_start = col; },
-        graph, history);
+                                 [](Node &nd, const ImVec4 &col) {
+                                   dynamic_cast<GradientNode &>(nd).color_start = col;
+                                 },
+                                 graph, history);
       auto *color_end_vec4 = reinterpret_cast<ImVec4 *>(&n.color_end);
       PropertyWidget::ColorEdit4("End color", n.id, *color_end_vec4,
-        [](Node &nd, const ImVec4 &col) { dynamic_cast<GradientNode &>(nd).color_end = col; },
-        graph, history);
+                                 [](Node &nd, const ImVec4 &col) { dynamic_cast<GradientNode &>(nd).color_end = col; },
+                                 graph, history);
       break;
     }
 
@@ -232,11 +240,11 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
       auto &n = dynamic_cast<CircleNode &>(node);
       auto *color_ = reinterpret_cast<ImVec4 *>(&n.color);
       PropertyWidget::ColorEdit4("Color", n.id, *color_,
-        [](Node &nd, const ImVec4 &col) { dynamic_cast<CircleNode &>(nd).color = col; },
-        graph, history);
+                                 [](Node &nd, const ImVec4 &col) { dynamic_cast<CircleNode &>(nd).color = col; },
+                                 graph, history);
       PropertyWidget::SliderFloat("Edge smoothness", n.id, n.edge_smoothness,
-        [](Node &nd, const float v) { dynamic_cast<CircleNode &>(nd).edge_smoothness = v; },
-        graph, history, 0.f, 1.f);
+                                  [](Node &nd, const float v) { dynamic_cast<CircleNode &>(nd).edge_smoothness = v; },
+                                  graph, history, 0.f, 1.f);
       break;
     }
 
@@ -244,11 +252,11 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
       auto &n = dynamic_cast<EllipseNode &>(node);
       auto *color_ = reinterpret_cast<ImVec4 *>(&n.color);
       PropertyWidget::ColorEdit4("Color", n.id, *color_,
-        [](Node &nd, const ImVec4 &v) { dynamic_cast<EllipseNode &>(nd).color = v; },
-        graph, history);
+                                 [](Node &nd, const ImVec4 &v) { dynamic_cast<EllipseNode &>(nd).color = v; },
+                                 graph, history);
       PropertyWidget::SliderFloat("Edge smoothness", n.id, n.edge_smoothness,
-        [](Node &nd, const float v) { dynamic_cast<EllipseNode &>(nd).edge_smoothness = v; },
-        graph, history, 0.f, 1.f, "%.3f");
+                                  [](Node &nd, const float v) { dynamic_cast<EllipseNode &>(nd).edge_smoothness = v; },
+                                  graph, history, 0.f, 1.f, "%.3f");
       break;
     }
 
@@ -256,11 +264,13 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
       auto &n = dynamic_cast<Rectangle2DNode &>(node);
       auto *color_ = reinterpret_cast<ImVec4 *>(&n.color);
       PropertyWidget::ColorEdit4("Color", n.id, *color_,
-        [](Node &nd, const ImVec4 &col) { dynamic_cast<Rectangle2DNode &>(nd).color = col; },
-        graph, history);
+                                 [](Node &nd, const ImVec4 &col) { dynamic_cast<Rectangle2DNode &>(nd).color = col; },
+                                 graph, history);
       PropertyWidget::SliderFloat("Corner radius", n.id, n.corner_radius,
-        [](Node &nd, const float v) { dynamic_cast<Rectangle2DNode &>(nd).corner_radius = v; },
-        graph, history, 0.f, 1.f);
+                                  [](Node &nd, const float v) {
+                                    dynamic_cast<Rectangle2DNode &>(nd).corner_radius = v;
+                                  },
+                                  graph, history, 0.f, 1.f);
       break;
     }
 
@@ -268,12 +278,12 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
       auto &n = dynamic_cast<PolygonNode &>(node);
       auto *color_ = reinterpret_cast<ImVec4 *>(&n.color);
       PropertyWidget::ColorEdit4("Color", n.id, *color_,
-        [](Node &nd, const ImVec4 &v) { dynamic_cast<PolygonNode &>(nd).color = v; },
-        graph, history);
+                                 [](Node &nd, const ImVec4 &v) { dynamic_cast<PolygonNode &>(nd).color = v; },
+                                 graph, history);
       ImGui::SliderInt("Sides", &n.n_sides, 3, 12);
       PropertyWidget::SliderFloat("Edge smoothness", n.id, n.edge_smoothness,
-        [](Node &nd, const float v) { dynamic_cast<PolygonNode &>(nd).edge_smoothness = v; },
-        graph, history, 0.f, 1.f, "%.3f");
+                                  [](Node &nd, const float v) { dynamic_cast<PolygonNode &>(nd).edge_smoothness = v; },
+                                  graph, history, 0.f, 1.f, "%.3f");
       break;
     }
 
@@ -302,21 +312,21 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
     case NodeType::Tile: {
       auto &n = dynamic_cast<TileNode &>(node);
       PropertyWidget::DragFloat("Tile X", n.id, n.tile_x,
-        [](Node &nd, const float v) { dynamic_cast<TileNode &>(nd).tile_x = v; },
-        graph, history, 0.1f, 1.f, 32.f, "%.1f",
-        n.get_input("tile_x")->connected);
+                                [](Node &nd, const float v) { dynamic_cast<TileNode &>(nd).tile_x = v; },
+                                graph, history, 0.1f, 1.f, 32.f, "%.1f",
+                                n.get_input("tile_x")->connected);
       PropertyWidget::DragFloat("Tile Y", n.id, n.tile_y,
-        [](Node &nd, const float v) { dynamic_cast<TileNode &>(nd).tile_y = v; },
-        graph, history, 0.1f, 1.f, 32.f, "%.1f",
-        n.get_input("tile_y")->connected);
+                                [](Node &nd, const float v) { dynamic_cast<TileNode &>(nd).tile_y = v; },
+                                graph, history, 0.1f, 1.f, 32.f, "%.1f",
+                                n.get_input("tile_y")->connected);
       PropertyWidget::DragFloat("Offset X", n.id, n.offset_x,
-        [](Node &nd, const float v) { dynamic_cast<TileNode &>(nd).offset_x = v; },
-        graph, history, 0.005f, -1.f, 1.f, "%.3f",
-        n.get_input("offset_x")->connected);
+                                [](Node &nd, const float v) { dynamic_cast<TileNode &>(nd).offset_x = v; },
+                                graph, history, 0.005f, -1.f, 1.f, "%.3f",
+                                n.get_input("offset_x")->connected);
       PropertyWidget::DragFloat("Offset Y", n.id, n.offset_y,
-        [](Node &nd, const float v) { dynamic_cast<TileNode &>(nd).offset_y = v; },
-        graph, history, 0.005f, -1.f, 1.f, "%.3f",
-        n.get_input("offset_y")->connected);
+                                [](Node &nd, const float v) { dynamic_cast<TileNode &>(nd).offset_y = v; },
+                                graph, history, 0.005f, -1.f, 1.f, "%.3f",
+                                n.get_input("offset_y")->connected);
       ImGui::Checkbox("Mirror X", &n.mirror_x);
       ImGui::Checkbox("Mirror Y", &n.mirror_y);
       break;
@@ -325,29 +335,45 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
     case NodeType::ParticleRenderer: {
       auto &n = dynamic_cast<ParticleRendererNode &>(node);
       PropertyWidget::SliderFloat("Color Jitter", n.id, n.color_jitter,
-        [](Node &nd, const float v) { dynamic_cast<ParticleRendererNode &>(nd).color_jitter = v; },
-        graph, history, 0.f, 1.f, "%.2f");
+                                  [](Node &nd, const float v) {
+                                    dynamic_cast<ParticleRendererNode &>(nd).color_jitter = v;
+                                  },
+                                  graph, history, 0.f, 1.f, "%.2f");
       PropertyWidget::SliderFloat("Alpha Jitter", n.id, n.alpha_jitter,
-        [](Node &nd, const float v) { dynamic_cast<ParticleRendererNode &>(nd).alpha_jitter = v; },
-        graph, history, 0.f, 1.f, "%.2f");
+                                  [](Node &nd, const float v) {
+                                    dynamic_cast<ParticleRendererNode &>(nd).alpha_jitter = v;
+                                  },
+                                  graph, history, 0.f, 1.f, "%.2f");
       PropertyWidget::SliderFloat("Size Min", n.id, n.size_min,
-        [](Node &nd, const float v) { dynamic_cast<ParticleRendererNode &>(nd).size_min = v; },
-        graph, history, 0.5f, 50.f, "%.1f");
+                                  [](Node &nd, const float v) {
+                                    dynamic_cast<ParticleRendererNode &>(nd).size_min = v;
+                                  },
+                                  graph, history, 0.5f, 50.f, "%.1f");
       PropertyWidget::SliderFloat("Size Max", n.id, n.size_max,
-        [](Node &nd, const float v) { dynamic_cast<ParticleRendererNode &>(nd).size_max = v; },
-        graph, history, 0.5f, 50.f, "%.1f");
+                                  [](Node &nd, const float v) {
+                                    dynamic_cast<ParticleRendererNode &>(nd).size_max = v;
+                                  },
+                                  graph, history, 0.5f, 50.f, "%.1f");
       PropertyWidget::SliderFloat("Size Scatter", n.id, n.size_scatter,
-        [](Node &nd, const float v) { dynamic_cast<ParticleRendererNode &>(nd).size_scatter = v; },
-        graph, history, 0.f, 20.f, "%.1f");
+                                  [](Node &nd, const float v) {
+                                    dynamic_cast<ParticleRendererNode &>(nd).size_scatter = v;
+                                  },
+                                  graph, history, 0.f, 20.f, "%.1f");
       PropertyWidget::SliderFloat("Global Scale", n.id, n.global_scale,
-        [](Node &nd, const float v) { dynamic_cast<ParticleRendererNode &>(nd).global_scale = v; },
-        graph, history, 0.01f, 10.f, "%.2f");
+                                  [](Node &nd, const float v) {
+                                    dynamic_cast<ParticleRendererNode &>(nd).global_scale = v;
+                                  },
+                                  graph, history, 0.01f, 10.f, "%.2f");
       PropertyWidget::SliderFloat("Emitter X", n.id, n.emitter_x,
-        [](Node &nd, const float v) { dynamic_cast<ParticleRendererNode &>(nd).emitter_x = v; },
-        graph, history, 0.f, 1.f, "%.2f");
+                                  [](Node &nd, const float v) {
+                                    dynamic_cast<ParticleRendererNode &>(nd).emitter_x = v;
+                                  },
+                                  graph, history, 0.f, 1.f, "%.2f");
       PropertyWidget::SliderFloat("Emitter Y", n.id, n.emitter_y,
-        [](Node &nd, const float v) { dynamic_cast<ParticleRendererNode &>(nd).emitter_y = v; },
-        graph, history, 0.f, 1.f, "%.2f");
+                                  [](Node &nd, const float v) {
+                                    dynamic_cast<ParticleRendererNode &>(nd).emitter_y = v;
+                                  },
+                                  graph, history, 0.f, 1.f, "%.2f");
       break;
     }
 
@@ -364,29 +390,37 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
     case NodeType::ChromaticAberration: {
       auto &n = dynamic_cast<ChromaticAberrationNode &>(node);
       PropertyWidget::SliderFloat("Strength", n.id, n.strength,
-        [](Node &nd, const float v) { dynamic_cast<ChromaticAberrationNode &>(nd).strength = v; },
-        graph, history, 0.f, 20.f, "%.1f");
+                                  [](Node &nd, const float v) {
+                                    dynamic_cast<ChromaticAberrationNode &>(nd).strength = v;
+                                  },
+                                  graph, history, 0.f, 20.f, "%.1f");
       break;
     }
 
     case NodeType::ColorCorrection: {
       auto &n = dynamic_cast<ColorCorrectionNode &>(node);
       PropertyWidget::SliderFloat("Brightness", n.id, n.brightness,
-        [](Node &nd, const float v) { dynamic_cast<ColorCorrectionNode &>(nd).brightness = v; },
-        graph, history, -1.f, 1.f, "%.2f",
-        n.get_input("brightness")->connected);
+                                  [](Node &nd, const float v) {
+                                    dynamic_cast<ColorCorrectionNode &>(nd).brightness = v;
+                                  },
+                                  graph, history, -1.f, 1.f, "%.2f",
+                                  n.get_input("brightness")->connected);
       PropertyWidget::SliderFloat("Contrast", n.id, n.contrast,
-        [](Node &nd, const float v) { dynamic_cast<ColorCorrectionNode &>(nd).contrast = v; },
-        graph, history, 0.f, 4.f, "%.2f",
-        n.get_input("contrast")->connected);
+                                  [](Node &nd, const float v) { dynamic_cast<ColorCorrectionNode &>(nd).contrast = v; },
+                                  graph, history, 0.f, 4.f, "%.2f",
+                                  n.get_input("contrast")->connected);
       PropertyWidget::SliderFloat("Saturation", n.id, n.saturation,
-        [](Node &nd, const float v) { dynamic_cast<ColorCorrectionNode &>(nd).saturation = v; },
-        graph, history, 0.f, 2.f, "%.2f",
-        n.get_input("saturation")->connected);
+                                  [](Node &nd, const float v) {
+                                    dynamic_cast<ColorCorrectionNode &>(nd).saturation = v;
+                                  },
+                                  graph, history, 0.f, 2.f, "%.2f",
+                                  n.get_input("saturation")->connected);
       PropertyWidget::SliderFloat("Hue shift", n.id, n.hue_shift,
-        [](Node &nd, const float v) { dynamic_cast<ColorCorrectionNode &>(nd).hue_shift = v; },
-        graph, history, 0.f, 6.2832f, "%.2f",
-        n.get_input("hue_shift")->connected);
+                                  [](Node &nd, const float v) {
+                                    dynamic_cast<ColorCorrectionNode &>(nd).hue_shift = v;
+                                  },
+                                  graph, history, 0.f, 6.2832f, "%.2f",
+                                  n.get_input("hue_shift")->connected);
       break;
     }
 
@@ -395,21 +429,24 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
       static constexpr const char *modes[] = {"Normal", "Add", "Multiply", "Screen", nullptr};
       int blend_mode_int = static_cast<int>(n.blend_mode);
       PropertyWidget::Combo("Blend mode", n.id, blend_mode_int, modes, 4,
-        [](Node &nd, int value) { dynamic_cast<CompositeNode &>(nd).blend_mode = static_cast<CompositeNode::BlendMode>(value); },
-        graph, history);
+                            [](Node &nd, int value) {
+                              dynamic_cast<CompositeNode &>(nd).blend_mode = static_cast<CompositeNode::BlendMode>(
+                                value);
+                            },
+                            graph, history);
       n.blend_mode = static_cast<CompositeNode::BlendMode>(blend_mode_int);
       PropertyWidget::SliderFloat("Opacity", n.id, n.opacity,
-        [](Node &nd, float value) { dynamic_cast<CompositeNode &>(nd).opacity = value; },
-        graph, history, 0.f, 1.f);
+                                  [](Node &nd, float value) { dynamic_cast<CompositeNode &>(nd).opacity = value; },
+                                  graph, history, 0.f, 1.f);
       break;
     }
 
     case NodeType::Displace: {
       auto &n = dynamic_cast<DisplaceNode &>(node);
       PropertyWidget::SliderFloat("Strength", n.id, n.strength,
-        [](Node &nd, const float v) { dynamic_cast<DisplaceNode &>(nd).strength = v; },
-        graph, history, 0.f, 0.5f, "%.3f",
-        n.get_input("strength")->connected);
+                                  [](Node &nd, const float v) { dynamic_cast<DisplaceNode &>(nd).strength = v; },
+                                  graph, history, 0.f, 0.5f, "%.3f",
+                                  n.get_input("strength")->connected);
       constexpr const char *kChannels[] = {"R", "G", "B"};
       ImGui::Combo("X channel", &n.channel_x, kChannels, 3);
       ImGui::Combo("Y channel", &n.channel_y, kChannels, 3);
@@ -419,8 +456,8 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
     case NodeType::Pixelate: {
       auto &n = dynamic_cast<PixelateNode &>(node);
       PropertyWidget::SliderFloat("Pixel Size", n.id, n.pixel_size,
-        [](Node &nd, const float v) { dynamic_cast<PixelateNode &>(nd).pixel_size = v; },
-        graph, history, 1.f, 64.f, "%.0f");
+                                  [](Node &nd, const float v) { dynamic_cast<PixelateNode &>(nd).pixel_size = v; },
+                                  graph, history, 1.f, 64.f, "%.0f");
       break;
     }
 
@@ -431,82 +468,147 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
       if (ImGui::Combo("Shape", &shape_idx, kShapes, 3)) {
         n.shape = static_cast<SDFShapeNode::Shape>(shape_idx);
       }
+
+      PropertyWidget::DragFloat(
+        "Position X", n.id, n.position.x,
+        [](Node &nd, const float v) {
+          dynamic_cast<SDFShapeNode &>(nd).position.x = v;
+        },
+        graph, history,
+        0.0001f, -1.f, 1.f,
+        "%.04f",
+        n.get_input("pos_x")->connected // disable if the corresponding pin is connected
+      );
+
+      PropertyWidget::DragFloat(
+        "Position Y", n.id, n.position.y,
+        [](Node &nd, const float v) {
+          dynamic_cast<SDFShapeNode &>(nd).position.y = v;
+        },
+        graph, history,
+        0.0001f, -1.f, 1.f,
+        "%.04f",
+        n.get_input("pos_y")->connected // disable if the corresponding pin is connected
+      );
+
+      PropertyWidget::DragFloat(
+        "Radius", n.id, n.radius,
+        [](Node &nd, const float v) {
+          dynamic_cast<SDFShapeNode &>(nd).radius = v;
+        },
+        graph, history,
+        0.0001f, .0001f, 2.f,
+        "%.04f",
+        n.get_input("radius")->connected // disable if the corresponding pin is connected
+      );
+
       if (n.shape == SDFShapeNode::Shape::Box) {
-        ImGui::DragFloat("Aspect ratio", &n.aspect, 0.01f, 0.1f, 10.f, "%.2f");
+        PropertyWidget::DragFloat(
+          "Aspect ratio", n.id, n.aspect,
+          [](Node &nd, const float v) {
+            dynamic_cast<SDFShapeNode &>(nd).aspect = v;
+          },
+          graph, history,
+          0.01f, .1f, 10.f,
+          "%.2f"
+        );
+        PropertyWidget::DragFloat(
+          "Rotation", n.id, n.rotation,
+          [](Node &nd, const float v) {
+            dynamic_cast<SDFShapeNode &>(nd).rotation = v;
+          },
+          graph, history,
+          0.01f, .0f, 2.f * PI,
+          "%.04f",
+          n.get_input("radius")->connected // disable if the corresponding pin is connected
+        );
       }
+
       if (n.shape == SDFShapeNode::Shape::Ring) {
         ImGui::DragFloat("Ring thickness", &n.ring_thickness, 0.005f, 0.01f, 1.f, "%.3f");
       }
+
       auto *color_ = reinterpret_cast<ImVec4 *>(&n.color);
       PropertyWidget::ColorEdit4("Color", n.id, *color_,
-        [](Node &nd, const ImVec4 &v) { dynamic_cast<SDFShapeNode &>(nd).color = v; },
-        graph, history);
+                                 [](Node &nd, const ImVec4 &v) { dynamic_cast<SDFShapeNode &>(nd).color = v; },
+                                 graph, history);
       PropertyWidget::SliderFloat("Edge smoothness", n.id, n.edge_smoothness,
-        [](Node &nd, const float v) { dynamic_cast<SDFShapeNode &>(nd).edge_smoothness = v; },
-        graph, history, 0.f, 1.f, "%.3f");
+                                  [](Node &nd, const float v) { dynamic_cast<SDFShapeNode &>(nd).edge_smoothness = v; },
+                                  graph, history, 0.f, 1.f, "%.3f");
       break;
     }
 
     case NodeType::Transform: {
       auto &n = dynamic_cast<TransformNode &>(node);
       PropertyWidget::DragFloat("Translate X", n.id, n.translate_x,
-        [](Node &nd, const float v) { dynamic_cast<TransformNode &>(nd).translate_x = v; },
-        graph, history, 0.005f, -1.f, 1.f, "%.3f",
-        n.get_input("translate_x")->connected);
+                                [](Node &nd, const float v) { dynamic_cast<TransformNode &>(nd).translate_x = v; },
+                                graph, history, 0.005f, -1.f, 1.f, "%.3f",
+                                n.get_input("translate_x")->connected);
       PropertyWidget::DragFloat("Translate Y", n.id, n.translate_y,
-        [](Node &nd, const float v) { dynamic_cast<TransformNode &>(nd).translate_y = v; },
-        graph, history, 0.005f, -1.f, 1.f, "%.3f",
-        n.get_input("translate_y")->connected);
+                                [](Node &nd, const float v) { dynamic_cast<TransformNode &>(nd).translate_y = v; },
+                                graph, history, 0.005f, -1.f, 1.f, "%.3f",
+                                n.get_input("translate_y")->connected);
       PropertyWidget::DragFloat("Scale", n.id, n.scale,
-        [](Node &nd, const float v) { dynamic_cast<TransformNode &>(nd).scale = v; },
-        graph, history, 0.01f, 0.01f, 10.f, "%.3f",
-        n.get_input("scale")->connected);
+                                [](Node &nd, const float v) { dynamic_cast<TransformNode &>(nd).scale = v; },
+                                graph, history, 0.01f, 0.01f, 10.f, "%.3f",
+                                n.get_input("scale")->connected);
       PropertyWidget::DragFloat("Rotation", n.id, n.rotation,
-        [](Node &nd, const float v) { dynamic_cast<TransformNode &>(nd).rotation = v; },
-        graph, history, 0.01f, -3.14159f, 3.14159f, "%.3f",
-        n.get_input("rotation")->connected);
+                                [](Node &nd, const float v) { dynamic_cast<TransformNode &>(nd).rotation = v; },
+                                graph, history, 0.01f, -3.14159f, 3.14159f, "%.3f",
+                                n.get_input("rotation")->connected);
       break;
     }
 
     case NodeType::VintageCRT: {
       auto &n = dynamic_cast<VintageCRTNode &>(node);
       PropertyWidget::SliderFloat("Pixel Size", n.id, n.pixel_size,
-        [](Node &nd, const float v) { dynamic_cast<VintageCRTNode &>(nd).pixel_size = v; },
-        graph, history, 1.f, 64.f, "%.0f");
+                                  [](Node &nd, const float v) { dynamic_cast<VintageCRTNode &>(nd).pixel_size = v; },
+                                  graph, history, 1.f, 64.f, "%.0f");
       break;
     }
 
     case NodeType::Mandel: {
       auto &n = dynamic_cast<MandelNode &>(node);
       PropertyWidget::DragFloat("Center X", n.id, n.center.x,
-        [](Node &nd, const float v) { dynamic_cast<MandelNode &>(nd).center.x = v; },
-        graph, history, 0.00001f, -3.f, 3.f, "%.06f");
+                                [](Node &nd, const float v) { dynamic_cast<MandelNode &>(nd).center.x = v; },
+                                graph, history, 0.00001f, -3.f, 3.f, "%.06f",
+                                n.get_input("center_x")->connected // disable if the corresponding pin is connected
+      );
+
       PropertyWidget::DragFloat("Center Y", n.id, n.center.y,
-        [](Node &nd, const float v) { dynamic_cast<MandelNode &>(nd).center.y = v; },
-        graph, history, 0.00001f, -3.f, 3.f, "%.06f");
+                                [](Node &nd, const float v) { dynamic_cast<MandelNode &>(nd).center.y = v; },
+                                graph, history, 0.00001f, -3.f, 3.f, "%.06f",
+                                n.get_input("center_y")->connected // disable if the corresponding pin is connected
+      );
+
       PropertyWidget::SliderFloat("Zoom", n.id, n.zoom,
-        [](Node &nd, const float v) { dynamic_cast<MandelNode &>(nd).zoom = v; },
-        graph, history, 0.05f, 10000.f, "%.3f", false, ImGuiSliderFlags_Logarithmic);
+                                  [](Node &nd, const float v) { dynamic_cast<MandelNode &>(nd).zoom = v; },
+                                  graph, history, 0.05f, 10000.f, "%.3f",
+                                  n.get_input("zoom")->connected, // disable if the corresponding pin is connected
+                                  ImGuiSliderFlags_Logarithmic);
+
       PropertyWidget::DragInt("Iterations", n.id, n.iterations,
-        [](Node &nd, const int v) { dynamic_cast<MandelNode &>(nd).iterations = v; },
-        graph, history, 1, 10, 10000);
+                              [](Node &nd, const int v) { dynamic_cast<MandelNode &>(nd).iterations = v; },
+                              graph, history, 1, 10, 10000, "%d",
+                              n.get_input("iterations")->connected // disable if the corresponding pin is connected
+      );
       break;
     }
 
     case NodeType::ParticleEmitter: {
       auto &n = dynamic_cast<ParticleEmitterNode &>(node);
       PropertyWidget::SliderFloat("Rate", n.id, n.rate,
-        [](Node &nd, const float v) { dynamic_cast<ParticleEmitterNode &>(nd).rate = v; },
-        graph, history, 0.1f, 500.f, "%.1f");
+                                  [](Node &nd, const float v) { dynamic_cast<ParticleEmitterNode &>(nd).rate = v; },
+                                  graph, history, 0.1f, 500.f, "%.1f");
       PropertyWidget::SliderFloat("Speed", n.id, n.speed,
-        [](Node &nd, const float v) { dynamic_cast<ParticleEmitterNode &>(nd).speed = v; },
-        graph, history, 0.f, 1000.f, "%.1f");
+                                  [](Node &nd, const float v) { dynamic_cast<ParticleEmitterNode &>(nd).speed = v; },
+                                  graph, history, 0.f, 1000.f, "%.1f");
       PropertyWidget::SliderFloat("Min Life", n.id, n.min_life,
-        [](Node &nd, const float v) { dynamic_cast<ParticleEmitterNode &>(nd).min_life = v; },
-        graph, history, 0.1f, 10.f, "%.2f");
+                                  [](Node &nd, const float v) { dynamic_cast<ParticleEmitterNode &>(nd).min_life = v; },
+                                  graph, history, 0.1f, 10.f, "%.2f");
       PropertyWidget::SliderFloat("Max Life", n.id, n.max_life,
-        [](Node &nd, const float v) { dynamic_cast<ParticleEmitterNode &>(nd).max_life = v; },
-        graph, history, 0.1f, 10.f, "%.2f");
+                                  [](Node &nd, const float v) { dynamic_cast<ParticleEmitterNode &>(nd).max_life = v; },
+                                  graph, history, 0.1f, 10.f, "%.2f");
       break;
     }
 
@@ -534,7 +636,8 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
         ImGui::BeginDisabled(n.is_renaming);
         int force_type = n.inputs[i].pad - static_cast<uint8_t>(ParticleSystemNode::ParticleSystemForce::AccelerationX);
         if (ImGui::Combo("Force type", &force_type, kForceTypes, 6)) {
-          n.inputs[i].pad = static_cast<uint8_t>(static_cast<int>(ParticleSystemNode::ParticleSystemForce::AccelerationX) + force_type);
+          n.inputs[i].pad = static_cast<uint8_t>(
+            static_cast<int>(ParticleSystemNode::ParticleSystemForce::AccelerationX) + force_type);
         }
         ImGui::SameLine();
         if (ImGui::SmallButton(ICON_FA_I_CURSOR)) {

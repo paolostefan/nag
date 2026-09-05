@@ -34,7 +34,6 @@ struct MultiplyNode : MultiInputNode {
     }
 
     outputs[0].set_float(result);
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<MultiplyNode> create() {
@@ -69,7 +68,6 @@ struct DivideNode : MultiInputNode {
     float divisor = *in_b;
     if (std::abs(divisor) < kEpsilon) { divisor = kEpsilon; }
     outputs[0].set_float((*in_a) / divisor);
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<DivideNode> create() {
@@ -103,8 +101,6 @@ struct AddNode : MultiInputNode {
         }
       }
       outputs[0].set_float(sum);
-
-      mark_inputs_consumed();
     }
   }
 
@@ -144,7 +140,6 @@ struct SubtractNode : MultiInputNode {
 
       outputs[0].set_float(result);
     }
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<SubtractNode> create() {
@@ -174,7 +169,6 @@ struct ModuloNode : MultiInputNode {
     const float *in_b = inputs[1].get_float();
     if (!in_a || !in_b || !outputs[0].get_float()) { return; }
     outputs[0].set_float(std::fmod(*in_a, *in_b));
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<ModuloNode> create() {
@@ -204,7 +198,6 @@ struct PowerNode : MultiInputNode {
     const float *exponent = inputs[1].get_float();
     if (!base || !exponent || !outputs[0].get_float()) { return; }
     outputs[0].set_float(std::pow(*base, *exponent));
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<PowerNode> create() {
@@ -241,7 +234,6 @@ struct MinNode : MultiInputNode {
     }
 
     outputs[0].set_float(min);
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<MinNode> create(const uint8_t num_inputs = 2) {
@@ -278,7 +270,6 @@ struct MaxNode : MultiInputNode {
     }
 
     outputs[0].set_float(max);
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<MaxNode> create(const uint8_t num_inputs = 2) {
@@ -308,7 +299,6 @@ struct CompareNode : MultiInputNode {
     const float *in_b = inputs[1].get_float();
     if (!in_a || !in_b || !outputs[0].get_bool()) { return; }
     outputs[0].set_bool((*in_a) > (*in_b));
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<CompareNode> create() {
@@ -341,7 +331,6 @@ struct AbsNode : Node {
     const float *in = inputs[0].get_float();
     if (!in || !outputs[0].get_float()) { return; }
     outputs[0].set_float(std::abs(*in));
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<AbsNode> create() {
@@ -371,7 +360,6 @@ struct FloorNode : Node {
     const float *in = inputs[0].get_float();
     if (!in || !outputs[0].get_float()) { return; }
     outputs[0].set_float(std::floor(*in));
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<FloorNode> create() {
@@ -401,7 +389,6 @@ struct CeilNode : Node {
     const float *in = inputs[0].get_float();
     if (!in || !outputs[0].get_float()) { return; }
     outputs[0].set_float(std::ceil(*in));
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<CeilNode> create() {
@@ -431,7 +418,6 @@ struct RoundNode : Node {
     const float *in = inputs[0].get_float();
     if (!in || !outputs[0].get_float()) { return; }
     outputs[0].set_float(std::round(*in));
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<RoundNode> create() {
@@ -463,7 +449,6 @@ struct SqrtNode : Node {
     if (!in || !outputs[0].get_float()) { return; }
     const float value = std::max(0.f, *in);
     outputs[0].set_float(std::sqrt(value));
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<SqrtNode> create() {
@@ -493,7 +478,6 @@ struct NegateNode : Node {
     const float *in = inputs[0].get_float();
     if (!in || !outputs[0].get_float()) { return; }
     outputs[0].set_float(-(*in));
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<NegateNode> create() {
@@ -519,7 +503,6 @@ struct SinNode : Node {
     const float *in = inputs[0].get_float();
     if (!in || !outputs[0].get_float()) { return; }
     outputs[0].set_float(std::sin(*in));
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<SinNode> create() {
@@ -550,7 +533,6 @@ struct CosNode : Node {
     const float *in = inputs[0].get_float();
     if (!in || !outputs[0].get_float()) { return; }
     outputs[0].set_float(std::cos(*in));
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<CosNode> create() {
@@ -580,7 +562,6 @@ struct TanNode : Node {
     const float *in = inputs[0].get_float();
     if (!in || !outputs[0].get_float()) { return; }
     outputs[0].set_float(std::tan(*in));
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<TanNode> create() {
@@ -623,7 +604,6 @@ struct RemapNode : Node {
     const float in_range = in_max - in_min;
     if (std::abs(in_range) < 1e-6f) {
       outputs[0].set_float(out_min);
-      mark_inputs_consumed();
       return;
     }
 
@@ -632,7 +612,6 @@ struct RemapNode : Node {
     const float result = out_min + t * (out_max - out_min);
 
     outputs[0].set_float(result);
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
@@ -705,7 +684,6 @@ struct ClampNode : Node {
 
     const float clamped = std::clamp(*in, min_value, max_value);
     outputs[0].set_float(clamped);
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
@@ -771,7 +749,6 @@ struct LerpNode : Node {
     const float result = *in_a + t * (*in_b - *in_a);
 
     outputs[0].set_float(result);
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<LerpNode> create() {
@@ -811,9 +788,7 @@ struct SmoothStepNode : Node {
 
     // Hermite interpolation: 3t² - 2t³
     const float smooth = t * t * (3.f - 2.f * t);
-
     outputs[0].set_float(smooth);
-    mark_inputs_consumed();
   }
 
   [[nodiscard]] static std::unique_ptr<SmoothStepNode> create(const float edge0 = 0.f,

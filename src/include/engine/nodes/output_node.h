@@ -23,7 +23,6 @@ struct OutputNode : Node {
     if (Texture **tex = inputs[0].get_texture()) {
       last_texture_ = *tex;
     }
-    mark_inputs_consumed();
   }
 
   /**
