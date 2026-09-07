@@ -1,12 +1,12 @@
 #ifndef NAG_EDITOR_SCENE_H
 #define NAG_EDITOR_SCENE_H
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-#include "imgui.h"
 #include "nlohmann/json.hpp"
 
 #include "engine/audio_track.h"
@@ -45,15 +45,16 @@ struct TimelineSegment {
   int audio_track_index{-1};
   int frame_start{0};
   int frame_end{100};
-  ImU32 color{0xFF8080FF};
+  // RGBA packed color used to tint the segment block in the timeline.
+  uint32_t color{0xFF8080FF};
 
   TimelineSegment() = default;
 
-  TimelineSegment(const int start, const int end, const std::string_view graph_id, const ImU32 color = 0xFF8080FF)
+  TimelineSegment(const int start, const int end, const std::string_view graph_id, const uint32_t color = 0xFF8080FF)
     : type(SegmentType::GRAPH), graph_id(graph_id), frame_start(start), frame_end(end), color(color) {
   }
 
-  TimelineSegment(const int start, const int end, const int audio_idx, const ImU32 color = 0xFF80FF80)
+  TimelineSegment(const int start, const int end, const int audio_idx, const uint32_t color = 0xFF80FF80)
     : type(SegmentType::AUDIO), audio_track_index(audio_idx), frame_start(start), frame_end(end), color(color) {
   }
 };
@@ -180,9 +181,9 @@ inline void from_json(const nlohmann::json &j, GraphFolder &folder) {
 }
 
 NLOHMANN_JSON_SERIALIZE_ENUM(SegmentType, {
-  {SegmentType::GRAPH, "Graph"},
-  {SegmentType::AUDIO, "Audio"},
-});
+                             {SegmentType::GRAPH, "Graph"},
+                             {SegmentType::AUDIO, "Audio"},
+                             });
 
 inline void to_json(nlohmann::json &j, const TimelineSegment &segment) {
   j = nlohmann::json{

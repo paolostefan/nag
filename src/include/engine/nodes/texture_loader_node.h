@@ -4,9 +4,6 @@
 #include <string>
 
 #include "GL/glew.h"
-#include "ImGuiFileDialog.h"
-#include "imgui.h"
-#include "IconsFontAwesome6.h"
 #include "stb_image.h"
 
 #include "engine/nodes/visual_node.h"
@@ -20,13 +17,12 @@
  * changes (dirty flag pattern), so evaluate() is cheap at steady state.
  *
  * The node does NOT own a RenderTarget — it uploads directly to a raw GL
- * texture. VisualNode is therefore not a suitable base; this node inherits
- * from Node directly and manages its own GL resource.
+ * texture. VisualNode is therefore not a suitable base;
+ * this node inherits from Node directly and manages its own GL resource.
  *
- * File dialog:
- *   draw_properties() calls OpenDialog() on the singleton.
- *   NodePropertiesPanel::render() must call display_file_dialog() every frame
- *   so the dialog is shown even when the properties panel is the focused window.
+ * Path handling is engine-side (std::string). The file-dialog UI is a
+ * GraphEditor concern; see the editor adapter helper
+ * (editor/NodePropertiesPanel) for opening and displaying it.
  *
  * Output: Texture*
  */
@@ -60,48 +56,6 @@ struct TextureLoaderNode : VisualNode {
   void render() override {
     // No rendering needed; this node just loads a texture and outputs it.
     spdlog::info("TextureLoaderNode::render()");
-  }
-
-  // ── File dialog helpers ───────────────────────────────────────────────────
-
-  /**
-   * @brief Opens the ImGuiFileDialog for this node.
-   * Call from draw_properties().
-   */
-  void open_file_dialog() const {
-    IGFD::FileDialogConfig cfg;
-    cfg.path = file_path.empty() ? "." : file_path.substr(0, file_path.find_last_of("/\\"));
-    cfg.flags = ImGuiFileDialogFlags_Modal;
-    ImGuiFileDialog::Instance()->OpenDialog(dialog_key(),
-                                            "Load Texture",
-                                            kImageFilter,
-                                            cfg);
-  }
-
-  /**
-   * @brief Processes the file dialog result.
-   * Must be called every frame from NodePropertiesPanel::render()
-   * (or any other site that runs unconditionally each frame).
-   *
-   * @return true if a new path was selected this frame.
-   */
-  bool display_file_dialog() {
-    constexpr ImVec2 kDialogSize{600.f, 400.f};
-
-    if (!ImGuiFileDialog::Instance()->Display(dialog_key(),
-                                              ImGuiWindowFlags_NoCollapse,
-                                              kDialogSize)) {
-      return false; // dialog not open or not yet confirmed
-    }
-
-    bool accepted = false;
-    if (ImGuiFileDialog::Instance()->IsOk()) {
-      set_path(ImGuiFileDialog::Instance()->GetFilePathName());
-      accepted = true;
-    }
-
-    ImGuiFileDialog::Instance()->Close();
-    return accepted;
   }
 
   /**
@@ -148,17 +102,9 @@ struct TextureLoaderNode : VisualNode {
   }
 
 private:
-  static constexpr auto *kImageFilter = "Image files{.png,.jpg,.jpeg,.bmp,.tga}";
-
   // GLuint gl_texture_{0};
   bool path_dirty_{false};
   std::string last_error_;
-
-  // Unique dialog key per node instance — avoids conflicts when multiple
-  // TextureLoaderNodes exist in the same graph.
-  [[nodiscard]] std::string dialog_key() const {
-    return "texture_loader_dialog_" + std::to_string(id);
-  }
 
   /**
    * @brief Loads the image from disk and uploads it to OpenGL.

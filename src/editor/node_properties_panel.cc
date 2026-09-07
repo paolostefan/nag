@@ -1,5 +1,6 @@
 #include "editor/node_properties_panel.h"
 
+#include "IconsFontAwesome6.h"
 #include "imgui.h"
 #include "imnodes.h"
 
@@ -35,7 +36,7 @@ void NodePropertiesPanel::render(NodeGraph &graph, CommandHistory &history) {
       draw_node_properties(*node, graph, history);
 
       if (auto *tl = dynamic_cast<TextureLoaderNode *>(node)) {
-        tl->display_file_dialog();
+        display_file_dialog(*tl);
       }
     }
   }

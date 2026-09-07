@@ -1,8 +1,9 @@
 #include "editor/node_properties_renderers.h"
 
-#include <IconsFontAwesome6.h>
 #include <cstring>
 
+#include "IconsFontAwesome6.h"
+#include "ImGuiFileDialog.h"
 #include "imgui.h"
 
 #include "editor/command_history.h"
@@ -17,131 +18,129 @@
 #include "engine/nodes/texture_loader_node.h"
 
 namespace {
-
-Vec4 to_vec4(const ImVec4 &v) {
-  return {v.x, v.y, v.z, v.w};
-}
-
-// ============================================================================
-// Schema-driven property rendering
-//
-// Iterates node.properties() and dispatches on WidgetKind, mapping each row to
-// the matching PropertyWidget helper (which preserves the 3-phase undo path).
-// Rows whose value lives on a pin that is already connected are disabled.
-// ============================================================================
-
-bool draw_schema_properties(Node &node, NodeGraph &graph, CommandHistory &history) {
-  const auto &props = node.properties();
-  if (props.empty()) {
-    return false;
+  Vec4 to_vec4(const ImVec4 &v) {
+    return {v.x, v.y, v.z, v.w};
   }
 
-  for (const auto &p : props) {
-    bool disabled = false;
-    if (!p.disable_pin.empty()) {
-      if (const Pin *pin = node.get_input(p.disable_pin)) {
-        disabled = pin->connected;
-      }
+  // ============================================================================
+  // Schema-driven property rendering
+  //
+  // Iterates node.properties() and dispatches on WidgetKind, mapping each row to
+  // the matching PropertyWidget helper (which preserves the 3-phase undo path).
+  // Rows whose value lives on a pin that is already connected are disabled.
+  // ============================================================================
+
+  bool draw_schema_properties(Node &node, NodeGraph &graph, CommandHistory &history) {
+    const auto &props = node.properties();
+    if (props.empty()) {
+      return false;
     }
 
-    const auto setter = [p](Node &, PropertyValue v) { p.set(v); };
+    for (const auto &p: props) {
+      bool disabled = false;
+      if (!p.disable_pin.empty()) {
+        if (const Pin *pin = node.get_input(p.disable_pin)) {
+          disabled = pin->connected;
+        }
+      }
 
-    switch (p.kind) {
-      case WidgetKind::SliderFloat: {
-        if (auto *ptr = std::get_if<float *>(&p.value)) {
-          ImGuiSliderFlags flags = 0;
-          if (p.slider_flags == SliderFlag::Logarithmic) {
-            flags |= ImGuiSliderFlags_Logarithmic;
+      const auto setter = [p](Node &, PropertyValue v) { p.set(v); };
+
+      switch (p.kind) {
+        case WidgetKind::SliderFloat: {
+          if (auto *ptr = std::get_if<float *>(&p.value)) {
+            ImGuiSliderFlags flags = 0;
+            if (p.slider_flags == SliderFlag::Logarithmic) {
+              flags |= ImGuiSliderFlags_Logarithmic;
+            }
+            PropertyWidget::SliderFloat(p.label, node.id, **ptr,
+                                        [setter](Node &nd, float v) { setter(nd, v); },
+                                        graph, history, p.min, p.max,
+                                        p.format ? p.format : "%.3f",
+                                        disabled, flags);
           }
-          PropertyWidget::SliderFloat(p.label, node.id, **ptr,
+          break;
+        }
+
+        case WidgetKind::DragFloat: {
+          if (auto *ptr = std::get_if<float *>(&p.value)) {
+            PropertyWidget::DragFloat(p.label, node.id, **ptr,
                                       [setter](Node &nd, float v) { setter(nd, v); },
-                                      graph, history, p.min, p.max,
+                                      graph, history, p.speed, p.min, p.max,
                                       p.format ? p.format : "%.3f",
-                                      disabled, flags);
+                                      disabled);
+          }
+          break;
         }
-        break;
-      }
 
-      case WidgetKind::DragFloat: {
-        if (auto *ptr = std::get_if<float *>(&p.value)) {
-          PropertyWidget::DragFloat(p.label, node.id, **ptr,
-                                    [setter](Node &nd, float v) { setter(nd, v); },
-                                    graph, history, p.speed, p.min, p.max,
-                                    p.format ? p.format : "%.3f",
-                                    disabled);
+        case WidgetKind::SliderInt: {
+          if (auto *ptr = std::get_if<int *>(&p.value)) {
+            PropertyWidget::SliderInt(p.label, node.id, **ptr,
+                                      [setter](Node &nd, int v) { setter(nd, v); },
+                                      graph, history,
+                                      static_cast<int>(p.min), static_cast<int>(p.max),
+                                      p.format ? p.format : "%d",
+                                      disabled);
+          }
+          break;
         }
-        break;
-      }
 
-      case WidgetKind::SliderInt: {
-        if (auto *ptr = std::get_if<int *>(&p.value)) {
-          PropertyWidget::SliderInt(p.label, node.id, **ptr,
+        case WidgetKind::DragInt: {
+          if (auto *ptr = std::get_if<int *>(&p.value)) {
+            PropertyWidget::DragInt(p.label, node.id, **ptr,
                                     [setter](Node &nd, int v) { setter(nd, v); },
-                                    graph, history,
+                                    graph, history, p.speed,
                                     static_cast<int>(p.min), static_cast<int>(p.max),
                                     p.format ? p.format : "%d",
                                     disabled);
+          }
+          break;
         }
-        break;
-      }
 
-      case WidgetKind::DragInt: {
-        if (auto *ptr = std::get_if<int *>(&p.value)) {
-          PropertyWidget::DragInt(p.label, node.id, **ptr,
+        case WidgetKind::InputInt: {
+          if (auto *ptr = std::get_if<int *>(&p.value)) {
+            PropertyWidget::InputInt(p.label, node.id, **ptr,
+                                     [setter](Node &nd, int v) { setter(nd, v); },
+                                     graph, history,
+                                     static_cast<int>(p.min), static_cast<int>(p.max),
+                                     disabled);
+          }
+          break;
+        }
+
+        case WidgetKind::Combo: {
+          if (auto *ptr = std::get_if<int *>(&p.value)) {
+            PropertyWidget::Combo(p.label, node.id, **ptr,
+                                  p.items, p.item_count,
                                   [setter](Node &nd, int v) { setter(nd, v); },
-                                  graph, history, p.speed,
-                                  static_cast<int>(p.min), static_cast<int>(p.max),
-                                  p.format ? p.format : "%d",
-                                  disabled);
+                                  graph, history, disabled);
+          }
+          break;
         }
-        break;
-      }
 
-      case WidgetKind::InputInt: {
-        if (auto *ptr = std::get_if<int *>(&p.value)) {
-          PropertyWidget::InputInt(p.label, node.id, **ptr,
-                                   [setter](Node &nd, int v) { setter(nd, v); },
-                                   graph, history,
-                                   static_cast<int>(p.min), static_cast<int>(p.max),
-                                   disabled);
+        case WidgetKind::Checkbox: {
+          if (auto *ptr = std::get_if<bool *>(&p.value)) {
+            PropertyWidget::Checkbox(p.label, node.id, **ptr,
+                                     [setter](Node &nd, bool v) { setter(nd, v); },
+                                     graph, history, disabled);
+          }
+          break;
         }
-        break;
-      }
 
-      case WidgetKind::Combo: {
-        if (auto *ptr = std::get_if<int *>(&p.value)) {
-          PropertyWidget::Combo(p.label, node.id, **ptr,
-                                p.items, p.item_count,
-                                [setter](Node &nd, int v) { setter(nd, v); },
-                                graph, history, disabled);
+        case WidgetKind::ColorEdit: {
+          if (auto *ptr = std::get_if<Vec4 *>(&p.value)) {
+            auto &im_color = reinterpret_cast<ImVec4 &>(**ptr);
+            PropertyWidget::ColorEdit4(p.label, node.id, im_color,
+                                       [setter](Node &nd, const ImVec4 &v) { setter(nd, to_vec4(v)); },
+                                       graph, history);
+          }
+          break;
         }
-        break;
-      }
-
-      case WidgetKind::Checkbox: {
-        if (auto *ptr = std::get_if<bool *>(&p.value)) {
-          PropertyWidget::Checkbox(p.label, node.id, **ptr,
-                                   [setter](Node &nd, bool v) { setter(nd, v); },
-                                   graph, history, disabled);
-        }
-        break;
-      }
-
-      case WidgetKind::ColorEdit: {
-        if (auto *ptr = std::get_if<Vec4 *>(&p.value)) {
-          auto &im_color = reinterpret_cast<ImVec4 &>(**ptr);
-          PropertyWidget::ColorEdit4(p.label, node.id, im_color,
-                                     [setter](Node &nd, const ImVec4 &v) { setter(nd, to_vec4(v)); },
-                                     graph, history);
-        }
-        break;
       }
     }
+    return true;
   }
-  return true;
-}
-
-}  // namespace
+} // namespace
 
 void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history) {
   if (draw_schema_properties(node, graph, history)) {
@@ -162,7 +161,7 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
       }
       ImGui::Spacing();
       if (ImGui::Button(ICON_FA_FOLDER_OPEN "  Browse...")) {
-        n.open_file_dialog();
+        open_file_dialog(n);
       }
       ImGui::SameLine();
       if (ImGui::Button(ICON_FA_ROTATE_RIGHT "  Reload")) {
@@ -389,4 +388,51 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
     case NodeType::Count:
       break;
   }
+}
+
+// ============================================================================
+// Editor adapter for TextureLoaderNode's file dialog
+//
+// The engine node keeps only the std::string path; the ImGuiFileDialog
+// interaction lives here. The dialog key is per-node so multiple
+// TextureLoaderNodes don't fight over the same modal window.
+// ============================================================================
+
+namespace {
+  constexpr auto *kTextureImageFilter = "Image files{.png,.jpg,.jpeg,.bmp,.tga}";
+
+  std::string texture_dialog_key(const TextureLoaderNode &node) {
+    return "texture_loader_dialog_" + std::to_string(node.id);
+  }
+} // namespace
+
+void open_file_dialog(TextureLoaderNode &node) {
+  IGFD::FileDialogConfig cfg;
+  cfg.path = node.file_path.empty()
+               ? "."
+               : node.file_path.substr(0, node.file_path.find_last_of("/\\"));
+  cfg.flags = ImGuiFileDialogFlags_Modal;
+  ImGuiFileDialog::Instance()->OpenDialog(texture_dialog_key(node),
+                                          "Load Texture",
+                                          kTextureImageFilter,
+                                          cfg);
+}
+
+bool display_file_dialog(TextureLoaderNode &node) {
+  constexpr ImVec2 kDialogSize{600.f, 400.f};
+
+  if (!ImGuiFileDialog::Instance()->Display(texture_dialog_key(node),
+                                            ImGuiWindowFlags_NoCollapse,
+                                            kDialogSize)) {
+    return false; // dialog not open or not yet confirmed
+  }
+
+  bool accepted = false;
+  if (ImGuiFileDialog::Instance()->IsOk()) {
+    node.set_path(ImGuiFileDialog::Instance()->GetFilePathName());
+    accepted = true;
+  }
+
+  ImGuiFileDialog::Instance()->Close();
+  return accepted;
 }
