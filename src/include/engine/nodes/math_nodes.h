@@ -584,13 +584,26 @@ struct RemapNode : Node {
   float in_max{1.f};
   float out_min{0.f};
   float out_max{1.f};
+  std::vector<Property> props_;
 
   RemapNode() {
     type = NodeType::Remap;
     name = "Remap";
+    props_ = {
+      MakeFloatProp(*this, &RemapNode::in_min, "in_min", "In Min",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+      MakeFloatProp(*this, &RemapNode::in_max, "in_max", "In Max",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+      MakeFloatProp(*this, &RemapNode::out_min, "out_min", "Out Min",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+      MakeFloatProp(*this, &RemapNode::out_max, "out_max", "Out Max",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+    };
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Remap"; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
@@ -614,37 +627,6 @@ struct RemapNode : Node {
     outputs[0].set_float(result);
   }
 
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j;
-    j["in_min"] = in_min;
-    j["in_max"] = in_max;
-    j["out_min"] = out_min;
-    j["out_max"] = out_max;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      if (j.contains("in_min")) in_min = j["in_min"];
-      if (j.contains("in_max")) in_max = j["in_max"];
-      if (j.contains("out_min")) out_min = j["out_min"];
-      if (j.contains("out_max")) out_max = j["out_max"];
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize RemapNode params: ") + e.what()
-      );
-    }
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "in_min") return in_min;
-    if (param_name == "in_max") return in_max;
-    if (param_name == "out_min") return out_min;
-    if (param_name == "out_max") return out_max;
-    return 0.f;
-  }
-
   [[nodiscard]] static std::unique_ptr<RemapNode> create(const float in_min = 0.f,
                                                          const float in_max = 1.f,
                                                          const float out_min = 0.f,
@@ -666,13 +648,22 @@ struct RemapNode : Node {
 struct ClampNode : Node {
   float min_value{0.f};
   float max_value{1.f};
+  std::vector<Property> props_;
 
   ClampNode() {
     type = NodeType::Clamp;
     name = "Clamp";
+    props_ = {
+      MakeFloatProp(*this, &ClampNode::min_value, "min_value", "Min",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+      MakeFloatProp(*this, &ClampNode::max_value, "max_value", "Max",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+    };
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Clamp"; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
@@ -684,31 +675,6 @@ struct ClampNode : Node {
 
     const float clamped = std::clamp(*in, min_value, max_value);
     outputs[0].set_float(clamped);
-  }
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j;
-    j["min_value"] = min_value;
-    j["max_value"] = max_value;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      if (j.contains("min_value")) min_value = j["min_value"];
-      if (j.contains("max_value")) max_value = j["max_value"];
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize Clamp params: ") + e.what()
-      );
-    }
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "min_value") return min_value;
-    if (param_name == "max_value") return max_value;
-    return 0.f;
   }
 
   [[nodiscard]] static std::unique_ptr<ClampNode> create(const float min_value = 0.f,

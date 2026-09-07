@@ -14,15 +14,26 @@ struct CircleNode : ShaderNode {
   Vec2 position{0.5f, 0.5f};
   float radius{0.2f};
   float edge_smoothness{0.01f};
+  std::vector<Property> props_;
 
   CircleNode() {
     type = NodeType::Circle;
     name = "Circle";
+    props_ = {
+      MakeColorProp(*this, &CircleNode::color, "color", "Color"),
+      MakeFloatProp(*this, &CircleNode::radius, "radius", "Radius",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.3f"),
+      MakeFloatProp(*this, &CircleNode::edge_smoothness, "edge_smoothness", "Edge Smoothness",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.3f"),
+    };
+    props_[1].disable_pin = "radius";
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Circle"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "circle"; }
   [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kcircle_frag; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void bind_params() override {
     shader->set_uniform("u_position", position.x, position.y);
@@ -33,10 +44,8 @@ struct CircleNode : ShaderNode {
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
-    j["radius"] = radius;
     j["position"] = {position.x, position.y};
     j["color"] = {color.x, color.y, color.z, color.w};
-    j["edge_smoothness"] = edge_smoothness;
     return j;
   }
 
@@ -57,14 +66,6 @@ struct CircleNode : ShaderNode {
       if (j.contains("position") && j["position"].is_array() && j["position"].size() >= 2) {
         position.x = j["position"][0];
         position.y = j["position"][1];
-      }
-
-      if (j.contains("radius")) {
-        radius = j["radius"];
-      }
-
-      if (j.contains("edge_smoothness")) {
-        edge_smoothness = j["edge_smoothness"];
       }
 
       return OperationResult::ok();

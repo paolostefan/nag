@@ -169,6 +169,83 @@ namespace PropertyWidget {
     ImGui::EndDisabled();
   }
 
+  void SliderInt(const std::string &label,
+                 int node_id,
+                 int &value,
+                 std::function<void(Node &, int)> setter,
+                 NodeGraph &graph,
+                 CommandHistory &history,
+                 const int min,
+                 const int max,
+                 const char *format,
+                 const bool disabled) {
+    const std::string key = internal::MakeKey(node_id, label);
+    auto &before_map = internal::BeforeMap<int>();
+
+    ImGui::BeginDisabled(disabled);
+    ImGui::SliderInt(label.c_str(), &value, min, max, format);
+
+    if (ImGui::IsItemActive() || ImGui::IsItemEdited()) {
+      internal::EvaluateNode(graph, node_id);
+    }
+
+    if (ImGui::IsItemActivated()) {
+      before_map[key] = value;
+    }
+
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+      if (const auto it = before_map.find(key); it != before_map.end()) {
+        const int value_before = it->second;
+        before_map.erase(it);
+
+        if (value_before != value) {
+          history.execute(
+            graph,
+            std::make_unique<SetNodeParamCommand<int> >(
+              node_id, label, value_before, value, std::move(setter)));
+        }
+      }
+    }
+
+    ImGui::EndDisabled();
+  }
+
+  void Checkbox(const std::string &label,
+                int node_id,
+                bool &value,
+                std::function<void(Node &, bool)> setter,
+                NodeGraph &graph,
+                CommandHistory &history,
+                const bool disabled) {
+    const std::string key = internal::MakeKey(node_id, label);
+    auto &before_map = internal::BeforeMap<bool>();
+
+    ImGui::BeginDisabled(disabled);
+    const bool changed = ImGui::Checkbox(label.c_str(), &value);
+
+    if (changed) {
+      internal::EvaluateNode(graph, node_id);
+    }
+
+    if (changed) {
+      // Checkbox toggles immediately — emit command right away (no drag phase).
+      const auto it = before_map.find(key);
+      const bool value_before = it != before_map.end() ? it->second : !value;
+      before_map.erase(key);
+
+      if (value_before != value) {
+        history.execute(
+          graph,
+          std::make_unique<SetNodeParamCommand<bool> >(
+            node_id, label, value_before, value, std::move(setter)));
+      }
+    } else {
+      before_map[key] = value;
+    }
+
+    ImGui::EndDisabled();
+  }
+
   void ColorEdit4(const std::string &label,
                   int node_id,
                   ImVec4 &value,

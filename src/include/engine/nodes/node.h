@@ -10,6 +10,7 @@
 #include "engine/data_type.h"
 #include "engine/node_type.h"
 #include "engine/operation_result.h"
+#include "engine/property.h"
 #include "engine/stream.h"
 
 struct NodeGraph;
@@ -146,9 +147,22 @@ struct Node {
     }
   }
 
+  [[nodiscard]] virtual const std::vector<Property> &properties() const noexcept {
+    static const std::vector<Property> kNoProperties{};
+    return kNoProperties;
+  }
+
   [[nodiscard]] virtual nlohmann::json serialize_params() const {
     nlohmann::json j = nlohmann::json::object();
     j["gui_xy"] = {gui_x, gui_y};
+    for (const auto &p : properties()) {
+      switch (p.param_type) {
+        case ParamType::Float: j[p.name] = std::get<float>(p.get()); break;
+        case ParamType::Int:   j[p.name] = std::get<int>(p.get()); break;
+        case ParamType::Bool:  j[p.name] = std::get<bool>(p.get()); break;
+        case ParamType::Vec4:  break; // composite; per-node hook writes it
+      }
+    }
     return j;
   }
 
@@ -157,12 +171,29 @@ struct Node {
       gui_x = j["gui_xy"][0];
       gui_y = j["gui_xy"][1];
     }
-
+    for (const auto &p : properties()) {
+      if (!j.contains(p.name)) continue;
+      switch (p.param_type) {
+        case ParamType::Float: p.set(j[p.name].get<float>()); break;
+        case ParamType::Int:   p.set(j[p.name].get<int>()); break;
+        case ParamType::Bool:  p.set(j[p.name].get<bool>()); break;
+        case ParamType::Vec4:  break; // composite; per-node hook reads it
+      }
+    }
     return OperationResult::ok();
   }
 
   [[nodiscard]] virtual float get_param(const std::string &param_name) const {
-    (void) param_name;
+    for (const auto &p : properties()) {
+      if (p.name == param_name) {
+        switch (p.param_type) {
+          case ParamType::Float: return std::get<float>(p.get());
+          case ParamType::Int:   return static_cast<float>(std::get<int>(p.get()));
+          case ParamType::Bool:  return std::get<bool>(p.get()) ? 1.f : 0.f;
+          case ParamType::Vec4:  break; // not scalar; keep searching
+        }
+      }
+    }
     return 0.f;
   }
 

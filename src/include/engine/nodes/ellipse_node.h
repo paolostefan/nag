@@ -25,15 +25,32 @@ struct EllipseNode : ShaderNode {
   float rotation{0.f};
   Vec4 color{1.f, 1.f, 1.f, 1.f};
   float edge_smoothness{.01f};
+  std::vector<Property> props_;
 
   EllipseNode() {
     type = NodeType::Ellipse;
     name = "Ellipse";
+    props_ = {
+      MakeColorProp(*this, &EllipseNode::color, "color", "Color"),
+      MakeFloatProp(*this, &EllipseNode::radius_x, "radius_x", "Radius X",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.3f"),
+      MakeFloatProp(*this, &EllipseNode::radius_y, "radius_y", "Radius Y",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.3f"),
+      MakeFloatProp(*this, &EllipseNode::rotation, "rotation", "Rotation",
+                    WidgetKind::SliderFloat, -3.14159265f, 3.14159265f, "%.3f"),
+      MakeFloatProp(*this, &EllipseNode::edge_smoothness, "edge_smoothness", "Edge Smoothness",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.3f"),
+    };
+    props_[1].disable_pin = "radius_x";
+    props_[2].disable_pin = "radius_y";
+    props_[3].disable_pin = "rotation";
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Ellipse"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "ellipse"; }
   [[nodiscard]] const char *frag_shader_src() const noexcept override { return kellipse_frag; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void bind_params() override {
     shader->set_uniform("u_position", position);
@@ -45,14 +62,13 @@ struct EllipseNode : ShaderNode {
   }
 
   // ── get_param — bridge for bind_float_inputs() ────────────────────────────
+  // pos_x/pos_y live in the composite `position` Vec2 (not serialized); schema
+  // covers radius_x/radius_y/rotation.
 
   [[nodiscard]] float get_param(const std::string &param_name) const override {
     if (param_name == "pos_x") return position.x;
     if (param_name == "pos_y") return position.y;
-    if (param_name == "radius_x") return radius_x;
-    if (param_name == "radius_y") return radius_y;
-    if (param_name == "rotation") return rotation;
-    return 0.f;
+    return Node::get_param(param_name);
   }
 
   // ── Serialization ─────────────────────────────────────────────────────────
@@ -60,11 +76,7 @@ struct EllipseNode : ShaderNode {
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
 
-    j["radius_x"] = radius_x;
-    j["radius_y"] = radius_y;
-    j["rotation"] = rotation;
     j["color"] = {color.x, color.y, color.z, color.w};
-    j["edge_smoothness"] = edge_smoothness;
     return j;
   }
 
@@ -72,16 +84,12 @@ struct EllipseNode : ShaderNode {
     try {
       if (auto result = VisualNode::deserialize_params(j); !result) return result;
 
-      if (j.contains("radius_x")) radius_x = j["radius_x"];
-      if (j.contains("radius_y")) radius_y = j["radius_y"];
-      if (j.contains("rotation")) rotation = j["rotation"];
       if (j.contains("color") && j["color"].is_array() && j["color"].size() >= 4) {
         color.x = j["color"][0];
         color.y = j["color"][1];
         color.z = j["color"][2];
         color.w = j["color"][3];
       }
-      if (j.contains("edge_smoothness")) edge_smoothness = j["edge_smoothness"];
 
       return OperationResult::ok();
     } catch (const std::exception &e) {

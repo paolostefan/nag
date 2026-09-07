@@ -27,15 +27,34 @@ struct TileNode : ShaderNode {
   float offset_y{0.f};
   bool mirror_x{false};
   bool mirror_y{false};
+  std::vector<Property> props_;
 
   TileNode() {
     type = NodeType::Tile;
     name = "Tile";
+    props_ = {
+      MakeFloatProp(*this, &TileNode::tile_x, "tile_x", "Tile X",
+                    WidgetKind::DragFloat, 1.f, 32.f, "%.1f", SliderFlag::None),
+      MakeFloatProp(*this, &TileNode::tile_y, "tile_y", "Tile Y",
+                    WidgetKind::DragFloat, 1.f, 32.f, "%.1f", SliderFlag::None),
+      MakeFloatProp(*this, &TileNode::offset_x, "offset_x", "Offset X",
+                    WidgetKind::DragFloat, -1.f, 1.f, "%.3f", SliderFlag::None),
+      MakeFloatProp(*this, &TileNode::offset_y, "offset_y", "Offset Y",
+                    WidgetKind::DragFloat, -1.f, 1.f, "%.3f", SliderFlag::None),
+      MakeBoolProp(*this, &TileNode::mirror_x, "mirror_x", "Mirror X"),
+      MakeBoolProp(*this, &TileNode::mirror_y, "mirror_y", "Mirror Y"),
+    };
+    props_[0].disable_pin = "tile_x";
+    props_[1].disable_pin = "tile_y";
+    props_[2].disable_pin = "offset_x";
+    props_[3].disable_pin = "offset_y";
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Tile"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "tile"; }
   [[nodiscard]] const char *frag_shader_src() const noexcept override { return ktile_frag; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void bind_params() override {
     shader->set_uniform("u_tile_x", tile_x);
@@ -49,47 +68,6 @@ struct TileNode : ShaderNode {
   void render() override {
     update_from_inputs();
     ShaderNode::render();
-  }
-
-  // ── get_param — bridge for bind_float_inputs() ────────────────────────────
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "tile_x") return tile_x;
-    if (param_name == "tile_y") return tile_y;
-    if (param_name == "offset_x") return offset_x;
-    if (param_name == "offset_y") return offset_y;
-    return 0.f;
-  }
-
-  // ── Serialization ─────────────────────────────────────────────────────────
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j = VisualNode::serialize_params();
-    j["tile_x"] = tile_x;
-    j["tile_y"] = tile_y;
-    j["offset_x"] = offset_x;
-    j["offset_y"] = offset_y;
-    j["mirror_x"] = mirror_x;
-    j["mirror_y"] = mirror_y;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      if (auto result = VisualNode::deserialize_params(j); !result) return result;
-
-      if (j.contains("tile_x")) tile_x = j["tile_x"];
-      if (j.contains("tile_y")) tile_y = j["tile_y"];
-      if (j.contains("offset_x")) offset_x = j["offset_x"];
-      if (j.contains("offset_y")) offset_y = j["offset_y"];
-      if (j.contains("mirror_x")) mirror_x = j["mirror_x"];
-      if (j.contains("mirror_y")) mirror_y = j["mirror_y"];
-
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize TileNode params: ") + e.what());
-    }
   }
 
   // ── Factory ───────────────────────────────────────────────────────────────

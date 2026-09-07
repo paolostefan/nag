@@ -26,52 +26,37 @@ struct DisplaceNode : ShaderNode {
   float strength{0.05f};
   int channel_x{0}; // R drives X
   int channel_y{1}; // G drives Y
+  std::vector<Property> props_;
 
   DisplaceNode() {
     type = NodeType::Displace;
     name = "Displace";
+    static constexpr const char *channels[] = {"R", "G", "B"};
+    props_ = {
+      MakeFloatProp(*this, &DisplaceNode::strength, "strength", "Strength",
+                    WidgetKind::SliderFloat, 0.f, 0.5f, "%.3f"),
+      MakeIntProp(*this, &DisplaceNode::channel_x, "channel_x", "Channel X",
+                  WidgetKind::Combo, 0.f, 0.f, "%d"),
+      MakeIntProp(*this, &DisplaceNode::channel_y, "channel_y", "Channel Y",
+                  WidgetKind::Combo, 0.f, 0.f, "%d"),
+    };
+    props_[0].disable_pin = "strength";
+    props_[1].items = channels;
+    props_[1].item_count = 3;
+    props_[2].items = channels;
+    props_[2].item_count = 3;
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Displace"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "displace"; }
   [[nodiscard]] const char *frag_shader_src() const noexcept override { return kdisplace_frag; }
 
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
+
   void bind_params() override {
     shader->set_uniform("u_strength", strength);
     shader->set_uniform("u_channel_x", static_cast<float>(channel_x));
     shader->set_uniform("u_channel_y", static_cast<float>(channel_y));
-  }
-
-  // ── get_param — bridge for bind_float_inputs() ────────────────────────────
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "strength") return strength;
-    return 0.f;
-  }
-
-  // ── Serialization ─────────────────────────────────────────────────────────
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j = VisualNode::serialize_params();
-    j["strength"] = strength;
-    j["channel_x"] = channel_x;
-    j["channel_y"] = channel_y;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      if (auto result = VisualNode::deserialize_params(j); !result) return result;
-
-      if (j.contains("strength")) strength = j["strength"];
-      if (j.contains("channel_x")) channel_x = j["channel_x"];
-      if (j.contains("channel_y")) channel_y = j["channel_y"];
-
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize DisplaceNode params: ") + e.what());
-    }
   }
 
   // ── Factory ───────────────────────────────────────────────────────────────

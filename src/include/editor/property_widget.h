@@ -149,6 +149,48 @@ namespace PropertyWidget {
   );
 
   // ---------------------------------------------------------------------------
+  // SliderInt
+  // ---------------------------------------------------------------------------
+
+  /// @brief Renders a SliderInt widget and emits an undo command on release.
+  ///
+  /// @param label       Widget label (also used as param_name in the command).
+  /// @param node_id     ID of the owning node.
+  /// @param value       Reference to the int field on the node.
+  /// @param setter      Callable to restore the value during undo/redo.
+  /// @param graph       The node graph (passed to history.execute).
+  /// @param history     The command history.
+  /// @param min         Minimum value (default 0).
+  /// @param max         Maximum value (default 100).
+  /// @param format      Printf format string (default "%d").
+  /// @param disabled    If true, the widget is rendered disabled and does not emit commands (default false).
+  void SliderInt(const std::string &label, int node_id, int &value,
+                 std::function<void(Node &, int)> setter,
+                 NodeGraph &graph, CommandHistory &history,
+                 int min = 0,
+                 int max = 100,
+                 const char *format = "%d",
+                 bool disabled = false);
+
+  // ---------------------------------------------------------------------------
+  // Checkbox
+  // ---------------------------------------------------------------------------
+
+  /// @brief Renders a Checkbox widget and emits an undo command on release.
+  ///
+  /// @param label       Widget label (also used as param_name in the command).
+  /// @param node_id     ID of the owning node.
+  /// @param value       Reference to the bool field on the node.
+  /// @param setter      Callable to restore the value during undo/redo.
+  /// @param graph       The node graph (passed to history.execute).
+  /// @param history     The command history.
+  /// @param disabled    If true, the widget is rendered disabled and does not emit commands (default false).
+  void Checkbox(const std::string &label, int node_id, bool &value,
+                std::function<void(Node &, bool)> setter,
+                NodeGraph &graph, CommandHistory &history,
+                bool disabled = false);
+
+  // ---------------------------------------------------------------------------
   // ColorEdit4
   // ---------------------------------------------------------------------------
 

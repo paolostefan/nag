@@ -16,15 +16,26 @@ struct Rectangle2DNode : ShaderNode {
   Vec2 size{0.3f, 0.2f}; // Width, height
   float rotation{0.f}; // Radians
   float corner_radius{0.f}; // For rounded corners
+  std::vector<Property> props_;
 
   Rectangle2DNode() {
     type = NodeType::Rectangle2D;
     name = "Rectangle";
+    props_ = {
+      MakeColorProp(*this, &Rectangle2DNode::color, "color", "Color"),
+      MakeFloatProp(*this, &Rectangle2DNode::corner_radius, "corner_radius", "Corner Radius",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.3f"),
+      MakeFloatProp(*this, &Rectangle2DNode::rotation, "rotation", "Rotation",
+                    WidgetKind::SliderFloat, -3.14159265f, 3.14159265f, "%.3f"),
+    };
+    props_[2].disable_pin = "rotation";
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Rectangle2D"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "rectangle"; }
   [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return krectangle_frag; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void bind_params() override {
     shader->set_uniform("u_position", position.x, position.y);
@@ -37,9 +48,7 @@ struct Rectangle2DNode : ShaderNode {
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
     j["size"] = {size.x, size.y};
-    j["rotation"] = rotation;
     j["color"] = {color.r(), color.g(), color.b(), color.a()};
-    j["corner_radius"] = corner_radius;
     return j;
   }
 
@@ -55,16 +64,8 @@ struct Rectangle2DNode : ShaderNode {
         size.y = j["size"][1];
       }
 
-      if (j.contains("rotation")) {
-        rotation = j["rotation"];
-      }
-
       if (j.contains("color") && j["color"].is_array() && j["color"].size() >= 4) {
         color = Color(j["color"][0], j["color"][1], j["color"][2], j["color"][3]);
-      }
-
-      if (j.contains("corner_radius")) {
-        corner_radius = j["corner_radius"];
       }
 
       return OperationResult::ok();

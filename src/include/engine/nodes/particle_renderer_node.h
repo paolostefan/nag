@@ -22,6 +22,7 @@ struct ParticleRendererNode : VisualNode {
   float global_scale{1.f};
   float emitter_x{0.5f};
   float emitter_y{0.5f};
+  std::vector<Property> props_;
 
   GLuint vao_{0};
   GLuint vbo_{0};
@@ -37,6 +38,24 @@ struct ParticleRendererNode : VisualNode {
   ParticleRendererNode() {
     type = NodeType::ParticleRenderer;
     name = "Particle Renderer";
+    props_ = {
+      MakeFloatProp(*this, &ParticleRendererNode::color_jitter, "color_jitter", "Color Jitter",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+      MakeFloatProp(*this, &ParticleRendererNode::alpha_jitter, "alpha_jitter", "Alpha Jitter",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+      MakeFloatProp(*this, &ParticleRendererNode::size_min, "size_min", "Size Min",
+                    WidgetKind::SliderFloat, 0.5f, 50.f, "%.1f"),
+      MakeFloatProp(*this, &ParticleRendererNode::size_max, "size_max", "Size Max",
+                    WidgetKind::SliderFloat, 0.5f, 50.f, "%.1f"),
+      MakeFloatProp(*this, &ParticleRendererNode::size_scatter, "size_scatter", "Size Scatter",
+                    WidgetKind::SliderFloat, 0.f, 20.f, "%.1f"),
+      MakeFloatProp(*this, &ParticleRendererNode::global_scale, "global_scale", "Global Scale",
+                    WidgetKind::SliderFloat, 0.01f, 10.f, "%.2f"),
+      MakeFloatProp(*this, &ParticleRendererNode::emitter_x, "emitter_x", "Emitter X",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+      MakeFloatProp(*this, &ParticleRendererNode::emitter_y, "emitter_y", "Emitter Y",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+    };
   }
 
   ~ParticleRendererNode() override {
@@ -47,6 +66,8 @@ struct ParticleRendererNode : VisualNode {
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Particle Renderer"; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   bool initialize(const int width, const int height) override {
     if (!VisualNode::initialize(width, height)) return false;
@@ -98,32 +119,6 @@ struct ParticleRendererNode : VisualNode {
     glColorMask(GL_TRUE,GL_TRUE,GL_TRUE,GL_TRUE);
 
     RenderTarget::unbind();
-  }
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j = VisualNode::serialize_params();
-    j["color_jitter"] = color_jitter;
-    j["alpha_jitter"] = alpha_jitter;
-    j["size_min"] = size_min;
-    j["size_max"] = size_max;
-    j["size_scatter"] = size_scatter;
-    j["global_scale"] = global_scale;
-    j["emitter_x"] = emitter_x;
-    j["emitter_y"] = emitter_y;
-    return j;
-  }
-
-  OperationResult deserialize_params(const nlohmann::json &j) override {
-    if (const auto result = VisualNode::deserialize_params(j); !result) return result;
-    if (j.contains("color_jitter")) color_jitter = j["color_jitter"];
-    if (j.contains("alpha_jitter")) alpha_jitter = j["alpha_jitter"];
-    if (j.contains("size_min")) size_min = j["size_min"];
-    if (j.contains("size_max")) size_max = j["size_max"];
-    if (j.contains("size_scatter")) size_scatter = j["size_scatter"];
-    if (j.contains("global_scale")) global_scale = j["global_scale"];
-    if (j.contains("emitter_x")) emitter_x = j["emitter_x"];
-    if (j.contains("emitter_y")) emitter_y = j["emitter_y"];
-    return OperationResult::ok();
   }
 
   static std::unique_ptr<Node> create() {

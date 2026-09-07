@@ -15,13 +15,19 @@
 struct ClearColorNode : VisualNode {
   Color color{0.f, 0.f, 0.f, 1.f};
   bool enabled{true};
+  std::vector<Property> props_;
 
   ClearColorNode() {
     type = NodeType::ClearColor;
     name = "ClearColor";
+    props_ = {
+      MakeColorProp(*this, &ClearColorNode::color, "color", "Color"),
+    };
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Clear Color"; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void render() override {
     static Color transparent = Color::transparent();

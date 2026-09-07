@@ -1,7 +1,6 @@
 #ifndef NAG_VISUAL_TYPES_H
 #define NAG_VISUAL_TYPES_H
 
-#include "imgui.h"
 #include <stdexcept>
 
 struct Vec2 {
@@ -34,17 +33,6 @@ struct Vec4 {
 
   // w = 1.f by default for colors (alpha = 1.f)
   Vec4(const float _x, const float _y, const float _z, const float _w = 1.f) : x(_x), y(_y), z(_z), w(_w) {
-  }
-
-  explicit Vec4(const ImVec4 &im_vec4) : x(im_vec4.x), y(im_vec4.y), z(im_vec4.z), w(im_vec4.w) {
-  }
-
-  Vec4 &operator=(const ImVec4 &im_vec4) {
-    x = im_vec4.x;
-    y = im_vec4.y;
-    z = im_vec4.z;
-    w = im_vec4.w;
-    return *this;
   }
 
   constexpr float &operator[](const int index) {

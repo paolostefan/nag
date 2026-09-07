@@ -26,6 +26,7 @@ add_executable(
     engine_tests
     node_serialization_test.cc
     nodes_test.cc
+    schema_serialization_test.cc
 )
 
 target_link_libraries(

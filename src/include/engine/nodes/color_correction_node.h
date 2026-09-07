@@ -22,58 +22,38 @@ struct ColorCorrectionNode : ShaderNode {
   float contrast{1.f};
   float saturation{1.f};
   float hue_shift{0.f};
+  std::vector<Property> props_;
 
   ColorCorrectionNode() {
     type = NodeType::ColorCorrection;
     name = "Color Correction";
+    props_ = {
+      MakeFloatProp(*this, &ColorCorrectionNode::brightness, "brightness", "Brightness",
+                    WidgetKind::SliderFloat, -1.f, 1.f, "%.2f"),
+      MakeFloatProp(*this, &ColorCorrectionNode::contrast, "contrast", "Contrast",
+                    WidgetKind::SliderFloat, 0.f, 4.f, "%.2f"),
+      MakeFloatProp(*this, &ColorCorrectionNode::saturation, "saturation", "Saturation",
+                    WidgetKind::SliderFloat, 0.f, 2.f, "%.2f"),
+      MakeFloatProp(*this, &ColorCorrectionNode::hue_shift, "hue_shift", "Hue Shift",
+                    WidgetKind::SliderFloat, 0.f, 6.28318f, "%.2f"),
+    };
+    props_[0].disable_pin = "brightness";
+    props_[1].disable_pin = "contrast";
+    props_[2].disable_pin = "saturation";
+    props_[3].disable_pin = "hue_shift";
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Color Correction"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "color_correction"; }
   [[nodiscard]] const char *frag_shader_src() const noexcept override { return kcolor_correction_frag; }
 
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
+
   void bind_params() override {
     shader->set_uniform("u_brightness", brightness);
     shader->set_uniform("u_contrast", contrast);
     shader->set_uniform("u_saturation", saturation);
     shader->set_uniform("u_hue_shift", hue_shift);
-  }
-
-  // ── get_param — bridge for bind_float_inputs() ────────────────────────────
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "brightness") return brightness;
-    if (param_name == "contrast") return contrast;
-    if (param_name == "saturation") return saturation;
-    if (param_name == "hue_shift") return hue_shift;
-    return 0.f;
-  }
-
-  // ── Serialization ─────────────────────────────────────────────────────────
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j = VisualNode::serialize_params();
-    j["brightness"] = brightness;
-    j["contrast"] = contrast;
-    j["saturation"] = saturation;
-    j["hue_shift"] = hue_shift;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      if (auto result = VisualNode::deserialize_params(j); !result) return result;
-
-      if (j.contains("brightness")) brightness = j["brightness"];
-      if (j.contains("contrast")) contrast = j["contrast"];
-      if (j.contains("saturation")) saturation = j["saturation"];
-      if (j.contains("hue_shift")) hue_shift = j["hue_shift"];
-
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize ColorCorrectionNode params: ") + e.what());
-    }
   }
 
   void update_from_inputs() override {

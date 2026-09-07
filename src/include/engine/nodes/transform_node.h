@@ -25,58 +25,38 @@ struct TransformNode : ShaderNode {
   float translate_y{0.f};
   float scale{1.f};
   float rotation{0.f};
+  std::vector<Property> props_;
 
   TransformNode() {
     type = NodeType::Transform;
     name = "Transform";
+    props_ = {
+      MakeFloatProp(*this, &TransformNode::translate_x, "translate_x", "Translate X",
+                    WidgetKind::DragFloat, -1.f, 1.f, "%.3f", SliderFlag::None),
+      MakeFloatProp(*this, &TransformNode::translate_y, "translate_y", "Translate Y",
+                    WidgetKind::DragFloat, -1.f, 1.f, "%.3f", SliderFlag::None),
+      MakeFloatProp(*this, &TransformNode::scale, "scale", "Scale",
+                    WidgetKind::DragFloat, 0.01f, 10.f, "%.3f", SliderFlag::None),
+      MakeFloatProp(*this, &TransformNode::rotation, "rotation", "Rotation",
+                    WidgetKind::DragFloat, -3.14159265f, 3.14159265f, "%.3f", SliderFlag::None),
+    };
+    props_[0].disable_pin = "translate_x";
+    props_[1].disable_pin = "translate_y";
+    props_[2].disable_pin = "scale";
+    props_[3].disable_pin = "rotation";
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Transform"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "transform"; }
   [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return ktransform_frag; }
 
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
+
   void bind_params() override {
     shader->set_uniform("u_translate_x", translate_x);
     shader->set_uniform("u_translate_y", translate_y);
     shader->set_uniform("u_scale", scale);
     shader->set_uniform("u_rotation", rotation);
-  }
-
-  // ── get_param — bridge for bind_float_inputs() ────────────────────────────
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "translate_x") return translate_x;
-    if (param_name == "translate_y") return translate_y;
-    if (param_name == "scale") return scale;
-    if (param_name == "rotation") return rotation;
-    return 0.f;
-  }
-
-  // ── Serialization ─────────────────────────────────────────────────────────
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j = VisualNode::serialize_params();
-    j["translate_x"] = translate_x;
-    j["translate_y"] = translate_y;
-    j["scale"]       = scale;
-    j["rotation"]    = rotation;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      if (auto result = VisualNode::deserialize_params(j); !result) return result;
-
-      if (j.contains("translate_x")) translate_x = j["translate_x"];
-      if (j.contains("translate_y")) translate_y = j["translate_y"];
-      if (j.contains("scale")) scale = j["scale"];
-      if (j.contains("rotation")) rotation = j["rotation"];
-
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize TransformNode params: ") + e.what());
-    }
   }
 
   // ── Factory ───────────────────────────────────────────────────────────────

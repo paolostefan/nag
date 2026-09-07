@@ -31,13 +31,31 @@ struct LFONode : Node {
   float phase{0.f}; // Radians
   float offset{0.f}; // DC offset
   float pulse_width{0.5f}; // For square wave (0-1)
+  std::vector<Property> props_;
 
   LFONode() {
     type = NodeType::LFO;
     name = "LFO";
+    static constexpr const char *wave_shapes[] = {"Sine", "Square", "Triangle", "Sawtooth"};
+    props_ = {
+      MakeFloatProp(*this, &LFONode::frequency, "frequency", "Frequency",
+                    WidgetKind::SliderFloat, 0.1f, 10.f, "%.2f"),
+      MakeFloatProp(*this, &LFONode::amplitude, "amplitude", "Amplitude",
+                    WidgetKind::SliderFloat, 0.f, 2.f, "%.2f"),
+      MakeEnumProp(*this, &LFONode::wave_shape, "wave_shape", "Wave Shape",
+                   wave_shapes, 4),
+      MakeFloatProp(*this, &LFONode::phase, "phase", "Phase",
+                    WidgetKind::SliderFloat, 0.f, 6.28f, "%.2f"),
+      MakeFloatProp(*this, &LFONode::offset, "offset", "Offset",
+                    WidgetKind::SliderFloat, -1.f, 1.f, "%.2f"),
+      MakeFloatProp(*this, &LFONode::pulse_width, "pulse_width", "Pulse Width",
+                    WidgetKind::SliderFloat, 0.01f, 0.99f, "%.2f"),
+    };
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "LFO"; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
@@ -80,45 +98,6 @@ struct LFONode : Node {
 
     const float result = offset + amplitude * wave_value;
     outputs[0].set_float(result);
-  }
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j;
-    j["frequency"] = frequency;
-    j["amplitude"] = amplitude;
-    j["wave_shape"] = wave_shape;
-    j["phase"] = phase;
-    j["offset"] = offset;
-    j["pulse_width"] = pulse_width;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      if (j.contains("frequency")) frequency = j["frequency"];
-      if (j.contains("amplitude")) amplitude = j["amplitude"];
-      if (j.contains("wave_shape")) {
-        wave_shape = static_cast<WaveShape>(j["wave_shape"].get<int>());
-      }
-      if (j.contains("phase")) phase = j["phase"];
-      if (j.contains("offset")) offset = j["offset"];
-      if (j.contains("pulse_width")) pulse_width = j["pulse_width"];
-
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize LFONode params: ") + e.what()
-      );
-    }
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "frequency") return frequency;
-    if (param_name == "amplitude") return amplitude;
-    if (param_name == "phase") return phase;
-    if (param_name == "offset") return offset;
-    if (param_name == "pulse_width") return pulse_width;
-    return 0.f;
   }
 
   /**
@@ -174,13 +153,26 @@ struct EnvelopeNode : Node {
   float state_start_time{0.f};
   float state_start_value{0.f};
   bool was_triggered{false};
+  std::vector<Property> props_;
 
   EnvelopeNode() {
     type = NodeType::Envelope;
     name = "Envelope";
+    props_ = {
+      MakeFloatProp(*this, &EnvelopeNode::attack_time, "attack_time", "Attack",
+                    WidgetKind::SliderFloat, 0.01f, 2.f, "%.2f"),
+      MakeFloatProp(*this, &EnvelopeNode::decay_time, "decay_time", "Decay",
+                    WidgetKind::SliderFloat, 0.01f, 2.f, "%.2f"),
+      MakeFloatProp(*this, &EnvelopeNode::sustain_level, "sustain_level", "Sustain",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+      MakeFloatProp(*this, &EnvelopeNode::release_time, "release_time", "Release",
+                    WidgetKind::SliderFloat, 0.01f, 2.f, "%.2f"),
+    };
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Envelope"; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void evaluate() override {
     if (inputs.size() < 2 || outputs.empty()) {
@@ -212,40 +204,6 @@ struct EnvelopeNode : Node {
     update_envelope(time);
 
     outputs[0].set_float(envelope_value);
-  }
-
-  // In EnvelopeNode struct, dopo update_envelope():
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j;
-    j["attack_time"] = attack_time;
-    j["decay_time"] = decay_time;
-    j["sustain_level"] = sustain_level;
-    j["release_time"] = release_time;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      if (j.contains("attack_time")) attack_time = j["attack_time"];
-      if (j.contains("decay_time")) decay_time = j["decay_time"];
-      if (j.contains("sustain_level")) sustain_level = j["sustain_level"];
-      if (j.contains("release_time")) release_time = j["release_time"];
-
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize EnvelopeNode params: ") + e.what()
-      );
-    }
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "attack_time") return attack_time;
-    if (param_name == "decay_time") return decay_time;
-    if (param_name == "sustain_level") return sustain_level;
-    if (param_name == "release_time") return release_time;
-    return 0.f;
   }
 
 private:
@@ -369,14 +327,25 @@ struct DelayNode : Node {
   size_t max_buffer_size{0};
   float last_time{0.f};
   bool initialized{false};
+  std::vector<Property> props_;
 
   DelayNode() {
     type = NodeType::Delay;
     name = "Delay";
+    props_ = {
+      MakeFloatProp(*this, &DelayNode::delay_time, "delay_time", "Delay Time",
+                    WidgetKind::SliderFloat, 0.1f, 5.f, "%.2f"),
+      MakeFloatProp(*this, &DelayNode::sample_rate, "sample_rate", "Sample Rate",
+                    WidgetKind::SliderFloat, 10.f, 120.f, "%.0f"),
+    };
+    props_[0].set = [this](PropertyValue v) { delay_time = std::get<float>(v); update_buffer_size(); };
+    props_[1].set = [this](PropertyValue v) { sample_rate = std::get<float>(v); update_buffer_size(); };
     update_buffer_size();
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Delay"; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   /**
    * Update buffer size based on delay time and sample rate.
@@ -429,38 +398,6 @@ struct DelayNode : Node {
     outputs[0].set_float(delayed_value);
   }
 
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j;
-    j["delay_time"] = delay_time;
-    j["sample_rate"] = sample_rate;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      if (j.contains("delay_time")) {
-        delay_time = j["delay_time"];
-        update_buffer_size();
-      }
-      if (j.contains("sample_rate")) {
-        sample_rate = j["sample_rate"];
-        update_buffer_size();
-      }
-
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize DelayNode params: ") + e.what()
-      );
-    }
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "delay_time") return delay_time;
-    if (param_name == "sample_rate") return sample_rate;
-    return 0.f;
-  }
-
   /**
    * Create a delay node with specified delay time.
    * @param delay_time Delay duration in seconds
@@ -488,16 +425,24 @@ struct DelayNode : Node {
  */
 struct SmootherNode : Node {
   float smooth_time{0.1f}; // Time to reach ~63% of target (seconds)
-  float current_value{0.f};
+
   float last_time{0.f};
+  float current_value{0.f};
   bool initialized{false};
+  std::vector<Property> props_;
 
   SmootherNode() {
     type = NodeType::Smoother;
     name = "Smoother";
+    props_ = {
+      MakeFloatProp(*this, &SmootherNode::smooth_time, "smooth_time", "Smooth Time",
+                    WidgetKind::SliderFloat, 0.01f, 1.f, "%.2f"),
+    };
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Smoother"; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void evaluate() override {
     if (inputs.size() < 2 || outputs.empty()) {
@@ -534,28 +479,6 @@ struct SmootherNode : Node {
     }
 
     outputs[0].set_float(current_value);
-  }
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j;
-    j["smooth_time"] = smooth_time;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      if (j.contains("smooth_time")) smooth_time = j["smooth_time"];
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize SmootherNode params: ") + e.what()
-      );
-    }
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "smooth_time") return smooth_time;
-    return 0.f;
   }
 
   /**

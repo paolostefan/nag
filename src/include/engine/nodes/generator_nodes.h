@@ -11,35 +11,26 @@
  */
 struct ConstantFloatNode : Node {
   float value{0.f};
+  std::vector<Property> props_;
 
   explicit ConstantFloatNode(const float _value = 0.f)
     : value(_value) {
     type = NodeType::Constant;
     name = "Constant";
+    props_ = {
+      MakeFloatProp(*this, &ConstantFloatNode::value, "value", "Value",
+                    WidgetKind::SliderFloat, -20.f, 20.f, "%.3f")
+    };
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Constant"; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void evaluate() override {
     if (!outputs.empty()) {
       outputs[0].set_float(value);
     }
-  }
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j;
-    j["value"] = value;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    if (j.contains("value")) value = j["value"];
-    return OperationResult::ok();
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "value") return value;
-    return 0.f;
   }
 
   static std::unique_ptr<Node> create(const float _value = 0.f) {
@@ -90,13 +81,26 @@ struct NoiseNode : Node {
   float amplitude{1.f};
   int octaves{1};
   float persistence{0.5f};
+  std::vector<Property> props_;
 
   NoiseNode() {
     type = NodeType::Noise;
     name = "Noise";
+    props_ = {
+      MakeFloatProp(*this, &NoiseNode::frequency, "frequency", "Frequency",
+                    WidgetKind::SliderFloat, 0.1f, 10.f, "%.2f"),
+      MakeFloatProp(*this, &NoiseNode::amplitude, "amplitude", "Amplitude",
+                    WidgetKind::SliderFloat, 0.f, 2.f, "%.2f"),
+      MakeIntProp(*this, &NoiseNode::octaves, "octaves", "Octaves",
+                  WidgetKind::SliderInt, 1.f, 8.f, "%d"),
+      MakeFloatProp(*this, &NoiseNode::persistence, "persistence", "Persistence",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+    };
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Noise"; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void evaluate() override {
     if (inputs.empty() || outputs.empty()) {
@@ -117,37 +121,6 @@ struct NoiseNode : Node {
     }
 
     outputs[0].set_float(result);
-  }
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j;
-    j["frequency"] = frequency;
-    j["amplitude"] = amplitude;
-    j["octaves"] = octaves;
-    j["persistence"] = persistence;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      if (j.contains("frequency")) frequency = j["frequency"];
-      if (j.contains("amplitude")) amplitude = j["amplitude"];
-      if (j.contains("octaves")) octaves = j["octaves"];
-      if (j.contains("persistence")) persistence = j["persistence"];
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize Noise params: ") + e.what()
-      );
-    }
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "frequency") return frequency;
-    if (param_name == "amplitude") return amplitude;
-    if (param_name == "octaves") return static_cast<float>(octaves);
-    if (param_name == "persistence") return persistence;
-    return 0.f;
   }
 
   static std::unique_ptr<NoiseNode> create(const float frequency = 1.f,
@@ -185,10 +158,23 @@ struct RandomNode : Node {
   uint64_t last_trigger_version{0};
   std::mt19937 rng;
   std::uniform_real_distribution<float> dist;
+  std::vector<Property> props_;
 
   RandomNode() {
     type = NodeType::Random;
     name = "Random";
+    props_ = {
+      MakeFloatProp(*this, &RandomNode::min_value, "min_value", "Min",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+      MakeFloatProp(*this, &RandomNode::max_value, "max_value", "Max",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+      MakeIntProp(*this, &RandomNode::seed, "seed", "Seed",
+                  WidgetKind::InputInt, 0.f, 0.f),
+    };
+    // Live range edits must rebuild the distribution too.
+    props_[0].set = [this](PropertyValue v) { set_range(std::get<float>(v), max_value); };
+    props_[1].set = [this](PropertyValue v) { set_range(min_value, std::get<float>(v)); };
+    props_[2].set = [this](PropertyValue v) { set_seed(std::get<int>(v)); };
   };
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Random"; }
@@ -211,6 +197,8 @@ struct RandomNode : Node {
     dist = std::uniform_real_distribution(min_value, max_value);
   }
 
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
+
   void evaluate() override {
     // Input 0: trigger - when changes, generates new random value
     // Output 0: random value
@@ -226,27 +214,6 @@ struct RandomNode : Node {
       const float random_value = dist(rng);
       outputs[0].set_float(random_value);
       last_trigger_version = inputs[0].stream->version;
-    }
-  }
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j;
-    j["min_value"] = min_value;
-    j["max_value"] = max_value;
-    j["seed"] = seed;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      if (j.contains("min_value")) min_value = j["min_value"];
-      if (j.contains("max_value")) max_value = j["max_value"];
-      if (j.contains("seed")) seed = j["seed"];
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize RandomNode params: ") + e.what()
-      );
     }
   }
 

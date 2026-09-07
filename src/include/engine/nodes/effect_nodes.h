@@ -26,15 +26,23 @@
 //
 struct BlurNode : ShaderNode {
   float radius{4.f};
+  std::vector<Property> props_;
 
   BlurNode() {
     type = NodeType::Blur;
     name = "Blur";
+    props_ = {
+      MakeFloatProp(*this, &BlurNode::radius, "radius", "Radius",
+                    WidgetKind::SliderFloat, 0.f, 32.f, "%.1f")
+    };
+    props_[0].disable_pin = "radius";
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Blur"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "blur_gaussian"; }
   [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kblur_frag; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   bool initialize(const int width, const int height) override {
     if (!ShaderNode::initialize(width, height)) return false;
@@ -63,12 +71,6 @@ struct BlurNode : ShaderNode {
               aux_target_->get_texture());
   }
 
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j = VisualNode::serialize_params();
-    j["radius"] = radius;
-    return j;
-  }
-
   [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
     if (auto result = VisualNode::deserialize_params(j); !result) {
       return result;
@@ -77,13 +79,7 @@ struct BlurNode : ShaderNode {
     if (render_target) {
       initialize_aux(render_target->get_width(), render_target->get_height());
     }
-    if (j.contains("radius")) radius = j["radius"];
     return OperationResult::ok();
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "radius") return radius;
-    return 0.f;
   }
 
   void update_from_inputs() override {
@@ -125,35 +121,21 @@ struct BlurNode : ShaderNode {
 //
 struct ChromaticAberrationNode : ShaderNode {
   float strength{3.f};
+  std::vector<Property> props_;
 
   ChromaticAberrationNode() {
     type = NodeType::ChromaticAberration;
     name = "ChromaticAberration";
+    props_ = {
+      MakeFloatProp(*this, &ChromaticAberrationNode::strength, "strength", "Strength",
+                    WidgetKind::SliderFloat, 0.f, 20.f, "%.1f")
+    };
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Chromatic Aberration"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "chromatic_aberration"; }
   [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kchromatic_aberration_frag; }
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j = VisualNode::serialize_params();
-    j["strength"] = strength;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    if (auto result = VisualNode::deserialize_params(j); !result) {
-      return result;
-    }
-
-    if (j.contains("strength")) strength = j["strength"];
-    return OperationResult::ok();
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "strength") return strength;
-    return 0.f;
-  }
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   [[nodiscard]] static std::unique_ptr<ChromaticAberrationNode> create(
     const float strength = 3.f) {
@@ -184,35 +166,21 @@ struct ChromaticAberrationNode : ShaderNode {
 //
 struct PixelateNode : ShaderNode {
   float pixel_size{8.f};
+  std::vector<Property> props_;
 
   PixelateNode() {
     type = NodeType::Pixelate;
     name = "Pixelate";
+    props_ = {
+      MakeFloatProp(*this, &PixelateNode::pixel_size, "pixel_size", "Pixel Size",
+                    WidgetKind::SliderFloat, 1.f, 64.f, "%.1f")
+    };
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Pixelate"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "pixelate"; }
   [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kpixelate_frag; }
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j = VisualNode::serialize_params();
-    j["pixel_size"] = pixel_size;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    if (auto result = VisualNode::deserialize_params(j); !result) {
-      return result;
-    }
-
-    if (j.contains("pixel_size")) pixel_size = j["pixel_size"];
-    return OperationResult::ok();
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "pixel_size") return pixel_size;
-    return 0.f;
-  }
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   [[nodiscard]] static std::unique_ptr<PixelateNode> create(
     const float pixel_size = 8.f) {

@@ -26,15 +26,31 @@ struct PolygonNode : ShaderNode {
   int   n_sides{6};
   Vec4  color{1.f, 1.f, 1.f, 1.f};
   float edge_smoothness{0.01f};
+  std::vector<Property> props_;
 
   PolygonNode() {
     type = NodeType::Polygon;
     name = "Polygon";
+    props_ = {
+      MakeColorProp(*this, &PolygonNode::color, "color", "Color"),
+      MakeIntProp(*this, &PolygonNode::n_sides, "n_sides", "Sides",
+                  WidgetKind::SliderInt, 3.f, 12.f, "%d"),
+      MakeFloatProp(*this, &PolygonNode::edge_smoothness, "edge_smoothness", "Edge Smoothness",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.3f"),
+      MakeFloatProp(*this, &PolygonNode::radius, "radius", "Radius",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.3f"),
+      MakeFloatProp(*this, &PolygonNode::rotation, "rotation", "Rotation",
+                    WidgetKind::SliderFloat, -3.14159265f, 3.14159265f, "%.3f"),
+    };
+    props_[3].disable_pin = "radius";
+    props_[4].disable_pin = "rotation";
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Polygon"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "polygon"; }
   [[nodiscard]] const char *frag_shader_src() const noexcept override { return kpolygon_frag; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void bind_params() override {
     shader->set_uniform("u_position", position.x, position.y);
@@ -46,24 +62,19 @@ struct PolygonNode : ShaderNode {
   }
 
   // ── get_param — bridge for bind_float_inputs() ────────────────────────────
+  // pos_x/pos_y live in the composite `position` Vec2.
 
   [[nodiscard]] float get_param(const std::string &param_name) const override {
     if (param_name == "pos_x") return position.x;
     if (param_name == "pos_y") return position.y;
-    if (param_name == "radius") return radius;
-    if (param_name == "rotation") return rotation;
-    return 0.f;
+    return Node::get_param(param_name);
   }
 
   // ── Serialization ─────────────────────────────────────────────────────────
 
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j     = VisualNode::serialize_params();
-    j["radius"]          = radius;
-    j["rotation"]        = rotation;
-    j["n_sides"]         = n_sides;
     j["color"]           = {color.x, color.y, color.z, color.w};
-    j["edge_smoothness"] = edge_smoothness;
     return j;
   }
 
@@ -71,16 +82,12 @@ struct PolygonNode : ShaderNode {
     try {
       if (auto result = VisualNode::deserialize_params(j); !result) return result;
 
-      if (j.contains("radius")) radius = j["radius"];
-      if (j.contains("rotation")) rotation = j["rotation"];
-      if (j.contains("n_sides")) n_sides = j["n_sides"];
       if (j.contains("color") && j["color"].is_array() && j["color"].size() >= 4) {
         color.x = j["color"][0];
         color.y = j["color"][1];
         color.z = j["color"][2];
         color.w = j["color"][3];
       }
-      if (j.contains("edge_smoothness")) edge_smoothness = j["edge_smoothness"];
 
       return OperationResult::ok();
     } catch (const std::exception &e) {

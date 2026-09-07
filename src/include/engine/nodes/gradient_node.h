@@ -24,19 +24,30 @@ struct GradientNode : ShaderNode {
   Color color_end{0.f, 0.f, 1.f, 1.f};
   Vec2 direction{1.f, 0.f};
   Vec2 center{0.5f, 0.5f};
+  std::vector<Property> props_;
 
   GradientNode() {
     type = NodeType::Gradient;
     name = "Gradient";
+    static constexpr const char *gradient_types[] = {"Linear", "Radial"};
+    props_ = {
+      MakeEnumProp(*this, &GradientNode::gradient_type, "gradient_type", "Gradient Type",
+                   gradient_types, 2),
+      MakeColorProp(*this, &GradientNode::color_start, "color_start", "Start Color"),
+      MakeColorProp(*this, &GradientNode::color_end, "color_end", "End Color"),
+    };
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Gradient"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "gradient"; }
   [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kgradient_frag; }
 
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
+
   [[nodiscard]] nlohmann::json serialize_params() const override {
     nlohmann::json j = VisualNode::serialize_params();
-    j["gradient_type"] = gradient_type;
+    // Vec4 colors (ColorEdit rows) skip the base schema loop; Vec2 composites
+    // have no schema row at all. Both are packed into arrays here.
     j["color_start"] = {color_start.x, color_start.y, color_start.z, color_start.w};
     j["color_end"] = {color_end.x, color_end.y, color_end.z, color_end.w};
     j["direction"] = {direction.x, direction.y};
@@ -49,10 +60,6 @@ struct GradientNode : ShaderNode {
       // Deserialize base class first
       if (auto result = VisualNode::deserialize_params(j); !result) {
         return result;
-      }
-
-      if (j.contains("gradient_type")) {
-        gradient_type = static_cast<Type>(j["gradient_type"].get<int>());
       }
 
       if (j.contains("color_start") && j["color_start"].is_array() && j["color_start"].size() >= 4) {

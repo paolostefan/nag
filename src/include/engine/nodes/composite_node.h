@@ -26,49 +26,29 @@ struct CompositeNode : ShaderNode {
 
   BlendMode blend_mode{BlendMode::Normal};
   float opacity{1.f};
+  std::vector<Property> props_;
 
   CompositeNode() {
     type = NodeType::Composite;
     name = CompositeNode::shader_name();
+    static constexpr const char *blend_modes[] = {"Normal", "Add", "Multiply", "Screen"};
+    props_ = {
+      MakeEnumProp(*this, &CompositeNode::blend_mode, "blend_mode", "Blend Mode",
+                   blend_modes, 4),
+      MakeFloatProp(*this, &CompositeNode::opacity, "opacity", "Opacity",
+                    WidgetKind::SliderFloat, 0.f, 1.f, "%.2f"),
+    };
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Composite"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "composite"; }
   [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kcomposite_frag; }
 
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
+
   void bind_params() override {
     shader->set_uniform("u_blend_mode", static_cast<int>(blend_mode));
     shader->set_uniform("u_opacity", opacity);
-  }
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j = VisualNode::serialize_params();
-    j["blend_mode"] = blend_mode;
-    j["opacity"] = opacity;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    try {
-      // Deserialize base class first
-      if (auto result = VisualNode::deserialize_params(j); !result) {
-        return result;
-      }
-
-      if (j.contains("blend_mode")) {
-        blend_mode = static_cast<BlendMode>(j["blend_mode"].get<int>());
-      }
-
-      if (j.contains("opacity")) {
-        opacity = j["opacity"];
-      }
-
-      return OperationResult::ok();
-    } catch (const std::exception &e) {
-      return OperationResult::error(
-        std::string("Failed to deserialize CompositeNode params: ") + e.what()
-      );
-    }
   }
 
   /**

@@ -22,35 +22,23 @@
 //
 struct VintageCRTNode : ShaderNode {
   float pixel_size{8.f};
+  std::vector<Property> props_;
 
   VintageCRTNode() {
     type = NodeType::VintageCRT;
     name = "Vintage CRT";
+    props_ = {
+      MakeFloatProp(*this, &VintageCRTNode::pixel_size, "pixel_size", "Pixel Size",
+                    WidgetKind::SliderFloat, 1.f, 64.f, "%.0f"),
+    };
+    props_[0].disable_pin = "pixel_size";
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Vintage CRT"; }
   [[nodiscard]] const char *shader_name() const noexcept override { return "vintage_crt"; }
   [[nodiscard]] constexpr const char *frag_shader_src() const noexcept override { return kvintage_crt_frag; }
 
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j = VisualNode::serialize_params();
-    j["pixel_size"] = pixel_size;
-    return j;
-  }
-
-  [[nodiscard]] OperationResult deserialize_params(const nlohmann::json &j) override {
-    if (auto result = VisualNode::deserialize_params(j); !result) {
-      return result;
-    }
-
-    if (j.contains("pixel_size")) pixel_size = j["pixel_size"];
-    return OperationResult::ok();
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "pixel_size") return pixel_size;
-    return 0.f;
-  }
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   [[nodiscard]] static std::unique_ptr<VintageCRTNode> create(
     const float pixel_size = 8.f) {

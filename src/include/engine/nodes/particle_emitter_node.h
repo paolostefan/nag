@@ -16,14 +16,52 @@ struct ParticleEmitterNode : Node {
   float    spawn_accumulator{0.f};
   uint32_t max_particles{10000};
   int      seed{42};
+  std::vector<Property> props_;
 
   explicit ParticleEmitterNode(const int seed_ = 42) : seed(seed_) {
     type = NodeType::ParticleEmitter;
     name = "Particle Emitter";
     rng.seed(seed_);
+
+    // max_particles is uint32_t; Property::value holds int*. Layout-identical on
+    // all supported platforms (C++ guarantees same size/align for int/unsigned).
+    static_assert(sizeof(int) == sizeof(uint32_t));
+    static_assert(alignof(int) == alignof(uint32_t));
+
+    props_ = {
+      MakeFloatProp(*this, &ParticleEmitterNode::rate, "rate", "Rate",
+                    WidgetKind::SliderFloat, 0.1f, 500.f, "%.1f"),
+      MakeFloatProp(*this, &ParticleEmitterNode::speed, "speed", "Speed",
+                    WidgetKind::SliderFloat, 0.f, 1000.f, "%.1f"),
+      MakeFloatProp(*this, &ParticleEmitterNode::min_life, "min_life", "Min Life",
+                    WidgetKind::SliderFloat, 0.1f, 10.f, "%.2f"),
+      MakeFloatProp(*this, &ParticleEmitterNode::max_life, "max_life", "Max Life",
+                    WidgetKind::SliderFloat, 0.1f, 10.f, "%.2f"),
+    };
+    Property max_p;
+    max_p.name = "max_particles";
+    max_p.label = "Max Particles";
+    max_p.kind = WidgetKind::InputInt;
+    max_p.param_type = ParamType::Int;
+    max_p.value = reinterpret_cast<int *>(&max_particles);
+    max_p.get = [this]() -> PropertyValue { return static_cast<int>(max_particles); };
+    max_p.set = [this](PropertyValue v) { max_particles = static_cast<uint32_t>(std::get<int>(v)); };
+    props_.push_back(std::move(max_p));
+
+    Property seed_p;
+    seed_p.name = "seed";
+    seed_p.label = "Seed";
+    seed_p.kind = WidgetKind::InputInt;
+    seed_p.param_type = ParamType::Int;
+    seed_p.value = &seed;
+    seed_p.get = [this]() -> PropertyValue { return seed; };
+    seed_p.set = [this](PropertyValue v) { seed = std::get<int>(v); rng.seed(seed); };
+    props_.push_back(std::move(seed_p));
   }
 
   [[nodiscard]] std::string_view type_name() const noexcept override { return "Particle Emitter"; }
+
+  [[nodiscard]] const std::vector<Property> &properties() const noexcept override { return props_; }
 
   void evaluate() override {
     // Spawn particles based on the rate and elapsed time
@@ -47,39 +85,6 @@ struct ParticleEmitterNode : Node {
     }
 
     outputs[0].set_particles(particles_);
-  }
-
-  [[nodiscard]] nlohmann::json serialize_params() const override {
-    nlohmann::json j;
-    j["rate"]          = rate;
-    j["speed"]         = speed;
-    j["min_life"]      = min_life;
-    j["max_life"]      = max_life;
-    j["max_particles"] = max_particles;
-    j["seed"]          = seed;
-    return j;
-  }
-
-  OperationResult deserialize_params(const nlohmann::json &j) override {
-    if (j.contains("rate")) rate = j["rate"];
-    if (j.contains("speed")) speed = j["speed"];
-    if (j.contains("min_life")) min_life = j["min_life"];
-    if (j.contains("max_life")) max_life = j["max_life"];
-    if (j.contains("max_particles")) max_particles = j["max_particles"];
-    if (j.contains("seed")) {
-      seed = j["seed"];
-      rng.seed(seed);
-    }
-    return OperationResult::ok();
-  }
-
-  [[nodiscard]] float get_param(const std::string &param_name) const override {
-    if (param_name == "rate") return rate;
-    if (param_name == "speed") return speed;
-    if (param_name == "min_life") return min_life;
-    if (param_name == "max_life") return max_life;
-    if (param_name == "max_particles") return static_cast<float>(max_particles);
-    return 0.f;
   }
 
   /// Factory method to create a new ParticleEmitterNode with the correct output pin
