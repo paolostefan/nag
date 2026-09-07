@@ -201,7 +201,7 @@ foreach (SHADER_FILE ${SHADER_FILES})
 endforeach()
 # End shader embedding
 
-file(GLOB ENGINE_SRCS src/engine/*.cc src/engine/nodes/*.h src/fx/*.cc)
+file(GLOB ENGINE_SRCS src/engine/*.cc src/engine/nodes/*.h)
 
 add_library(nag_engine_lib
     ${ENGINE_SRCS}

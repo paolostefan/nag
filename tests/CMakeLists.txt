@@ -40,8 +40,6 @@ target_link_libraries(
 # ============================================================================
 add_executable(
     editor_tests
-    timeline_json_test.cc
-    timeline_test.cc
     recent_files_manager_test.cc
     audio_playback_controller_test.cc
     timeline_controller_test.cc

@@ -29,7 +29,6 @@ src/
 │   ├── preview_window.cc
 │   ├── scene.cc/h             # Scene data model (folders, graphs, timeline)
 │   └── scene_library.cc/h    # Scene file operations
-├── fx/              # Effect implementations
 ├── shaders/         # GLSL shaders
 ├── include/         # Public headers
 └── poc/             # Proofs of concept
