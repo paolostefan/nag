@@ -138,36 +138,4 @@ private:
   std::vector<Link> deleted_links_; // For undo
 };
 
-// ============================================================================
-// MoveNodesCommand
-// ============================================================================
-
-/**
- * @brief Command to move one or more nodes to new positions.
- */
-class MoveNodesCommand : public ICommand {
-public:
-  struct NodePosition {
-    int node_id{};
-    float old_x{0.f};
-    float old_y{0.f};
-    float new_x{0.f};
-    float new_y{0.f};
-  };
-
-  /**
-   * @brief Create a command to move nodes.
-   */
-  explicit MoveNodesCommand(std::vector<NodePosition> moves);
-
-  bool execute(NodeGraph &graph) override;
-
-  bool undo(NodeGraph &graph) override;
-
-  [[nodiscard]] std::string description() const override;
-
-private:
-  std::vector<NodePosition> moves_;
-};
-
 #endif  // NAG_EDITOR_GRAPH_COMMANDS_H

@@ -45,6 +45,8 @@ add_executable(
     audio_playback_controller_test.cc
     timeline_controller_test.cc
     graph_scene_sync_test.cc
+    command_history_test.cc
+    scene_commands_test.cc
 )
 
 target_link_libraries(

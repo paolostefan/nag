@@ -266,6 +266,7 @@ add_library(nag_editor_lib
     src/editor/property_widget.cc
     src/editor/recent_files_manager.cc
     src/editor/scene.cc
+    src/editor/scene_commands.cc
     src/editor/scene_library.cc
     src/editor/timeline_controller.cc
     src/editor/toast_manager.cc

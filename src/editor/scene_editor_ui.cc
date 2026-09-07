@@ -13,6 +13,7 @@
 #include "spdlog/spdlog.h"
 
 #include "editor/audio_playback_controller.h"
+#include "editor/scene_commands.h"
 
 namespace {
   /// @brief Extract audio segments from the scene timeline.
@@ -60,7 +61,8 @@ SceneEditorUI::SceneEditorUI()
 }
 
 void SceneEditorUI::wire_scene_dependencies() {
-  timeline_controller_ = std::make_unique<TimelineController>(*scene_);
+  command_history.bind_scene(*scene_);
+  timeline_controller_ = std::make_unique<TimelineController>(*scene_, &command_history);
   graph_scene_sync_ = std::make_unique<GraphSceneSync>(*scene_);
 
   GraphLibraryPanel::Callbacks cb;
@@ -68,14 +70,16 @@ void SceneEditorUI::wire_scene_dependencies() {
   cb.on_add_graph = [this](GraphFolder &folder) -> GraphReference * {
     return add_graph_in_folder(folder);
   };
-  cb.on_add_folder = [this]() { [[maybe_unused]] auto *folder = scene_->add_folder(nullptr, "New Folder"); };
+  cb.on_add_folder = [this]() {
+    command_history.execute(*scene_, std::make_unique<AddFolderCommand>("", "New Folder"));
+  };
   cb.on_graph_deleted = [this](const std::string &graph_id) {
     graph_scene_sync_->remove_graph_data(graph_id);
     select_first_available_graph();
   };
 
   graph_library_panel_ = std::make_unique<GraphLibraryPanel>(
-    *scene_, current_graph_ref, std::move(cb));
+    *scene_, current_graph_ref, std::move(cb), &command_history);
 }
 
 void SceneEditorUI::render_ui() {
@@ -106,6 +110,7 @@ void SceneEditorUI::display_dialogs() {
       scene_ = SceneLibrary::load_scene(scene_path);
       if (scene_) {
         wire_scene_dependencies();
+        command_history.clear();
         current_scene_path_ = scene_path;
         reset_graph();
         set_status_message("Scene loaded: " + scene_->name);
@@ -144,10 +149,9 @@ void SceneEditorUI::display_dialogs() {
       const auto file_path = ImGuiFileDialog::Instance()->GetFilePathName();
       try {
         AudioTrack track{std::filesystem::path(file_path)};
-        const size_t idx = scene_->add_audio_track(std::move(track));
-        const TimelineSegment segment(0, 100, static_cast<int>(idx));
-        scene_->add_timeline_segment(segment);
-        set_status_message("Audio track imported: " + track.title);
+        const std::string title = track.title;
+        command_history.execute(*scene_, std::make_unique<ImportAudioCommand>(std::move(track)));
+        set_status_message("Audio track imported: " + title);
       } catch (const std::exception &e) {
         spdlog::error("Failed to import audio track: {}", e.what());
         set_status_message("Failed to import audio track");
@@ -191,6 +195,12 @@ void SceneEditorUI::select_first_available_graph() {
   } else {
     current_graph_ref = nullptr;
     reset_graph();
+  }
+}
+
+void SceneEditorUI::refresh_graph_selection_after_history() {
+  if (current_graph_ref && !scene_->find_graph(current_graph_ref->id)) {
+    select_first_available_graph();
   }
 }
 
@@ -255,12 +265,14 @@ void SceneEditorUI::handle_keyboard_shortcuts() {
   } else if (ImGui::IsKeyPressed(ImGuiKey_Z)) {
     if (command_history.can_undo()) {
       command_history.undo(graph);
+      refresh_graph_selection_after_history();
       node_pos_refresh = true;
       on_graph_modified();
     }
   } else if (ImGui::IsKeyPressed(ImGuiKey_Y)) {
     if (command_history.can_redo()) {
       command_history.redo(graph);
+      refresh_graph_selection_after_history();
       node_pos_refresh = true;
       on_graph_modified();
     }
@@ -292,6 +304,7 @@ void SceneEditorUI::render_menu_bar() {
               if (loaded) {
                 scene_ = std::move(loaded);
                 wire_scene_dependencies();
+                command_history.clear();
                 current_scene_path_ = path;
                 reset_graph();
                 set_status_message("Scene loaded: " + scene_->name);
@@ -332,6 +345,7 @@ void SceneEditorUI::render_menu_bar() {
       ImGui::BeginDisabled(!command_history.can_undo());
       if (ImGui::MenuItem(ICON_FA_ARROW_ROTATE_LEFT "  Undo", "Ctrl+Z")) {
         command_history.undo(graph);
+        refresh_graph_selection_after_history();
         node_pos_refresh = true;
       }
       ImGui::EndDisabled();
@@ -339,6 +353,7 @@ void SceneEditorUI::render_menu_bar() {
       ImGui::BeginDisabled(!command_history.can_redo());
       if (ImGui::MenuItem(ICON_FA_ARROW_ROTATE_RIGHT "  Redo", "Ctrl+Y")) {
         command_history.redo(graph);
+        refresh_graph_selection_after_history();
         node_pos_refresh = true;
       }
       ImGui::EndDisabled();
@@ -379,9 +394,9 @@ void SceneEditorUI::render_timeline() {
     ImGui::SameLine();
 
     if (ImGui::Button(ICON_FA_SQUARE_PLUS " Add Segment")) {
-      const std::string_view selected_graph_id = current_graph_ref->id;
+      const std::string selected_graph_id = current_graph_ref->id;
       const TimelineSegment segment(0, 100, selected_graph_id);
-      scene_->add_timeline_segment(segment);
+      command_history.execute(*scene_, std::make_unique<AddTimelineSegmentCommand>(segment));
     }
 
     ImGui::SameLine();
@@ -395,7 +410,7 @@ void SceneEditorUI::render_timeline() {
       ImGui::SameLine();
       ImGui::PushStyleColor(ImGuiCol_Button, kDangerButton);
       if (ImGui::Button(ICON_FA_BAN " Remove Selected")) {
-        scene_->remove_timeline_segment(static_cast<size_t>(selected_segment_));
+        command_history.execute(*scene_, std::make_unique<RemoveTimelineSegmentCommand>(static_cast<size_t>(selected_segment_)));
         selected_segment_ = -1;
       }
       ImGui::PopStyleColor();
@@ -481,6 +496,7 @@ void SceneEditorUI::render_top_status_bar() {
 void SceneEditorUI::new_scene() {
   scene_ = std::make_unique<Scene>("New Scene");
   wire_scene_dependencies();
+  command_history.clear();
   current_scene_path_.clear();
   current_frame_ = 0;
   selected_segment_ = -1;
@@ -535,7 +551,7 @@ void SceneEditorUI::load_graph_from_library(GraphReference &graph_ref) {
     return;
   }
 
-  command_history.clear();
+  command_history.clear_graph_commands();
   graph = std::move(*loaded_graph);
   node_pos_refresh = true;
 
@@ -560,7 +576,16 @@ void SceneEditorUI::load_graph_from_library(GraphReference &graph_ref) {
 
 GraphReference *SceneEditorUI::add_graph_in_folder(GraphFolder &folder,
                                                    const std::string_view graph_name) {
-  auto *ref = graph_scene_sync_->add_graph(folder, graph_name);
+  auto command = std::make_unique<AddGraphCommand>(folder.id, std::string(graph_name));
+  const std::string graph_id = command->graph_id();
+
+  if (history_enabled.load(std::memory_order_acquire)) {
+    command_history.execute(graph, std::move(command));
+  } else {
+    command->execute(*scene_);
+  }
+
+  auto *ref = scene_->find_graph(graph_id);
   if (ref) {
     load_graph_from_library(*ref);
   }

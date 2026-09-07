@@ -1,5 +1,10 @@
 #include "editor/timeline_controller.h"
 
+#include <memory>
+
+#include "editor/command_history.h"
+#include "editor/scene_commands.h"
+
 const char *TimelineController::GetItemLabel(const int index) const {
   if (index < 0 || index >= static_cast<int>(scene_.timeline.size())) {
     return "";
@@ -30,27 +35,43 @@ void TimelineController::Get(const int index, int **start, int **end, int *type,
 }
 
 void TimelineController::Add(const int type) {
+  TimelineSegment segment;
   if (type == static_cast<int>(SegmentType::AUDIO)) {
-    const TimelineSegment segment(0, 100, 0);
-    scene_.add_timeline_segment(segment);
+    segment = TimelineSegment(0, 100, 0);
   } else {
-    const TimelineSegment segment(0, 100, "");
+    segment = TimelineSegment(0, 100, "");
+  }
+
+  if (history_) {
+    history_->execute(scene_, std::make_unique<AddTimelineSegmentCommand>(std::move(segment)));
+  } else {
     scene_.add_timeline_segment(segment);
   }
 }
 
 void TimelineController::Del(const int index) {
-  if (index >= 0 && index < static_cast<int>(scene_.timeline.size())) {
+  if (index < 0 || index >= static_cast<int>(scene_.timeline.size())) {
+    return;
+  }
+  if (history_) {
+    history_->execute(scene_, std::make_unique<RemoveTimelineSegmentCommand>(static_cast<size_t>(index)));
+  } else {
     scene_.remove_timeline_segment(static_cast<size_t>(index));
   }
 }
 
 void TimelineController::Duplicate(const int index) {
-  if (index >= 0 && index < static_cast<int>(scene_.timeline.size())) {
-    const TimelineSegment &original = scene_.timeline[static_cast<size_t>(index)];
-    TimelineSegment copy = original;
-    copy.frame_start = original.frame_end;
-    copy.frame_end = original.frame_end + (original.frame_end - original.frame_start);
+  if (index < 0 || index >= static_cast<int>(scene_.timeline.size())) {
+    return;
+  }
+  const TimelineSegment &original = scene_.timeline[static_cast<size_t>(index)];
+  TimelineSegment copy = original;
+  copy.frame_start = original.frame_end;
+  copy.frame_end = original.frame_end + (original.frame_end - original.frame_start);
+
+  if (history_) {
+    history_->execute(scene_, std::make_unique<AddTimelineSegmentCommand>(std::move(copy)));
+  } else {
     scene_.add_timeline_segment(copy);
   }
 }

@@ -9,12 +9,17 @@
 
 #include "editor/scene.h"
 
+class CommandHistory;
+
 /**
  * @brief Renders and owns the state of the "Graph Library" dock panel.
  *
  * Draws the folder tree, the New folder/New graph buttons, the rename popup,
  * and the delete-graph confirmation modal. Owns the rename/delete selection
  * state internally. Emits high-level events to the editor through @ref Callbacks.
+ *
+ * When bound to a @c CommandHistory, structural edits (folders, renames, graph
+ * deletion) run through undoable scene commands instead of direct Scene CRUD.
  */
 class GraphLibraryPanel {
 public:
@@ -34,7 +39,7 @@ public:
   };
 
   GraphLibraryPanel(Scene &scene, GraphReference *&current_graph,
-                    Callbacks callbacks);
+                    Callbacks callbacks, CommandHistory *history = nullptr);
 
   /// @brief Render the panel and any open popups/modals.
   void render();
@@ -54,6 +59,9 @@ private:
   GraphReference *&current_graph_;
 
   Callbacks callbacks_;
+
+  /// @brief Optional undo history; structural edits route through it when set.
+  CommandHistory *history_;
 
   /// ID of the item being renamed (folder ID or graph ID)
   std::string rename_target_id_;

@@ -55,6 +55,9 @@ private:
 
   void select_first_available_graph();
 
+  /// @brief After undo/redo, reselect when the active graph was removed by the operation.
+  void refresh_graph_selection_after_history();
+
   void open_audio_track_dialog();
 
   // ── Recent Scenes ───────────────────────────────────────────────────────────

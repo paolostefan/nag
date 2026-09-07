@@ -6,15 +6,19 @@
 #include "ImSequencer.h"
 #include "editor/scene.h"
 
+class CommandHistory;
+
 /**
  * @brief Adapter between the ImSequencer widget and the Scene timeline model.
  *
  * Implements ImSequencer::SequenceInterface by reading from and mutating a
- * Scene's timeline. All operations delegate to the Scene CRUD methods.
+ * Scene's timeline. All operations delegate to undoable commands when a
+ * CommandHistory is provided, and otherwise fall back to direct Scene CRUD.
  */
 class TimelineController : public ImSequencer::SequenceInterface {
 public:
-  explicit TimelineController(Scene &scene) : scene_(scene) {}
+  explicit TimelineController(Scene &scene, CommandHistory *history = nullptr)
+    : scene_(scene), history_(history) {}
 
   [[nodiscard]] int GetFrameMin() const override { return 0; }
   [[nodiscard]] int GetFrameMax() const override { return scene_.total_frames; }
@@ -37,6 +41,7 @@ public:
 
 private:
   Scene &scene_;
+  CommandHistory *history_;
 };
 
 #endif // NAG_EDITOR_TIMELINE_CONTROLLER_H

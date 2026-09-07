@@ -1,14 +1,18 @@
 #include "editor/graph_library_panel.h"
 
 #include <cstring>
+#include <memory>
 
 #include <IconsFontAwesome6.h>
 
 #include "imgui.h"
 
+#include "editor/command_history.h"
+#include "editor/scene_commands.h"
+
 GraphLibraryPanel::GraphLibraryPanel(Scene &scene, GraphReference *&current_graph,
-                                     Callbacks callbacks)
-  : scene_(scene), current_graph_(current_graph), callbacks_(std::move(callbacks)) {
+                                     Callbacks callbacks, CommandHistory *history)
+  : scene_(scene), current_graph_(current_graph), callbacks_(std::move(callbacks)), history_(history) {
 }
 
 void GraphLibraryPanel::render() {
@@ -16,6 +20,8 @@ void GraphLibraryPanel::render() {
     if (ImGui::Button(ICON_FA_FOLDER_PLUS "  New folder")) {
       if (callbacks_.on_add_folder) {
         callbacks_.on_add_folder();
+      } else if (history_) {
+        history_->execute(scene_, std::make_unique<AddFolderCommand>("", "New Folder"));
       } else {
         [[maybe_unused]] auto *folder = scene_.add_folder(nullptr, "New Folder");
       }
@@ -53,7 +59,11 @@ void GraphLibraryPanel::render() {
 
       if (ImGui::Button("Delete", ImVec2(100, 0))) {
         const std::string deleted_id = pending_delete_graph_id_;
-        scene_.remove_graph(deleted_id);
+        if (history_) {
+          history_->execute(scene_, std::make_unique<RemoveGraphCommand>(deleted_id));
+        } else {
+          scene_.remove_graph(deleted_id);
+        }
         pending_delete_graph_id_.clear();
         if (callbacks_.on_graph_deleted) {
           callbacks_.on_graph_deleted(deleted_id);
@@ -84,7 +94,11 @@ void GraphLibraryPanel::render_folder_tree(
 
     if (ImGui::BeginPopupContextItem()) {
       if (ImGui::MenuItem(ICON_FA_FOLDER_PLUS "  Add Subfolder")) {
-        [[maybe_unused]] auto *subfolder = scene_.add_folder(folder->id, "New Subfolder");
+        if (history_) {
+          history_->execute(scene_, std::make_unique<AddFolderCommand>(folder->id, "New Subfolder"));
+        } else {
+          [[maybe_unused]] auto *subfolder = scene_.add_folder(folder->id, "New Subfolder");
+        }
       }
       if (ImGui::MenuItem(ICON_FA_DIAGRAM_PROJECT "  Add Graph Here")) {
         if (callbacks_.on_add_graph) {
@@ -101,7 +115,11 @@ void GraphLibraryPanel::render_folder_tree(
       ImGui::Separator();
 
       if (ImGui::MenuItem(ICON_FA_TRASH "  Delete Folder")) {
-        scene_.remove_folder(folder->id);
+        if (history_) {
+          history_->execute(scene_, std::make_unique<RemoveFolderCommand>(folder->id));
+        } else {
+          scene_.remove_folder(folder->id);
+        }
         ImGui::EndPopup();
         if (opened)
           ImGui::TreePop();
@@ -199,10 +217,18 @@ void GraphLibraryPanel::render_rename_popup() {
           scene_.name = new_name;
           break;
         case RenameTargetFolder:
-          scene_.rename_folder(rename_target_id_, new_name);
+          if (history_) {
+            history_->execute(scene_, std::make_unique<RenameFolderCommand>(rename_target_id_, new_name));
+          } else {
+            scene_.rename_folder(rename_target_id_, new_name);
+          }
           break;
         case RenameTargetGraph:
-          scene_.rename_graph(rename_target_id_, new_name);
+          if (history_) {
+            history_->execute(scene_, std::make_unique<RenameGraphCommand>(rename_target_id_, new_name));
+          } else {
+            scene_.rename_graph(rename_target_id_, new_name);
+          }
           break;
         default:
           break;
