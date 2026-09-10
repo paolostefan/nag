@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "nlohmann/json.hpp"
+
 #include "engine/node_type.h"
 
 struct Node;
@@ -71,6 +73,25 @@ public:
     }
     return NodeType::Default;
   }
+
+  /**
+   * @brief Canonical single-adapter serialization of a node to JSON.
+   *
+   * The "type" field is written as the node's stable string name (see
+   * Node::type_name), never the enum integer, so serialized nodes survive
+   * NodeType reordering. JsonGraphSerializer and the undo/redo commands
+   * delegate here so the on-disk format lives in exactly one place.
+   */
+  [[nodiscard]] static nlohmann::json serialize_node(const Node &node);
+
+  /**
+   * @brief Deserialize a node from JSON.
+   *
+   * Accepts the canonical string "type" and, for backward compatibility,
+   * the legacy numeric form written by old saves. Returns nullptr when the
+   * type is unknown or the node could not be constructed.
+   */
+  [[nodiscard]] std::unique_ptr<Node> deserialize_node(const nlohmann::json &j) const;
 
 private:
   NodeRegistry() = default;

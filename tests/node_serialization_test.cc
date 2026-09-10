@@ -14,6 +14,7 @@
 #include "engine/nodes/rectangle2dnode.h"
 #include "engine/nodes/temporal_nodes.h"
 #include "engine/serialization/json_graph_serializer.h"
+#include "editor/graph_commands.h"
 
 namespace fs = std::filesystem;
 
@@ -779,4 +780,104 @@ TEST_F(NodeSerializationTest, MandelNodeSerializeWithoutInitOmitsDimensions) {
   EXPECT_FLOAT_EQ(j["center"][1], -0.2f);
   EXPECT_FLOAT_EQ(j["zoom"], 2.f);
   EXPECT_EQ(j["iterations"].get<int>(), 50);
+}
+
+// ============================================================================
+// Single canonical node adapter (NodeRegistry) — interrogation + round trips
+// ============================================================================
+
+// The registry adapter is the single source of truth: it must write the same
+// JSON the serializer does, and always use the stable string "type".
+TEST_F(NodeSerializationTest, RegistryAdapterIsCanonicalSingleFormat) {
+  auto node = LFONode::create(2.f, 0.5f);
+  node->name = "Canonical";
+  node->gui_x = 42.f;
+  node->gui_y = 24.f;
+
+  const auto via_serializer = JsonGraphSerializer::serialize_node(node.get());
+  const auto via_registry = NodeRegistry::instance().serialize_node(*node);
+
+  EXPECT_EQ(via_registry, via_serializer);
+  ASSERT_TRUE(via_registry.contains("type"));
+  EXPECT_TRUE(via_registry["type"].is_string());
+  EXPECT_EQ(via_registry["type"], "LFO");
+}
+
+// Old saves store "type" as the enum integer; the adapter must keep reading
+// them while writing the stable string form going forward.
+TEST_F(NodeSerializationTest, RegistryAdapterAcceptsLegacyNumericType) {
+  nlohmann::json j;
+  j["id"] = 7;
+  j["type"] = static_cast<int>(NodeType::Constant);
+  j["name"] = "OldSave";
+  j["gui_xy"] = {10.f, 20.f};
+  j["params"] = {{"value", 7.0f}};
+
+  auto loaded = NodeRegistry::instance().deserialize_node(j);
+  ASSERT_NE(loaded, nullptr);
+  EXPECT_EQ(loaded->type, NodeType::Constant);
+  EXPECT_EQ(loaded->name, "OldSave");
+  EXPECT_FLOAT_EQ(loaded->gui_x, 10.f);
+  EXPECT_FLOAT_EQ(loaded->gui_y, 20.f);
+
+  auto *constant = dynamic_cast<ConstantFloatNode *>(loaded.get());
+  ASSERT_NE(constant, nullptr);
+  EXPECT_FLOAT_EQ(constant->value, 7.0f);
+}
+
+// Unknown string types must fail cleanly (nullptr), not crash.
+TEST_F(NodeSerializationTest, RegistryAdapterRejectsUnknownType) {
+  nlohmann::json j;
+  j["type"] = "DefinitelyNotANode";
+  j["params"] = nlohmann::json::object();
+
+  EXPECT_EQ(NodeRegistry::instance().deserialize_node(j), nullptr);
+}
+
+// AddNodeCommand redo path deserializes its snapshot through the adapter.
+TEST_F(NodeSerializationTest, AddNodeCommandRedoUsesCanonicalFormat) {
+  NodeGraph graph;
+
+  auto node = ConstantFloatNode::create(1.25f);
+  node->name = "RedoMe";
+  AddNodeCommand cmd(std::move(node));
+
+  ASSERT_TRUE(cmd.execute(graph)); // first run: moves the node in
+  ASSERT_EQ(graph.nodes.size(), 1);
+
+  // Redo: node_ is exhausted, the stored snapshot is deserialized back
+  ASSERT_TRUE(cmd.execute(graph));
+  ASSERT_EQ(graph.nodes.size(), 2);
+
+  auto *restored = dynamic_cast<ConstantFloatNode *>(graph.nodes[1].get());
+  ASSERT_NE(restored, nullptr);
+  EXPECT_EQ(restored->type, NodeType::Constant);
+  EXPECT_EQ(restored->name, "RedoMe");
+  EXPECT_FLOAT_EQ(restored->value, 1.25f);
+}
+
+// DeleteNodesCommand undo restores deleted nodes through the shared adapter.
+TEST_F(NodeSerializationTest, DeleteNodesCommandRestoresNodeFromCanonicalFormat) {
+  NodeGraph graph;
+
+  auto node = ConstantFloatNode::create(2.5f);
+  node->name = "DeleteMe";
+  node->gui_x = 5.f;
+  node->gui_y = 6.f;
+  const auto *added = graph.add_node(std::move(node));
+
+  DeleteNodesCommand cmd({added->id});
+  ASSERT_TRUE(cmd.execute(graph));
+  ASSERT_EQ(graph.nodes.size(), 0);
+
+  ASSERT_TRUE(cmd.undo(graph));
+  ASSERT_EQ(graph.nodes.size(), 1);
+
+  auto *restored = dynamic_cast<ConstantFloatNode *>(graph.nodes[0].get());
+  ASSERT_NE(restored, nullptr);
+  EXPECT_EQ(restored->type, NodeType::Constant);
+  EXPECT_EQ(restored->name, "DeleteMe");
+  EXPECT_FLOAT_EQ(restored->gui_x, 5.f);
+  EXPECT_FLOAT_EQ(restored->gui_y, 6.f);
+  EXPECT_FLOAT_EQ(restored->value, 2.5f);
 }

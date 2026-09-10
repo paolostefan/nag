@@ -3,7 +3,6 @@
 #include "spdlog/spdlog.h"
 
 #include "engine/node_registry.h"
-#include "engine/serialization/json_graph_serializer.h"
 
 // ============================================================================
 // AddNodeCommand
@@ -16,21 +15,11 @@ AddNodeCommand::AddNodeCommand(std::unique_ptr<Node> node)
 bool AddNodeCommand::execute(NodeGraph &graph) {
   if (!node_) {
     // Redo case: deserialize from stored JSON
-    auto recreated = NodeRegistry::instance().create_node(
-      static_cast<NodeType>(node_data_["type"].get<int>())
-    );
+    auto recreated = NodeRegistry::instance().deserialize_node(node_data_);
 
     if (!recreated) {
       spdlog::error("Failed to recreate node for redo");
       return false;
-    }
-
-    recreated->name = node_data_["name"];
-    recreated->gui_x = node_data_["gui_xy"][0];
-    recreated->gui_y = node_data_["gui_xy"][1];
-
-    if (node_data_.contains("params")) {
-      recreated->deserialize_params(node_data_["params"]);
     }
 
     added_node_id_ = recreated->id;
@@ -40,10 +29,7 @@ bool AddNodeCommand::execute(NodeGraph &graph) {
     added_node_id_ = node_->id;
 
     // Serialize for potential redo
-    node_data_["type"] = node_->type;
-    node_data_["name"] = node_->name;
-    node_data_["gui_xy"] = {node_->gui_x, node_->gui_y};
-    node_data_["params"] = node_->serialize_params();
+    node_data_ = NodeRegistry::instance().serialize_node(*node_);
 
     graph.add_node(std::move(node_));
   }
@@ -98,19 +84,11 @@ DeleteNodesCommand::DeleteNodesCommand(std::unordered_set<int> node_ids)
 bool DeleteNodesCommand::execute(NodeGraph &graph) {
   if (deleted_nodes_.empty()) {
     // First execute: capture state for undo
-    JsonGraphSerializer serializer;
-
     for (const auto &node: graph.nodes) {
       if (!node_ids_.contains(node->id)) continue;
 
-      // Serialize node
-      nlohmann::json node_json;
-      node_json["id"] = node->id;
-      node_json["type"] = node->type;
-      node_json["name"] = node->name;
-      node_json["gui_xy"] = {node->gui_x, node->gui_y};
-      node_json["params"] = node->serialize_params();
-      deleted_nodes_.push_back(node_json);
+      // Serialize node via the shared canonical adapter (string "type")
+      deleted_nodes_.push_back(NodeRegistry::instance().serialize_node(*node));
 
       // Capture connected links with pin indices for reliable undo
       for (const auto &link: graph.links) {
@@ -165,21 +143,11 @@ bool DeleteNodesCommand::undo(NodeGraph &graph) {
   std::unordered_map<int, int> id_remap;
 
   for (const auto &node_json: deleted_nodes_) {
-    auto node = NodeRegistry::instance().create_node(
-      static_cast<NodeType>(node_json["type"].get<int>())
-    );
+    auto node = NodeRegistry::instance().deserialize_node(node_json);
 
     if (!node) continue;
 
-    const int old_id = node_json["id"];
-
-    node->name = node_json["name"];
-    node->gui_x = node_json["gui_xy"][0];
-    node->gui_y = node_json["gui_xy"][1];
-
-    if (node_json.contains("params")) {
-      node->deserialize_params(node_json["params"]);
-    }
+    const int old_id = node_json.value("id", 0);
 
     Node *added = graph.add_node(std::move(node));
     id_remap[old_id] = added->id;
