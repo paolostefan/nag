@@ -1,8 +1,46 @@
 #include "editor/scene.h"
 
-#include <functional>
 #include <random>
 #include <sstream>
+
+namespace {
+  bool locate_folder_in(std::vector<std::unique_ptr<GraphFolder> > &folders,
+                        const std::string &id,
+                        const std::string &parent_folder_id,
+                        FolderLocation &out) {
+    for (size_t i = 0; i < folders.size(); ++i) {
+      if (folders[i]->id == id) {
+        out.parent = &folders;
+        out.index = i;
+        out.parent_folder_id = parent_folder_id;
+        return true;
+      }
+      if (locate_folder_in(folders[i]->children, id, folders[i]->id, out)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool locate_graph_in(std::vector<std::unique_ptr<GraphFolder> > &folders,
+                       const std::string &graph_id,
+                       GraphLocation &out) {
+    for (auto &folder: folders) {
+      for (size_t g = 0; g < folder->graphs.size(); ++g) {
+        if (folder->graphs[g].id == graph_id) {
+          out.parent = &folder->graphs;
+          out.index = g;
+          out.parent_folder_id = folder->id;
+          return true;
+        }
+      }
+      if (locate_graph_in(folder->children, graph_id, out)) {
+        return true;
+      }
+    }
+    return false;
+  }
+} // namespace
 
 std::string Scene::generate_id() {
   static std::random_device rd;
@@ -22,19 +60,15 @@ GraphFolder *Scene::find_folder(const std::string &folder_id) {
 }
 
 const GraphFolder *Scene::find_folder(const std::string &folder_id) const {
-  std::function<const GraphFolder *(const std::vector<std::unique_ptr<GraphFolder> > &)> search =
-      [&](const std::vector<std::unique_ptr<GraphFolder> > &folders) -> const GraphFolder * {
-    for (const auto &folder: folders) {
-      if (folder->id == folder_id) {
-        return folder.get();
-      }
-      if (const auto found = search(folder->children)) {
-        return found;
-      }
+  const GraphFolder *result = nullptr;
+  visit_folders([&](const GraphFolder &folder) {
+    if (folder.id == folder_id) {
+      result = &folder;
+      return true;
     }
-    return nullptr;
-  };
-  return search(root_folders);
+    return false;
+  });
+  return result;
 }
 
 GraphReference *Scene::find_graph(const std::string &graph_id) {
@@ -42,21 +76,36 @@ GraphReference *Scene::find_graph(const std::string &graph_id) {
 }
 
 const GraphReference *Scene::find_graph(const std::string &graph_id) const {
-  std::function<const GraphReference *(const std::vector<std::unique_ptr<GraphFolder> > &)> search =
-      [&](const std::vector<std::unique_ptr<GraphFolder> > &folders) -> const GraphReference * {
-    for (const auto &folder: folders) {
-      for (const auto &graph: folder->graphs) {
-        if (graph.id == graph_id) {
-          return &graph;
-        }
-      }
-      if (const auto found = search(folder->children)) {
-        return found;
-      }
+  const GraphReference *result = nullptr;
+  visit_graphs([&](const GraphReference &graph) {
+    if (graph.id == graph_id) {
+      result = &graph;
+      return true;
     }
-    return nullptr;
-  };
-  return search(root_folders);
+    return false;
+  });
+  return result;
+}
+
+GraphReference *Scene::find_first_graph() {
+  return const_cast<GraphReference *>(static_cast<const Scene *>(this)->find_first_graph());
+}
+
+const GraphReference *Scene::find_first_graph() const {
+  const GraphReference *result = nullptr;
+  visit_graphs([&](const GraphReference &graph) {
+    result = &graph;
+    return true;
+  });
+  return result;
+}
+
+bool Scene::locate_folder(const std::string &folder_id, FolderLocation &out) {
+  return locate_folder_in(root_folders, folder_id, "", out);
+}
+
+bool Scene::locate_graph(const std::string &graph_id, GraphLocation &out) {
+  return locate_graph_in(root_folders, graph_id, out);
 }
 
 GraphFolder *Scene::add_folder(const char *const parent_folder_id, const std::string &folder_name) {
@@ -91,26 +140,13 @@ bool Scene::rename_folder(const std::string &folder_id, const std::string &new_n
 }
 
 bool Scene::remove_folder(const std::string &folder_id) {
-  std::function<bool(std::vector<std::unique_ptr<GraphFolder> > &, const std::string &)> remove_from_vector;
-  remove_from_vector = [&remove_from_vector](std::vector<std::unique_ptr<GraphFolder> > &folders,
-                                             const std::string &id) -> bool {
-    for (auto it = folders.begin(); it != folders.end(); ++it) {
-      if ((*it)->id == id) {
-        folders.erase(it);
-        return true;
-      }
-      if (remove_from_vector((*it)->children, id)) {
-        return true;
-      }
-    }
+  FolderLocation loc;
+  if (!locate_folder(folder_id, loc) || !loc.parent) {
     return false;
-  };
-
-  if (remove_from_vector(root_folders, folder_id)) {
-    dirty = true;
-    return true;
   }
-  return false;
+  loc.parent->erase(loc.parent->begin() + static_cast<long>(loc.index));
+  dirty = true;
+  return true;
 }
 
 GraphReference *Scene::add_graph(GraphFolder &folder,
@@ -123,71 +159,32 @@ GraphReference *Scene::add_graph(GraphFolder &folder,
 }
 
 bool Scene::remove_graph(const std::string &graph_id) {
-  std::function<bool(std::vector<std::unique_ptr<GraphFolder> > &, const std::string &)> remove_from_vector;
-  remove_from_vector = [&remove_from_vector](const std::vector<std::unique_ptr<GraphFolder> > &folders,
-                                             const std::string &id) -> bool {
-    for (auto &folder: folders) {
-      for (auto it = folder->graphs.begin(); it != folder->graphs.end(); ++it) {
-        if (it->id == id) {
-          folder->graphs.erase(it);
-          return true;
-        }
-      }
-      if (remove_from_vector(folder->children, id)) {
-        return true;
-      }
-    }
+  GraphLocation loc;
+  if (!locate_graph(graph_id, loc) || !loc.parent) {
     return false;
-  };
-
-  if (remove_from_vector(root_folders, graph_id)) {
-    graph_data.erase(graph_id);
-    dirty = true;
-    return true;
   }
-  return false;
+  loc.parent->erase(loc.parent->begin() + static_cast<long>(loc.index));
+  graph_data.erase(graph_id);
+  dirty = true;
+  return true;
 }
 
 bool Scene::move_graph(const std::string &graph_id, const std::string &target_folder_id) {
-  const GraphReference *graph_ref = find_graph(graph_id);
-  if (!graph_ref) {
-    spdlog::error("Graph not found: {}", graph_id);
-    return false;
-  }
-
   GraphFolder *target_folder = find_folder(target_folder_id);
   if (!target_folder) {
     spdlog::error("Target folder not found: {}", target_folder_id);
     return false;
   }
 
-  std::function<bool(std::vector<std::unique_ptr<GraphFolder> > &, const std::string &, GraphFolder *,
-                     GraphReference &&)>
-      remove_and_insert;
-  remove_and_insert = [&remove_and_insert](const std::vector<std::unique_ptr<GraphFolder> > &folders,
-                                           const std::string &id, GraphFolder *target,
-                                           GraphReference &&ref) -> bool {
-    for (const auto &folder: folders) {
-      for (auto it = folder->graphs.begin(); it != folder->graphs.end(); ++it) {
-        if (it->id == id) {
-          target->graphs.push_back(std::move(*it));
-          folder->graphs.erase(it);
-          return true;
-        }
-      }
-      if (remove_and_insert(folder->children, id, target, std::move(ref))) {
-        return true;
-      }
-    }
+  GraphLocation loc;
+  if (!locate_graph(graph_id, loc) || !loc.parent) {
+    spdlog::error("Graph not found: {}", graph_id);
     return false;
-  };
-
-  if (GraphReference copy = *graph_ref;
-    remove_and_insert(root_folders, graph_id, target_folder, std::move(copy))) {
-    dirty = true;
-    return true;
   }
-  return false;
+  target_folder->graphs.push_back(std::move(loc.parent->at(loc.index)));
+  loc.parent->erase(loc.parent->begin() + static_cast<long>(loc.index));
+  dirty = true;
+  return true;
 }
 
 bool Scene::rename_graph(const std::string &graph_id, const std::string &new_name) {

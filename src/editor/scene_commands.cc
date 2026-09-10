@@ -4,51 +4,6 @@
 
 #include "editor/scene.h"
 
-namespace {
-  struct FolderLocation {
-    std::vector<std::unique_ptr<GraphFolder> > *parent{nullptr};
-    size_t index{0};
-    std::string parent_folder_id; // Empty = root
-  };
-
-  bool locate_folder(std::vector<std::unique_ptr<GraphFolder> > &folders,
-                     const std::string &id,
-                     const std::string &parent_folder_id,
-                     FolderLocation &out) {
-    for (size_t i = 0; i < folders.size(); ++i) {
-      if (folders[i]->id == id) {
-        out.parent = &folders;
-        out.index = i;
-        out.parent_folder_id = parent_folder_id;
-        return true;
-      }
-      if (locate_folder(folders[i]->children, id, folders[i]->id, out)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  bool locate_graph(std::vector<std::unique_ptr<GraphFolder> > &folders,
-                    const std::string &graph_id,
-                    FolderLocation &out) {
-    for (size_t i = 0; i < folders.size(); ++i) {
-      for (size_t g = 0; g < folders[i]->graphs.size(); ++g) {
-        if (folders[i]->graphs[g].id == graph_id) {
-          out.parent = &folders;
-          out.index = g;
-          out.parent_folder_id = folders[i]->id; // The folder containing the graph
-          return true;
-        }
-      }
-      if (locate_graph(folders[i]->children, graph_id, out)) {
-        return true;
-      }
-    }
-    return false;
-  }
-} // namespace
-
 // ============================================================================
 // AddFolderCommand
 // ============================================================================
@@ -95,7 +50,7 @@ RemoveFolderCommand::RemoveFolderCommand(const std::string &folder_id)
 bool RemoveFolderCommand::execute(Scene &scene) {
   if (!captured_) {
     FolderLocation loc;
-    if (!locate_folder(scene.root_folders, folder_id_, "", loc)) {
+    if (!scene.locate_folder(folder_id_, loc)) {
       spdlog::error("RemoveFolderCommand: folder not found: {}", folder_id_);
       return false;
     }
@@ -197,14 +152,14 @@ RemoveGraphCommand::RemoveGraphCommand(const std::string &graph_id)
 
 bool RemoveGraphCommand::execute(Scene &scene) {
   if (!captured_) {
-    FolderLocation loc;
-    if (!locate_graph(scene.root_folders, graph_id_, loc)) {
+    GraphLocation loc;
+    if (!scene.locate_graph(graph_id_, loc)) {
       spdlog::error("RemoveGraphCommand: graph not found: {}", graph_id_);
       return false;
     }
     parent_folder_id_ = loc.parent_folder_id;
     index_ = loc.index;
-    graph_ref_json_ = loc.parent->at(loc.index)->graphs[loc.index];
+    graph_ref_json_ = loc.parent->at(loc.index);
     if (const auto it = scene.graph_data.find(graph_id_); it != scene.graph_data.end()) {
       graph_data_ = it->second;
       has_graph_data_ = true;

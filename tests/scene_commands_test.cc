@@ -126,6 +126,31 @@ TEST(SceneCommandsTest, RemoveGraphRestoresReferenceAndData) {
   EXPECT_FALSE(scene.graph_data.contains(graph->id));
 }
 
+// Regression: the graph's containing folder index (in its parent vector) must
+// not be conflated with the graph's index inside that folder. Removing and
+// undoing must restore the exact graph, not whatever lives at a mirrored index.
+TEST(SceneCommandsTest, RemoveGraphRestoresCorrectGraphWhenIndexesDiffer) {
+  Scene scene;
+  auto *folder_a = scene.add_folder(nullptr, "A");
+  auto *graph_a = scene.add_graph(*folder_a, "G_A");
+  auto *folder_b = scene.add_folder(nullptr, "B");
+  auto *graph_b = scene.add_graph(*folder_b, "G_B");
+  scene.graph_data[graph_b->id] = {{"bar", 7}};
+
+  RemoveGraphCommand cmd(graph_b->id);
+  EXPECT_TRUE(cmd.execute(scene));
+  EXPECT_TRUE(scene.find_graph(graph_b->id) == nullptr);
+  EXPECT_TRUE(scene.find_graph(graph_a->id) != nullptr);
+
+  EXPECT_TRUE(cmd.undo(scene));
+  const GraphReference *restored = scene.find_graph(graph_b->id);
+  ASSERT_NE(restored, nullptr);
+  EXPECT_EQ(restored->name, "G_B");
+  EXPECT_EQ(&restored->dirty, &folder_b->graphs.front().dirty);
+  ASSERT_TRUE(scene.graph_data.contains(graph_b->id));
+  EXPECT_EQ(scene.graph_data.at(graph_b->id).at("bar"), 7);
+}
+
 TEST(SceneCommandsTest, RenameGraphExecuteUndo) {
   Scene scene;
   auto *folder = scene.add_folder(nullptr, "Root");

@@ -1,23 +1,9 @@
 #include "editor/graph_scene_sync.h"
 
-#include <functional>
-
 #include "spdlog/spdlog.h"
 
 GraphReference *GraphSceneSync::find_first_graph() const {
-  std::function<GraphReference *(const std::vector<std::unique_ptr<GraphFolder> > &)> find_first;
-  find_first = [&find_first](const std::vector<std::unique_ptr<GraphFolder> > &folders) -> GraphReference * {
-    for (const auto &folder: folders) {
-      if (!folder->graphs.empty()) {
-        return &folder->graphs.front();
-      }
-      if (auto *found = find_first(folder->children)) {
-        return found;
-      }
-    }
-    return nullptr;
-  };
-  return find_first(scene_.root_folders);
+  return scene_.find_first_graph();
 }
 
 void GraphSceneSync::sync_graph(GraphReference &ref, const NodeGraph &graph) {

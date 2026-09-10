@@ -1,7 +1,7 @@
 #ifndef NAG_EDITOR_SCENE_H
 #define NAG_EDITOR_SCENE_H
 
-#include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -37,6 +37,20 @@ struct GraphFolder {
   GraphFolder(const std::string_view id_, const std::string_view name_)
     : id(id_), name(name_) {
   }
+};
+
+/// @brief Location of a folder within the tree: its parent vector and index.
+struct FolderLocation {
+  std::vector<std::unique_ptr<GraphFolder> > *parent{nullptr};
+  size_t index{0};
+  std::string parent_folder_id; // Empty = root
+};
+
+/// @brief Location of a graph within the tree: its containing folder's graph list and index.
+struct GraphLocation {
+  std::vector<GraphReference> *parent{nullptr};
+  size_t index{0};
+  std::string parent_folder_id; // Id of the folder containing the graph
 };
 
 struct TimelineSegment {
@@ -88,6 +102,76 @@ public:
   [[nodiscard]] GraphReference *find_graph(const std::string &graph_id);
 
   [[nodiscard]] const GraphReference *find_graph(const std::string &graph_id) const;
+
+  /// @brief Depth-first search for the first graph reference in the folder tree.
+  /// @return Pointer to the first graph, or nullptr if none exist.
+  [[nodiscard]] GraphReference *find_first_graph();
+
+  [[nodiscard]] const GraphReference *find_first_graph() const;
+
+  /// @brief Locate a folder's position (parent vector + index) in the tree.
+  /// @return true if found; @p out is populated with the folder's location.
+  [[nodiscard]] bool locate_folder(const std::string &folder_id, FolderLocation &out);
+
+  /// @brief Locate a graph's position (containing folder's graph list + index) in the tree.
+  /// @return true if found; @p out is populated with the graph's location.
+  [[nodiscard]] bool locate_graph(const std::string &graph_id, GraphLocation &out);
+
+  /// @brief Depth-first preorder traversal over every folder in the tree.
+  /// @tparam Fn Callable taking @c const GraphFolder& returning @c bool.
+  ///   Returning true stops the traversal early.
+  /// @return true if the traversal was stopped early by @p fn.
+  template <typename Fn>
+  bool visit_folders(Fn &&fn) {
+    return const_cast<const Scene *>(this)->visit_folders(
+      [&fn](const GraphFolder &f) -> bool { return fn(const_cast<GraphFolder &>(f)); });
+  }
+
+  template <typename Fn>
+  bool visit_folders(Fn &&fn) const {
+    std::function<bool(const std::vector<std::unique_ptr<GraphFolder> > &)> walk =
+        [&](const std::vector<std::unique_ptr<GraphFolder> > &folders) -> bool {
+      for (const auto &folder: folders) {
+        if (fn(*folder)) {
+          return true;
+        }
+        if (walk(folder->children)) {
+          return true;
+        }
+      }
+      return false;
+    };
+    return walk(root_folders);
+  }
+
+  /// @brief Deepen the tree: run @p fn over every graph in every folder, DFS.
+  /// @tparam Fn Callable taking @c const GraphReference& returning @c bool.
+  ///   Returning true stops the traversal early.
+  /// @return true if the traversal was stopped early by @p fn.
+  template <typename Fn>
+  bool visit_graphs(Fn &&fn) {
+    return const_cast<const Scene *>(this)->visit_graphs(
+      [&fn](const GraphReference &g) -> bool { return fn(const_cast<GraphReference &>(g)); });
+  }
+
+  template <typename Fn>
+  bool visit_graphs(Fn &&fn) const {
+    std::function<bool(const std::vector<std::unique_ptr<GraphFolder> > &)> walk =
+        [&](const std::vector<std::unique_ptr<GraphFolder> > &folders) -> bool {
+      for (const auto &folder: folders) {
+        for (const auto &graph: folder->graphs) {
+          if (fn(graph)) {
+            return true;
+          }
+        }
+        if (walk(folder->children)) {
+          return true;
+        }
+      }
+      return false;
+    };
+    return walk(root_folders);
+  }
 
   [[nodiscard]] GraphFolder *add_folder(const char *parent_folder_id,
                                         const std::string &folder_name);
