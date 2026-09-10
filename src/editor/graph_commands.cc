@@ -22,16 +22,16 @@ bool AddNodeCommand::execute(NodeGraph &graph) {
       return false;
     }
 
-    added_node_id_ = recreated->id;
-    graph.add_node(std::move(recreated));
+    const Node * added = graph.add_node(std::move(recreated));
+    added_node_id_ = added->id;
   } else {
     // First execute: add the node
-    added_node_id_ = node_->id;
 
-    // Serialize for potential redo
-    node_data_ = NodeRegistry::instance().serialize_node(*node_);
+    const Node *added = graph.add_node(std::move(node_));
+    added_node_id_ = added->id;
 
-    graph.add_node(std::move(node_));
+    // Serialize AFTER add so the snapshot reflects the real in-graph id
+    node_data_ = NodeRegistry::serialize_node(*added);
   }
 
   return true;

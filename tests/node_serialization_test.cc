@@ -179,7 +179,7 @@ TEST_F(NodeSerializationTest, SaveAndLoadGraphWithLinks) {
   const auto *loaded_lfo = loaded_graph.nodes[1].get();
   const auto *loaded_smoother = loaded_graph.nodes[2].get();
 
-  EXPECT_NE(loaded_lfo->inputs[0].stream, nullptr); // Connected to time
+  EXPECT_NE(loaded_lfo->inputs[0].stream, nullptr);      // Connected to time
   EXPECT_NE(loaded_smoother->inputs[0].stream, nullptr); // Connected to LFO
   EXPECT_NE(loaded_smoother->inputs[1].stream, nullptr); // Connected to time
 }
@@ -383,8 +383,8 @@ TEST_F(NodeSerializationTest, SaveAndLoadCircleNode) {
   NodeGraph graph;
 
   auto circle = CircleNode::create(
-    Vec2(0.7f, 0.3f), // position
-    0.15f, // radius
+    Vec2(0.7f, 0.3f),         // position
+    0.15f,                    // radius
     Vec4(0.f, 1.f, 0.f, 0.8f) // green semi-transparent
   );
   circle->name = "Moving Circle";
@@ -862,8 +862,8 @@ TEST_F(NodeSerializationTest, DeleteNodesCommandRestoresNodeFromCanonicalFormat)
 
   auto node = ConstantFloatNode::create(2.5f);
   node->name = "DeleteMe";
-  node->gui_x = 5.f;
   node->gui_y = 6.f;
+  node->gui_x = 5.f;
   const auto *added = graph.add_node(std::move(node));
 
   DeleteNodesCommand cmd({added->id});
@@ -880,4 +880,24 @@ TEST_F(NodeSerializationTest, DeleteNodesCommandRestoresNodeFromCanonicalFormat)
   EXPECT_FLOAT_EQ(restored->gui_x, 5.f);
   EXPECT_FLOAT_EQ(restored->gui_y, 6.f);
   EXPECT_FLOAT_EQ(restored->value, 2.5f);
+}
+
+TEST_F(NodeSerializationTest, AddNodeCommandUndoRedoRemovesNode) {
+  NodeGraph graph;
+  auto node = ConstantFloatNode::create(1.11f);
+  node->name = "UndoMe";
+
+  AddNodeCommand cmd(std::move(node));
+
+  ASSERT_TRUE(cmd.execute(graph));
+  ASSERT_EQ(graph.nodes.size(), 1);
+
+  ASSERT_TRUE(cmd.undo(graph)); // BEFORE fix: false (id 0 not found)
+  ASSERT_EQ(graph.nodes.size(), 0);
+
+  ASSERT_TRUE(cmd.execute(graph)); // redo
+  ASSERT_EQ(graph.nodes.size(), 1);
+
+  ASSERT_TRUE(cmd.undo(graph)); // undo of the redo must also work
+  ASSERT_EQ(graph.nodes.size(), 0);
 }
