@@ -145,6 +145,13 @@ make -j$(nproc)
 - Keyframe handling is incomplete
 - Effect parameter keyframing via UI not implemented
 
+## Teaching Workspace
+
+`./tmp/lessons/` is a private learning workspace for studying engine changes. It holds
+a mission statement, HTML lessons, printable reference sheets, and shared assets. Git
+ignores all of `tmp/`, so nothing in it is committed or reviewed. Open the lessons in a
+browser; each links the shared stylesheet and widgets in `assets/`.
+
 ## Commands
 
 - Delete: Remove selected nodes/links
