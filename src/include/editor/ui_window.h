@@ -7,6 +7,8 @@
 #include "imgui.h"
 #include "SDL.h"
 
+#include "editor/ui.h"
+
 /**
  * @brief Base class for an SDL window with an ImGui UI.
  *
@@ -43,16 +45,6 @@ protected:
 
   /// @brief Status Message (fade out after kStatusMessageDuration) ─────────────────
   void print_status_message();
-
-
-  static constexpr ImVec4 kDangerButton{1.f, 0.3f, 0.3f, 1.f};
-  static constexpr ImVec4 kWarningTextCol{.9f, .9f, 0.3f, 1.f};
-
-  /// Font size for the UI. Adjust as needed for different screen DPIs.
-  static constexpr float kUIFontSize = 14.f;
-
-  /// Duration to show status messages before fading out (in seconds).
-  static constexpr float kStatusMessageDuration{3.f};
 
   std::string title{};
 

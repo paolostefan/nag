@@ -267,7 +267,7 @@ void GraphEditorUI::render_node_editor() {
 
           const auto *tx = out_node->get_texture();
           if (!tx) {
-            ImGui::TextColored(kWarningTextCol, "No output texture");
+            ImGui::TextColored(kWarningTextColor, "No output texture");
             break;
           }
 

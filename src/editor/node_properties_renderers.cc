@@ -8,10 +8,10 @@
 
 #include "editor/command_history.h"
 #include "editor/property_widget.h"
+#include "editor/ui.h"
 #include "engine/node_graph.h"
 #include "engine/node_type.h"
 #include "engine/nodes/node.h"
-
 #include "engine/nodes/mandel_node.h"
 #include "engine/nodes/particle_system_node.h"
 #include "engine/nodes/sdf_shape_node.h"
@@ -166,7 +166,15 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
       ImGui::SameLine();
       if (ImGui::Button(ICON_FA_ROTATE_RIGHT "  Reload")) {
         n.set_path(n.file_path);
+        n.reload();
       }
+
+      const auto &err = n.last_error();
+      if (!err.empty()) {
+        ImGui::Spacing();
+        ImGui::TextColored(kDangerBtnColor, "%s", err.c_str());
+      }
+
       break;
     }
 
@@ -383,9 +391,9 @@ void draw_node_properties(Node &node, NodeGraph &graph, CommandHistory &history)
     case NodeType::Max:
     case NodeType::Lerp:
     case NodeType::SmoothStep:
-      break;
 
     case NodeType::Count:
+    default:
       break;
   }
 }

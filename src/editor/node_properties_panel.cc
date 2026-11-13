@@ -36,7 +36,7 @@ void NodePropertiesPanel::render(NodeGraph &graph, CommandHistory &history) {
       draw_node_properties(*node, graph, history);
 
       if (auto *tl = dynamic_cast<TextureLoaderNode *>(node)) {
-        display_file_dialog(*tl);
+        const bool dlg_res = display_file_dialog(*tl);
       }
     }
   }

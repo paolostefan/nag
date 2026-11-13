@@ -16,10 +16,6 @@
  * then re-used every frame. Reloading is triggered only when the file path
  * changes (dirty flag pattern), so evaluate() is cheap at steady state.
  *
- * The node does NOT own a RenderTarget — it uploads directly to a raw GL
- * texture. VisualNode is therefore not a suitable base;
- * this node inherits from Node directly and manages its own GL resource.
- *
  * Path handling is engine-side (std::string). The file-dialog UI is a
  * GraphEditor concern; see the editor adapter helper
  * (editor/NodePropertiesPanel) for opening and displaying it.
@@ -33,7 +29,7 @@ struct TextureLoaderNode : VisualNode {
     type = NodeType::TextureLoader;
     name = "Texture Loader";
 
-    VisualNode::initialize(1,1); // dummy 1x1 texture to start with; will be replaced on load
+    VisualNode::initialize(1, 1); // dummy 1x1 texture to start with; will be replaced on load
   }
 
   // ── Node interface ────────────────────────────────────────────────────────
@@ -43,19 +39,14 @@ struct TextureLoaderNode : VisualNode {
   void evaluate() override {
     if (path_dirty_) {
       reload_texture();
-      path_dirty_ = false;
     }
-
-    if (!outputs.empty()) {
-      outputs[0].set_texture(output_texture.is_valid() ? &output_texture : nullptr);
-    }
+    push_output();
   }
 
   // ── VisualNode overrides ──────────────────────────────────────────────────
 
   void render() override {
     // No rendering needed; this node just loads a texture and outputs it.
-    spdlog::info("TextureLoaderNode::render()");
   }
 
   /**
@@ -65,6 +56,8 @@ struct TextureLoaderNode : VisualNode {
     if (path == file_path) return;
     file_path = path;
     path_dirty_ = true;
+    reload_texture();
+    push_output();
   }
 
   // ── Serialization ─────────────────────────────────────────────────────────
@@ -101,8 +94,17 @@ struct TextureLoaderNode : VisualNode {
     return node;
   }
 
+  void reload() {
+    reload_texture();
+    push_output();
+  }
+
+  [[nodiscard]] const std::string &last_error() const {
+    return last_error_;
+  }
+
+
 private:
-  // GLuint gl_texture_{0};
   bool path_dirty_{false};
   std::string last_error_;
 
@@ -112,9 +114,8 @@ private:
    * On failure, last_error_ is set with a descriptive message.
    */
   void reload_texture() {
-    if (file_path.empty()) return;
+    if (!render_target) return;
 
-    render_target->free_texture();
     last_error_.clear();
 
     // stb_image: flip vertically to match OpenGL UV convention (origin = bottom-left)
@@ -128,29 +129,46 @@ private:
                                     4);
     if (!data) {
       last_error_ = std::string("stb_image: ") + stbi_failure_reason();
-      spdlog::error("TextureLoaderNode: failed to load '{}': {}",
-                    file_path, last_error_);
+      spdlog::error("TextureLoaderNode #{}: failed to load '{}': {}",
+                    id, file_path, last_error_);
+      push_output();
       return;
     }
 
-    render_target->resize(width, height);
+    if (!render_target->resize(width, height)) {
+      stbi_image_free(data);
+      last_error_ = "render target resize failed";
+      spdlog::error("TextureLoaderNode #{}: {}", id, last_error_);
+      push_output();
+      return;
+    }
 
     // Upload to OpenGL
-    glBindTexture(GL_TEXTURE_2D, render_target->get_texture());
+    const GLuint tex = render_target->get_texture();
+    glBindTexture(GL_TEXTURE_2D, tex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8,
                  width, height, 0,
                  GL_RGBA, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    if (const GLenum err = glGetError(); err != GL_NO_ERROR) {
+      last_error_ = "glTexImage2D failed: " + std::to_string(err);
+      spdlog::error("TextureLoaderNode #{}: {}", id, last_error_);
+    } else {
+      glGenerateMipmap(GL_TEXTURE_2D);
+    }
 
+    glBindTexture(GL_TEXTURE_2D, 0);
     stbi_image_free(data);
 
-    output_texture.texture_id = render_target->get_texture();
-    output_texture.width = width;
-    output_texture.height = height;
+    output_texture = Texture{tex, width, height};
 
     spdlog::info("TextureLoaderNode: loaded '{}' ({}x{}, {} ch)", file_path, width, height, channels);
   }
+
+  void push_output() {
+    if (!outputs.empty()) {
+      outputs[0].set_texture(output_texture.is_valid() ? &output_texture : nullptr);
+    }
+  }
 };
 
-#endif  // NAG_ENGINE_NODES_TEXTURE_LOADER_NODE_H
+#endif // NAG_ENGINE_NODES_TEXTURE_LOADER_NODE_H

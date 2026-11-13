@@ -167,19 +167,27 @@ void SceneEditorUI::display_dialogs() {
       ImGui::Text("The scene has unsaved changes.");
       ImGui::Separator();
 
+      ImGui::PushStyleColor(ImGuiCol_Button, kSuccessBtnColor);
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
       if (ImGui::Button("Save && Quit", ImVec2(120, 0))) {
         quit_requested_.store(false, std::memory_order_release);
         save_scene();
         running.store(false, std::memory_order_release);
         ImGui::CloseCurrentPopup();
       }
+      ImGui::PopStyleColor(2);
       ImGui::SameLine();
+
+      ImGui::PushStyleColor(ImGuiCol_Button, kDangerBtnColor);
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
       if (ImGui::Button("Discard && Quit", ImVec2(120, 0))) {
         quit_requested_.store(false, std::memory_order_release);
         running.store(false, std::memory_order_release);
         ImGui::CloseCurrentPopup();
       }
+      ImGui::PopStyleColor(2);
       ImGui::SameLine();
+
       if (ImGui::Button("Cancel", ImVec2(100, 0))) {
         quit_requested_.store(false, std::memory_order_release);
         ImGui::CloseCurrentPopup();
@@ -408,7 +416,7 @@ void SceneEditorUI::render_timeline() {
 
     if (selected_segment_ >= 0) {
       ImGui::SameLine();
-      ImGui::PushStyleColor(ImGuiCol_Button, kDangerButton);
+      ImGui::PushStyleColor(ImGuiCol_Button, kDangerBtnColor);
       if (ImGui::Button(ICON_FA_BAN " Remove Selected")) {
         command_history.execute(*scene_, std::make_unique<RemoveTimelineSegmentCommand>(static_cast<size_t>(selected_segment_)));
         selected_segment_ = -1;
@@ -553,6 +561,9 @@ void SceneEditorUI::load_graph_from_library(GraphReference &graph_ref) {
 
   command_history.clear_graph_commands();
   graph = std::move(*loaded_graph);
+
+  graph.prime(); // seed input-less sources (TextureLoader, Time, Constant)
+
   node_pos_refresh = true;
 
   // Find time and output nodes in the loaded graph
