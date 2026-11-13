@@ -65,6 +65,7 @@ enum class NodeType : uint8_t {
 
   // FX nodes
   Blur,
+  BumpMap,
   ChromaticAberration,
   ColorCorrection,
   Composite,

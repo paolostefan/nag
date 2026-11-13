@@ -147,7 +147,7 @@ struct Node {
   }
 
   [[nodiscard]] virtual const std::vector<Property> &properties() const noexcept {
-    static const std::vector<Property> kNoProperties{};
+    static constexpr std::vector<Property> kNoProperties{};
     return kNoProperties;
   }
 

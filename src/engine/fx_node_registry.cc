@@ -1,4 +1,5 @@
 #include "engine/node_registry.h"
+#include "engine/nodes/bump_map_node.h"
 #include "engine/nodes/color_correction_node.h"
 #include "engine/nodes/displace_node.h"
 #include "engine/nodes/effect_nodes.h"
@@ -9,6 +10,12 @@ namespace node_registration {
     auto &registry = NodeRegistry::instance();
 
     registry.register_node(NodeType::Blur, "Effects", "Gaussian blur (two-pass separable)", [] { return BlurNode::create(); });
+
+    registry.register_node(
+      NodeType::BumpMap,
+      "Effects",
+      "Shades a texture using a greyscale height map and a 2D light direction",
+      [] { return BumpMapNode::create(); });
 
     registry.register_node(NodeType::ChromaticAberration, "Effects", "RGB channel offset — lens fringing", [] { return ChromaticAberrationNode::create(); });
 
