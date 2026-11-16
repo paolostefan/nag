@@ -562,7 +562,7 @@ void SceneEditorUI::load_graph_from_library(GraphReference &graph_ref) {
   command_history.clear_graph_commands();
   graph = std::move(*loaded_graph);
 
-  graph.prime(); // seed input-less sources (TextureLoader, Time, Constant)
+  graph.evaluate(); // seed input-less sources (TextureLoader, Time, Constant)
 
   node_pos_refresh = true;
 

@@ -121,7 +121,8 @@ struct Node {
   float gui_y{0.f};
   int id{};
   NodeType type{NodeType::Default};
-  uint8_t pad[3]{};
+  bool dirty{true};
+  uint8_t pad[2]{};
 
   virtual ~Node() = default;
 
@@ -130,6 +131,10 @@ struct Node {
   [[nodiscard]] virtual std::string_view type_name() const noexcept = 0;
 
   [[nodiscard]] constexpr bool needs_evaluation() const noexcept {
+    if (dirty) {
+      return true;
+    }
+
     for (auto const &pin: inputs) {
       if (pin.stream && pin.stream->version != pin.last_seen_version) {
         return true;
@@ -138,12 +143,13 @@ struct Node {
     return false;
   }
 
-  void mark_inputs_consumed() noexcept {
+  void mark_evaluated() noexcept {
     for (auto &pin: inputs) {
       if (pin.stream) {
         pin.last_seen_version = pin.stream->version;
       }
     }
+    dirty = false;
   }
 
   [[nodiscard]] virtual const std::vector<Property> &properties() const noexcept {

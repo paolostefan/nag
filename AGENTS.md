@@ -89,7 +89,7 @@ A unified editor combining node graph editing with timeline-based scene organiza
 
 ### Graph Evaluation
 - Uses Kahn's algorithm (topological sort) in `NodeGraph::evaluate()` (non-const; it mutates pin bookkeeping).
-- **Incremental**: a node is evaluated only when `needs_evaluation()` is true — i.e. at least one input stream's `version` differs from the input pin's `last_seen_version`. After evaluating, `NodeGraph::evaluate()` calls `mark_inputs_consumed()` so the node is skipped until an input actually changes.
+- **Incremental**: a node is evaluated only when `needs_evaluation()` is true — i.e. at least one input stream's `version` differs from the input pin's `last_seen_version`. After evaluating, `NodeGraph::evaluate()` calls `mark_evaluated()` so the node is skipped until an input actually changes.
 - **Skipped nodes don't bump their output version**, so downstream nodes see no change and are skipped too — the dirty/clean signal propagates through the DAG naturally.
 - **Sources are driven externally**: input-less nodes have no versioned inputs, so `needs_evaluation()` is false for them and the graph skips them. They are evaluated by their driver (e.g. `TimeNode::step()` in the editor, or a param-edit command). `NodeGraph::prime()` evaluates all input-less source nodes once after (de)serialization so their outputs populate.
 - **Param edits propagate**: `SetNodeParamCommand::apply()` and live property widgets re-evaluate the owning node after changing a field, so the output version advances and downstream wakes up (works even when time is paused).

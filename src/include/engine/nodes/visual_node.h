@@ -34,6 +34,8 @@ struct VisualNode : Node {
     output_texture.width = width;
     output_texture.height = height;
 
+    dirty = true;
+
     return true;
   }
 
@@ -63,6 +65,8 @@ struct VisualNode : Node {
       output_texture.texture_id = render_target->get_texture();
       output_texture.width = width;
       output_texture.height = height;
+
+      dirty = true;
     }
   }
 

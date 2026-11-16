@@ -247,7 +247,6 @@ void GraphEditorUI::render_node_editor() {
         case NodeType::Time: {
           if (flowing) {
             ((TimeNode *) node.get())->step(ImGui::GetIO().DeltaTime);
-            graph.evaluate();
           }
         }
         break;
@@ -322,7 +321,6 @@ void GraphEditorUI::render_node_editor() {
           break;
       } // switch node type
 
-
       // Render input/output pins
       if (node->inputs.size() + node->outputs.size() == 0) {
         ImGui::TextUnformatted("No in/out?!");
@@ -350,6 +348,8 @@ void GraphEditorUI::render_node_editor() {
 
       ImNodes::EndNode();
     }
+
+    graph.evaluate();
 
     node_pos_refresh = false;
 

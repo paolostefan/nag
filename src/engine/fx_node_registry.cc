@@ -9,10 +9,12 @@ namespace node_registration {
   void register_fx_nodes() {
     auto &registry = NodeRegistry::instance();
 
-    registry.register_node(NodeType::Blur, "Effects", "Gaussian blur (two-pass separable)", [] { return BlurNode::create(); });
+    registry.register_node(NodeType::Blur,
+      "Effects",
+      "Gaussian blur (two-pass separable)",
+      [] { return BlurNode::create(); });
 
-    registry.register_node(
-      NodeType::BumpMap,
+    registry.register_node(NodeType::BumpMap,
       "Effects",
       "Shades a texture using a greyscale height map and a 2D light direction",
       [] { return BumpMapNode::create(); });

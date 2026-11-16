@@ -207,7 +207,7 @@ void NodeGraph::evaluate() {
     Node *node = node_map[current_id];
     if (node->needs_evaluation()) {
       node->evaluate();
-      node->mark_inputs_consumed();
+      node->mark_evaluated();
     }
 
     // Decrement in-degree of successors; enqueue any that become ready
@@ -234,7 +234,7 @@ void NodeGraph::prime() const {
   for (const auto &node: nodes) {
     if (node->inputs.empty()) {
       node->evaluate();
-      node->mark_inputs_consumed();
+      node->mark_evaluated();
     }
   }
 }

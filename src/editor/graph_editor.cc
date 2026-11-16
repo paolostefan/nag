@@ -49,7 +49,7 @@ OperationResult GraphEditor::load_graph(const std::string &path) {
   graph = std::move(temp_graph);
 
   // Seed input-less source nodes so their outputs are populated on first pass.
-  graph.prime();
+  graph.evaluate();
 
   // search time & output nodes in the existing graph
   for (const auto &node: graph.nodes) {

@@ -161,7 +161,7 @@ void evaluate() override {
 
   // 6. Output
   outputs[0].set_particles(buffer_);
-  mark_inputs_consumed();
+  mark_evaluated();
 }
 ```
 
